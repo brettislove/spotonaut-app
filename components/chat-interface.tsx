@@ -44,6 +44,7 @@ export default function ChatInterface() {
   const [showMapView, setShowMapView] = useState(false);
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const requestTimestamps = useRef<number[]>([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -53,9 +54,41 @@ export default function ChatInterface() {
     scrollToBottom();
   }, [messages]);
 
+  const checkRateLimit = (): boolean => {
+    const now = Date.now();
+    const oneMinuteAgo = now - 60000;
+
+    // Remove timestamps older than 1 minute
+    requestTimestamps.current = requestTimestamps.current.filter(
+      (timestamp) => timestamp > oneMinuteAgo
+    );
+
+    // Check if we've hit the limit
+    if (requestTimestamps.current.length >= 5) {
+      return false;
+    }
+
+    // Add current timestamp
+    requestTimestamps.current.push(now);
+    return true;
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+
+    // Check rate limit
+    if (!checkRateLimit()) {
+      const rateLimitMessage: Message = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content:
+          "Příliš mnoho požadavků. Prosím, zkuste to znovu za chvíli. Maximální počet dotazů je 5 za minutu.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, rateLimitMessage]);
+      return;
+    }
 
     // Check if user is requesting analysis
     const analysisKeywords = [
@@ -145,6 +178,20 @@ export default function ChatInterface() {
 
   const handleAnalysisSubmit = async (data: AnalysisFormData) => {
     setShowAnalysisForm(false);
+
+    // Check rate limit
+    if (!checkRateLimit()) {
+      const rateLimitMessage: Message = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content:
+          "Příliš mnoho požadavků. Prosím, zkuste to znovu za chvíli. Maximální počet dotazů je 5 za minutu.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, rateLimitMessage]);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -229,7 +276,9 @@ export default function ChatInterface() {
               Spotonaut Assistant
             </span>
           </h1>
-          <p className="text-slate-400">Váš inteligentní AI společník</p>
+          <p className="text-slate-400">
+            Váš inteligentní AI lokační specialista
+          </p>
         </div>
 
         {/* Chat container */}
@@ -409,7 +458,15 @@ export default function ChatInterface() {
                           : "bg-slate-800/50 border border-slate-700 text-slate-300"
                       }`}
                     >
-                      <p className="whitespace-pre-wrap">{message.content}</p>
+                      <p
+                        className="whitespace-pre-wrap"
+                        dangerouslySetInnerHTML={{
+                          __html: message.content.replace(
+                            /\*\*(.+?)\*\*/g,
+                            "<b>$1</b>"
+                          ),
+                        }}
+                      />
                     </div>
                   </div>
                 ))}
