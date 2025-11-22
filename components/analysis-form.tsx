@@ -71,22 +71,22 @@ export default function AnalysisForm({
   };
 
   return (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold text-white mb-2">
+    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 max-w-2xl mx-auto">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-white mb-1">
           Analýza lokality
         </h3>
-        <p className="text-slate-400 text-sm">
+        <p className="text-slate-400 text-xs">
           Vyplňte informace o vašem podnikání pro podrobnou analýzu
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-3">
         {/* Location */}
         <div>
           <label
             htmlFor="location"
-            className="block text-sm font-medium text-slate-300 mb-2"
+            className="block text-xs font-medium text-slate-300 mb-1"
           >
             Lokalita *
           </label>
@@ -99,10 +99,10 @@ export default function AnalysisForm({
             disabled={isLoading}
             className={`w-full bg-slate-900/50 border ${
               errors.location ? "border-red-500" : "border-slate-600"
-            } text-white placeholder-slate-500 rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50`}
+            } text-white text-sm placeholder-slate-500 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50`}
           />
           {errors.location && (
-            <p className="text-red-400 text-xs mt-1">{errors.location}</p>
+            <p className="text-red-400 text-xs mt-0.5">{errors.location}</p>
           )}
         </div>
 
@@ -110,7 +110,7 @@ export default function AnalysisForm({
         <div>
           <label
             htmlFor="productType"
-            className="block text-sm font-medium text-slate-300 mb-2"
+            className="block text-xs font-medium text-slate-300 mb-1"
           >
             Typ produktu *
           </label>
@@ -124,7 +124,7 @@ export default function AnalysisForm({
               )
             }
             disabled={isLoading}
-            className="w-full bg-slate-900/50 border border-slate-600 text-white rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
+            className="w-full bg-slate-900/50 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
           >
             <option value="coffee">Káva / Teplé nápoje</option>
             <option value="snacks">Snacky</option>
@@ -132,73 +132,70 @@ export default function AnalysisForm({
           </select>
         </div>
 
-        {/* Operating Hours */}
-        <div>
-          <label
-            htmlFor="operatingHours"
-            className="block text-sm font-medium text-slate-300 mb-2"
-          >
-            Provozní hodiny týdně *
-          </label>
-          <input
-            id="operatingHours"
-            type="number"
-            min="1"
-            max="168"
-            value={formData.operatingHours}
-            onChange={(e) =>
-              updateField("operatingHours", parseInt(e.target.value) || 0)
-            }
-            disabled={isLoading}
-            className={`w-full bg-slate-900/50 border ${
-              errors.operatingHours ? "border-red-500" : "border-slate-600"
-            } text-white placeholder-slate-500 rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50`}
-          />
-          {errors.operatingHours && (
-            <p className="text-red-400 text-xs mt-1">{errors.operatingHours}</p>
-          )}
-          <p className="text-slate-500 text-xs mt-1">
-            Maximálně 168 hodin (7 dní × 24 hodin)
-          </p>
-        </div>
+        {/* Operating Hours and Average Spend - Side by Side */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label
+              htmlFor="operatingHours"
+              className="block text-xs font-medium text-slate-300 mb-1"
+            >
+              Hodiny/týden *
+            </label>
+            <input
+              id="operatingHours"
+              type="number"
+              min="1"
+              max="168"
+              value={formData.operatingHours}
+              onChange={(e) =>
+                updateField("operatingHours", parseInt(e.target.value) || 0)
+              }
+              disabled={isLoading}
+              className={`w-full bg-slate-900/50 border ${
+                errors.operatingHours ? "border-red-500" : "border-slate-600"
+              } text-white text-sm placeholder-slate-500 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50`}
+            />
+            {errors.operatingHours && (
+              <p className="text-red-400 text-xs mt-0.5">
+                {errors.operatingHours}
+              </p>
+            )}
+          </div>
 
-        {/* Average Spend */}
-        <div>
-          <label
-            htmlFor="avgSpend"
-            className="block text-sm font-medium text-slate-300 mb-2"
-          >
-            Průměrná útrata zákazníka (Kč) *
-          </label>
-          <input
-            id="avgSpend"
-            type="number"
-            min="1"
-            step="1"
-            value={formData.avgSpend}
-            onChange={(e) =>
-              updateField("avgSpend", parseInt(e.target.value) || 0)
-            }
-            disabled={isLoading}
-            className={`w-full bg-slate-900/50 border ${
-              errors.avgSpend ? "border-red-500" : "border-slate-600"
-            } text-white placeholder-slate-500 rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50`}
-          />
-          {errors.avgSpend && (
-            <p className="text-red-400 text-xs mt-1">{errors.avgSpend}</p>
-          )}
-          <p className="text-slate-500 text-xs mt-1">
-            Očekávaná průměrná částka na jednoho zákazníka
-          </p>
+          <div>
+            <label
+              htmlFor="avgSpend"
+              className="block text-xs font-medium text-slate-300 mb-1"
+            >
+              Útrata (Kč) *
+            </label>
+            <input
+              id="avgSpend"
+              type="number"
+              min="1"
+              step="1"
+              value={formData.avgSpend}
+              onChange={(e) =>
+                updateField("avgSpend", parseInt(e.target.value) || 0)
+              }
+              disabled={isLoading}
+              className={`w-full bg-slate-900/50 border ${
+                errors.avgSpend ? "border-red-500" : "border-slate-600"
+              } text-white text-sm placeholder-slate-500 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50`}
+            />
+            {errors.avgSpend && (
+              <p className="text-red-400 text-xs mt-0.5">{errors.avgSpend}</p>
+            )}
+          </div>
         </div>
 
         {/* Timeframe */}
         <div>
           <label
             htmlFor="timeframe"
-            className="block text-sm font-medium text-slate-300 mb-2"
+            className="block text-xs font-medium text-slate-300 mb-1"
           >
-            Časové období analýzy *
+            Období analýzy *
           </label>
           <div className="grid grid-cols-4 gap-2">
             {[
@@ -217,7 +214,7 @@ export default function AnalysisForm({
                   )
                 }
                 disabled={isLoading}
-                className={`py-2 px-4 rounded-lg font-medium text-sm transition-all disabled:opacity-50 ${
+                className={`py-1.5 px-3 rounded-lg font-medium text-xs transition-all disabled:opacity-50 ${
                   formData.timeframe === option.value
                     ? "bg-blue-500 text-white"
                     : "bg-slate-900/50 border border-slate-600 text-slate-300 hover:border-slate-500"
@@ -230,19 +227,19 @@ export default function AnalysisForm({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 pt-4">
+        <div className="flex gap-2 pt-2">
           <button
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="flex-1 bg-slate-700 text-white font-semibold px-6 py-3 rounded-lg hover:bg-slate-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-slate-700 text-white font-semibold text-sm px-4 py-2 rounded-lg hover:bg-slate-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Zrušit
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold px-6 py-3 rounded-lg hover:from-blue-600 hover:to-purple-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold text-sm px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? "Analyzuji..." : "Analyzovat"}
           </button>
