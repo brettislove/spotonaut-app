@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import AnalysisForm from "./analysis-form";
 import MapView from "./map-view";
-import ModeSwitch from "./mode-switch";
 
 interface Message {
   id: string;
@@ -38,13 +37,13 @@ interface AnalysisData {
 }
 
 export default function ChatInterface() {
-  const [mode, setMode] = useState<"analysis" | "chat">("analysis");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showAnalysisForm, setShowAnalysisForm] = useState(false);
+  const [showAnalysisForm, setShowAnalysisForm] = useState(true);
   const [showMapView, setShowMapView] = useState(false);
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
+  const [hasCompletedAnalysis, setHasCompletedAnalysis] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
 
@@ -55,15 +54,6 @@ export default function ChatInterface() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  // Show analysis form by default in analysis mode
-  useEffect(() => {
-    if (mode === "analysis") {
-      setShowAnalysisForm(true);
-    } else {
-      setShowAnalysisForm(false);
-    }
-  }, [mode]);
 
   const checkRateLimit = (): boolean => {
     const now = Date.now();
@@ -86,7 +76,7 @@ export default function ChatInterface() {
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !hasCompletedAnalysis) return;
 
     // Check rate limit
     if (!checkRateLimit()) {
@@ -98,36 +88,6 @@ export default function ChatInterface() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, rateLimitMessage]);
-      return;
-    }
-
-    // Check if user is requesting analysis
-    const analysisKeywords = [
-      "analýza",
-      "analyzuj",
-      "vyhodnoť",
-      "spočítej",
-      "projekce",
-      "odhad",
-      "příjem",
-      "výnos",
-    ];
-
-    const isAnalysisRequest = analysisKeywords.some((keyword) =>
-      input.toLowerCase().includes(keyword)
-    );
-
-    if (isAnalysisRequest) {
-      // Show the form instead of sending to chat
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        role: "user",
-        content: input,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, userMessage]);
-      setInput("");
-      setShowAnalysisForm(true);
       return;
     }
 
@@ -233,6 +193,7 @@ export default function ChatInterface() {
       if (result.data) {
         setAnalysisData(result.data);
         setShowMapView(true);
+        setHasCompletedAnalysis(true);
       }
     } catch (error) {
       console.error("Error getting analysis:", error);
@@ -252,7 +213,10 @@ export default function ChatInterface() {
   };
 
   const handleAnalysisCancel = () => {
-    setShowAnalysisForm(false);
+    // Only allow canceling if analysis has been completed
+    if (hasCompletedAnalysis) {
+      setShowAnalysisForm(false);
+    }
   };
 
   const shouldShowFormHint = (content: string): boolean => {
@@ -283,15 +247,26 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-950 font-sans relative overflow-hidden">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-slate-950 font-sans relative overflow-hidden">
       {/* Ambient glow effects */}
       <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
       <div className="fixed bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Map View - Left Side */}
+      {/* Header - Fixed on top for mobile, hidden on desktop */}
+      <div className="lg:hidden fixed top-0 left-0 w-full bg-slate-950/95 backdrop-blur-sm z-20 px-4 py-4">
+        <h1 className="text-2xl font-bold text-white mb-1">
+          <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Spotonaut Assistant
+          </span>
+        </h1>
+      </div>
+
+      {/* Map View - Fixed on mobile below header, Left on desktop */}
       <div
-        className={`h-screen p-8 transition-all duration-700 ease-in-out relative z-10 ${
-          showMapView ? "w-1/2 opacity-100" : "w-0 opacity-0 overflow-hidden"
+        className={`transition-all duration-700 ease-in-out z-10 ${
+          showMapView
+            ? "fixed lg:relative top-[88px] lg:top-0 left-0 h-[calc(50vh-88px)] lg:h-screen w-full lg:w-1/2 opacity-100 p-4 lg:p-8"
+            : "h-0 w-0 opacity-0 overflow-hidden absolute"
         }`}
       >
         {showMapView && analysisData && (
@@ -301,40 +276,58 @@ export default function ChatInterface() {
         )}
       </div>
 
-      {/* Chat Interface - Right Side */}
+      {/* Chat Interface - Bottom on mobile with top padding, Right on desktop */}
       <main
-        className={`flex flex-col h-screen py-8 px-4 relative z-10 transition-all duration-700 ease-in-out ${
-          showMapView ? "w-1/2" : "w-full max-w-4xl mx-auto"
+        className={`flex flex-col z-10 transition-all duration-700 ease-in-out ${
+          showMapView
+            ? "min-h-screen lg:h-screen w-full lg:w-1/2 pt-[50vh] lg:pt-0 lg:py-8 px-4 pb-4"
+            : "h-screen w-full max-w-4xl mx-auto py-8 px-4 pt-[88px] lg:pt-8"
         }`}
       >
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">
-                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Spotonaut Assistant
-                </span>
-              </h1>
-              <p className="text-slate-400">
-                Váš inteligentní AI lokační specialista
-              </p>
-            </div>
-            <ModeSwitch mode={mode} setMode={setMode} />
-          </div>
+        {/* Header - Only visible on desktop */}
+        <div className="hidden lg:block mb-6">
+          <h1 className="text-3xl font-bold text-white mb-2">
+            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Spotonaut Assistant
+            </span>
+          </h1>
+          <p className="text-slate-400 text-base">
+            Váš inteligentní AI lokační specialista
+          </p>
         </div>
 
         {/* Chat container */}
-        <div className="flex-1 bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-6 flex flex-col overflow-hidden">
+        <div className="flex-1 bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-3 lg:p-6 flex flex-col overflow-hidden">
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto mb-4 space-y-4">
+          <div className="flex-1 overflow-y-auto mb-3 lg:mb-4 space-y-3 lg:space-y-4">
             {showAnalysisForm ? (
-              <AnalysisForm
-                onSubmit={handleAnalysisSubmit}
-                onCancel={handleAnalysisCancel}
-                isLoading={isLoading}
-              />
-            ) : messages.length === 0 && mode === "chat" ? (
+              <div className="flex justify-start">
+                <div className="w-full lg:max-w-[85%]">
+                  <AnalysisForm
+                    onSubmit={handleAnalysisSubmit}
+                    onCancel={handleAnalysisCancel}
+                    isLoading={isLoading}
+                    showCancelButton={hasCompletedAnalysis}
+                  />
+                </div>
+              </div>
+            ) : isLoading ? (
+              <div className="flex justify-start">
+                <div className="bg-slate-800/50 border border-slate-700 rounded-xl px-6 py-4">
+                  <div className="flex gap-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+                    <div
+                      className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"
+                      style={{ animationDelay: "0.2s" }}
+                    />
+                    <div
+                      className="w-2 h-2 bg-pink-400 rounded-full animate-pulse"
+                      style={{ animationDelay: "0.4s" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : messages.length === 0 ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center max-w-2xl">
                   <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
@@ -495,14 +488,14 @@ export default function ChatInterface() {
                     }`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-xl px-6 py-4 ${
+                      className={`max-w-[95%] lg:max-w-[80%] rounded-xl px-4 lg:px-6 py-3 lg:py-4 ${
                         message.role === "user"
                           ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
                           : "bg-slate-800/50 border border-slate-700 text-slate-300"
                       }`}
                     >
                       <p
-                        className="whitespace-pre-wrap"
+                        className="whitespace-pre-wrap text-sm lg:text-base"
                         dangerouslySetInnerHTML={{
                           __html: message.content.replace(
                             /\*\*(.+?)\*\*/g,
@@ -530,7 +523,7 @@ export default function ChatInterface() {
                               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                             />
                           </svg>
-                          <span>Vyplnit formulář pro analýzu</span>
+                          <span>Vyplnit formulář pro novou analýzu</span>
                         </button>
                       )}
                   </div>
@@ -557,26 +550,28 @@ export default function ChatInterface() {
             )}
           </div>
 
-          {/* Input form - Only show in chat mode or when analysis form is not visible */}
-          {(mode === "chat" || !showAnalysisForm) && (
-            <form onSubmit={sendMessage} className="flex gap-3">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your message..."
-                disabled={isLoading}
-                className="flex-1 bg-slate-900/50 border border-slate-700 text-white placeholder-slate-400 rounded-xl px-6 py-4 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={!input.trim() || isLoading}
-                className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold px-8 py-4 rounded-xl hover:from-blue-600 hover:to-purple-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Odeslat
-              </button>
-            </form>
-          )}
+          {/* Input form */}
+          <form onSubmit={sendMessage} className="flex gap-2 lg:gap-3">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={
+                hasCompletedAnalysis
+                  ? "Napište svou zprávu..."
+                  : "Dokončete analýzu pro zahájení chatu..."
+              }
+              disabled={isLoading || !hasCompletedAnalysis}
+              className="flex-1 bg-slate-900/50 border border-slate-700 text-white placeholder-slate-400 rounded-xl px-4 lg:px-6 py-3 lg:py-4 text-sm lg:text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={!input.trim() || isLoading || !hasCompletedAnalysis}
+              className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold px-6 lg:px-8 py-3 lg:py-4 rounded-xl text-sm lg:text-base hover:from-blue-600 hover:to-purple-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Odeslat
+            </button>
+          </form>
         </div>
       </main>
     </div>
