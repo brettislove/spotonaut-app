@@ -3,7 +3,8 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
 const SYSTEM_PROMPT_MORE_TEXT = `
   Jsi odborný analytik obchodních lokalit specializující se na maloobchodní prodej a vendingové podnikání v České republice.
-  Tvá expertíza
+
+  Tvá expertíza:
   - Analýza pohybu a návštěvnosti
   - Výpočty potenciálu výnosů
   - Doporučení cenové strategie
