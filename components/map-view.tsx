@@ -80,10 +80,10 @@ export default function MapView({ data }: MapViewProps) {
 
       {/* Data Overlay */}
       {data.metrics && (
-        <div className="p-4 bg-slate-900/90 backdrop-blur-sm border-t border-slate-700">
-          <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+        <div className="p-3 lg:p-4 bg-slate-900/90 backdrop-blur-sm border-t border-slate-700">
+          <h3 className="text-white font-semibold text-sm lg:text-base mb-2 lg:mb-3 flex items-center gap-2">
             <svg
-              className="w-5 h-5 text-blue-400"
+              className="w-4 h-4 lg:w-5 lg:h-5 text-blue-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -95,32 +95,32 @@ export default function MapView({ data }: MapViewProps) {
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
               />
             </svg>
-            Klíčové metriky
+            Hlavní metriky
           </h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-slate-800/50 rounded-lg p-3">
+          <div className="grid grid-cols-2 gap-2 lg:gap-3">
+            <div className="bg-slate-800/50 rounded-lg p-2 lg:p-3">
               <div className="text-slate-400 text-xs mb-1">Měsíční příjem</div>
-              <div className="text-white font-bold text-lg">
+              <div className="text-white font-bold text-base lg:text-lg">
                 {formatNumber(data.metrics.monthlyRevenue)} Kč
               </div>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-3">
+            <div className="bg-slate-800/50 rounded-lg p-2 lg:p-3">
               <div className="text-slate-400 text-xs mb-1">
                 Denní návštěvnost
               </div>
-              <div className="text-white font-bold text-lg">
+              <div className="text-white font-bold text-base lg:text-lg">
                 {formatNumber(data.metrics.dailyFootTraffic)}
               </div>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-3">
+            <div className="bg-slate-800/50 rounded-lg p-2 lg:p-3">
               <div className="text-slate-400 text-xs mb-1">Konverze</div>
-              <div className="text-white font-bold text-lg">
+              <div className="text-white font-bold text-base lg:text-lg">
                 {data.metrics.conversionRate}%
               </div>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-3">
+            <div className="bg-slate-800/50 rounded-lg p-2 lg:p-3">
               <div className="text-slate-400 text-xs mb-1">Konkurenti</div>
-              <div className="text-white font-bold text-lg">
+              <div className="text-white font-bold text-base lg:text-lg">
                 {data.metrics.competitorCount}
               </div>
             </div>
