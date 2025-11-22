@@ -85,41 +85,41 @@ export async function POST(request: NextRequest) {
 
     // Create structured prompt with all data and request for structured metrics
     const structuredPrompt = `
-Proveď komplexní analýzu obchodní lokality s následujícími daty:
+  Proveď komplexní analýzu obchodní lokality s následujícími daty:
 
-**VSTUPNÍ DATA:**
-- Lokalita: ${data.location}
-- Typ produktu: ${productTypeLabels[data.productType]}
-- Provozní hodiny za týden: ${data.operatingHours} hodin
-- Průměrná útrata zákazníka: ${data.avgSpend} Kč
-- Časový rámec analýzy: ${timeframeLabels[data.timeframe]}
+  **VSTUPNÍ DATA:**
+  - Lokalita: ${data.location}
+  - Typ produktu: ${productTypeLabels[data.productType]}
+  - Provozní hodiny za týden: ${data.operatingHours} hodin
+  - Průměrná útrata zákazníka: ${data.avgSpend} Kč
+  - Časový rámec analýzy: ${timeframeLabels[data.timeframe]}
 
-**POŽADOVANÁ ANALÝZA:**
-Poskytni podrobnou analýzu zahrnující:
+  **POŽADOVANÁ ANALÝZA:**
+  Poskytni podrobnou analýzu zahrnující:
 
-1. **Přehled lokality** - krátké zhodnocení lokality a jejího potenciálu
-2. **Analýza provozu** - odhad návštěvnosti, špičkové hodiny, vzorce provozu
-3. **Projekce příjmů** - konkrétní finanční odhady pro zvolený časový rámec (${
-      timeframeLabels[data.timeframe]
-    })
-   - Optimistický scénář
-   - Realistický scénář
-   - Pesimistický scénář
-4. **Cenová strategie** - doporučení ohledně cen a průměrné útraty
-5. **Analýza konkurence** - odhad počtu konkurentů, jejich vliv
-6. **Klíčová doporučení** - 3-5 konkrétních praktických doporučení
+  1. **Přehled lokality** - krátké zhodnocení lokality a jejího potenciálu
+  2. **Analýza provozu** - odhad návštěvnosti, špičkové hodiny, vzorce provozu
+  3. **Projekce příjmů** - konkrétní finanční odhady pro zvolený časový rámec (${
+    timeframeLabels[data.timeframe]
+  })
+    - Optimistický scénář
+    - Realistický scénář
+    - Pesimistický scénář
+  4. **Cenová strategie** - doporučení ohledně cen a průměrné útraty
+  5. **Analýza konkurence** - odhad počtu konkurentů, jejich vliv
+  6. **Klíčová doporučení** - 3-5 konkrétních praktických doporučení
 
-Použij reálné české tržní podmínky a sezónní faktory. Všechna čísla formátuj česky (mezera jako oddělovač tisíců, čárka jako desetinná).
-Buď konkrétní s čísly a odhady. Struktur odpověď přehledně s nadpisy a body.
+  Použij reálné české tržní podmínky a sezónní faktory. Všechna čísla formátuj česky (mezera jako oddělovač tisíců, čárka jako desetinná).
+  Buď konkrétní s čísly a odhady. Struktur odpověď přehledně s nadpisy a body.
 
-DŮLEŽITÉ: V analýze musíš uvést následující konkrétní metriky (použij realistický scénář):
-- Denní příjem v Kč
-- Týdenní příjem v Kč
-- Měsíční příjem v Kč
-- Roční příjem v Kč
-- Denní návštěvnost (počet lidí)
-- Konverzní poměr v %
-- Počet konkurentů v okolí
+  DŮLEŽITÉ: V analýze musíš uvést následující konkrétní metriky (použij realistický scénář):
+  - Denní příjem v Kč
+  - Týdenní příjem v Kč
+  - Měsíční příjem v Kč
+  - Roční příjem v Kč
+  - Denní návštěvnost (počet lidí)
+  - Konverzní poměr v %
+  - Počet konkurentů v okolí
 `;
 
     const response = await chatAgent.generate(structuredPrompt);
