@@ -1,0 +1,185 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import type L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+interface LocationPickerDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onLocationSelect: (location: {
+    address: string;
+    lat: number;
+    lon: number;
+  }) => void;
+  initialCenter?: [number, number];
+}
+
+export default function LocationPickerDialog({
+  isOpen,
+  onClose,
+  onLocationSelect,
+  initialCenter = [50.0755, 14.4378], // Prague default
+}: LocationPickerDialogProps) {
+  const mapRef = useRef<L.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+  const [currentCenter, setCurrentCenter] =
+    useState<[number, number]>(initialCenter);
+
+  useEffect(() => {
+    if (!isOpen || !mapContainerRef.current) return;
+
+    // Dynamically import Leaflet only on client side
+    const initMap = async () => {
+      const L = (await import("leaflet")).default;
+
+      // Initialize map only if not already initialized
+      if (!mapRef.current && mapContainerRef.current) {
+        const map = L.map(mapContainerRef.current, {
+          center: currentCenter,
+          zoom: 15,
+          zoomControl: true,
+        });
+
+        L.tileLayer(
+          "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+          {
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: "abcd",
+            maxZoom: 20,
+          }
+        ).addTo(map);
+
+        mapRef.current = map;
+
+        // Update center when map is moved
+        map.on("moveend", () => {
+          const center = map.getCenter();
+          setCurrentCenter([center.lat, center.lng]);
+        });
+      }
+    };
+
+    initMap();
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const handleConfirmLocation = async () => {
+    setIsLoadingAddress(true);
+    try {
+      // Reverse geocode to get address
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentCenter[0]}&lon=${currentCenter[1]}&addressdetails=1`,
+        {
+          headers: {
+            "User-Agent": "SpotonAutApp/1.0",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        onLocationSelect({
+          address: data.display_name,
+          lat: currentCenter[0],
+          lon: currentCenter[1],
+        });
+        onClose();
+      }
+    } catch (error) {
+      console.error("Error fetching address:", error);
+    } finally {
+      setIsLoadingAddress(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col m-4">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-white">
+              Vyberte lokalitu
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              Přesuňte mapu a umístěte špendlík na požadované místo
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white transition-colors p-1"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* Map Container */}
+        <div className="flex-1 relative min-h-[500px]">
+          <div
+            ref={mapContainerRef}
+            className="absolute inset-0 rounded-b-xl overflow-hidden"
+          />
+
+          {/* Center Pin */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-[1000]">
+            <div className="relative">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+                <div className="w-3 h-3 bg-white rounded-full" />
+              </div>
+              <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-8 bg-gradient-to-b from-purple-500 to-transparent" />
+            </div>
+          </div>
+
+          {/* Coordinates Display */}
+          <div className="absolute top-4 left-4 bg-slate-900/90 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 z-[1000]">
+            <div className="font-mono">
+              {currentCenter[0].toFixed(6)}, {currentCenter[1].toFixed(6)}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-slate-700 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 bg-slate-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg hover:bg-slate-600 active:scale-95 transition-all"
+          >
+            Zrušit
+          </button>
+          <button
+            onClick={handleConfirmLocation}
+            disabled={isLoadingAddress}
+            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold text-sm px-4 py-2.5 rounded-lg hover:from-blue-600 hover:to-purple-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoadingAddress ? "Načítání..." : "Potvrdit lokalitu"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
