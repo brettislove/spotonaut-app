@@ -1,4 +1,4 @@
-import { Agent } from "@mastra/core";
+import { Agent } from "@mastra/core/agent";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
 const SYSTEM_PROMPT_MORE_TEXT = `
