@@ -244,6 +244,33 @@ export default function ChatInterface() {
     setShowAnalysisForm(false);
   };
 
+  const shouldShowFormHint = (content: string): boolean => {
+    const formTriggerKeywords = [
+      "lokalit",
+      "adres",
+      "míst",
+      "informac",
+      "podnikán",
+      "podnik",
+      "typ prodeje",
+      "provozní hodiny",
+      "útrata",
+      "potřebuj",
+      "vyplň",
+      "zadej",
+      "pověz mi",
+      "řekněte mi",
+      "jaká je",
+      "kde",
+      "který",
+      "kolik",
+    ];
+
+    return formTriggerKeywords.some((keyword) =>
+      content.toLowerCase().includes(keyword)
+    );
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-950 font-sans relative overflow-hidden">
       {/* Ambient glow effects */}
@@ -447,8 +474,8 @@ export default function ChatInterface() {
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex ${
-                      message.role === "user" ? "justify-end" : "justify-start"
+                    className={`flex flex-col ${
+                      message.role === "user" ? "items-end" : "items-start"
                     }`}
                   >
                     <div
@@ -468,6 +495,28 @@ export default function ChatInterface() {
                         }}
                       />
                     </div>
+                    {message.role === "assistant" &&
+                      shouldShowFormHint(message.content) && (
+                        <button
+                          onClick={() => setShowAnalysisForm(true)}
+                          className="mt-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 hover:cursor-pointer border border-blue-500/30 text-blue-400 text-sm rounded-lg transition-all flex items-center gap-2 group"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          <span>Vyplnit formulář pro analýzu</span>
+                        </button>
+                      )}
                   </div>
                 ))}
                 {isLoading && (
