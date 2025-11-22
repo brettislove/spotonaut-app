@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import AnalysisForm from "./analysis-form";
 import MapView from "./map-view";
+import ModeSwitch from "./mode-switch";
 
 interface Message {
   id: string;
@@ -37,6 +38,7 @@ interface AnalysisData {
 }
 
 export default function ChatInterface() {
+  const [mode, setMode] = useState<"analysis" | "chat">("analysis");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -53,6 +55,15 @@ export default function ChatInterface() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Show analysis form by default in analysis mode
+  useEffect(() => {
+    if (mode === "analysis") {
+      setShowAnalysisForm(true);
+    } else {
+      setShowAnalysisForm(false);
+    }
+  }, [mode]);
 
   const checkRateLimit = (): boolean => {
     const now = Date.now();
@@ -298,14 +309,19 @@ export default function ChatInterface() {
       >
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Spotonaut Assistant
-            </span>
-          </h1>
-          <p className="text-slate-400">
-            Váš inteligentní AI lokační specialista
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">
+                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Spotonaut Assistant
+                </span>
+              </h1>
+              <p className="text-slate-400">
+                Váš inteligentní AI lokační specialista
+              </p>
+            </div>
+            <ModeSwitch mode={mode} setMode={setMode} />
+          </div>
         </div>
 
         {/* Chat container */}
@@ -318,7 +334,7 @@ export default function ChatInterface() {
                 onCancel={handleAnalysisCancel}
                 isLoading={isLoading}
               />
-            ) : messages.length === 0 ? (
+            ) : messages.length === 0 && mode === "chat" ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center max-w-2xl">
                   <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
@@ -541,24 +557,26 @@ export default function ChatInterface() {
             )}
           </div>
 
-          {/* Input form */}
-          <form onSubmit={sendMessage} className="flex gap-3">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
-              disabled={isLoading}
-              className="flex-1 bg-slate-900/50 border border-slate-700 text-white placeholder-slate-400 rounded-xl px-6 py-4 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={!input.trim() || isLoading}
-              className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold px-8 py-4 rounded-xl hover:from-blue-600 hover:to-purple-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Odeslat
-            </button>
-          </form>
+          {/* Input form - Only show in chat mode or when analysis form is not visible */}
+          {(mode === "chat" || !showAnalysisForm) && (
+            <form onSubmit={sendMessage} className="flex gap-3">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type your message..."
+                disabled={isLoading}
+                className="flex-1 bg-slate-900/50 border border-slate-700 text-white placeholder-slate-400 rounded-xl px-6 py-4 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={!input.trim() || isLoading}
+                className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold px-8 py-4 rounded-xl hover:from-blue-600 hover:to-purple-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Odeslat
+              </button>
+            </form>
+          )}
         </div>
       </main>
     </div>
