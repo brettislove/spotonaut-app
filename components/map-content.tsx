@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useMemo, useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import type { LatLngExpression } from "leaflet";
 
@@ -13,21 +13,56 @@ interface MapContentProps {
   location: string;
 }
 
-export default function MapContent({ position, location }: MapContentProps) {
-  useEffect(() => {
-    // Fix for default marker icon in Next.js
-    delete (L.Icon.Default.prototype as L.Icon & { _getIconUrl?: () => string })
-      ._getIconUrl;
+// Component to trigger map invalidation
+function MapInvalidator() {
+  const map = useMap();
 
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-      iconUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-      shadowUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-    });
-  }, []);
+  useEffect(() => {
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [map]);
+
+  return null;
+}
+
+export default function MapContent({ position, location }: MapContentProps) {
+  const customIcon = useMemo(
+    () =>
+      L.divIcon({
+        className: "custom-marker",
+        html: `
+        <div style="position: relative;">
+          <div style="
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            border: 3px solid white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          "></div>
+          <div style="
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            transform: rotate(45deg);
+          "></div>
+        </div>
+      `,
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
+        popupAnchor: [0, -40],
+      }),
+    []
+  );
 
   return (
     <MapContainer
@@ -35,7 +70,7 @@ export default function MapContent({ position, location }: MapContentProps) {
       zoom={15}
       style={{ height: "100%", width: "100%" }}
       className="z-0 rounded-t-2xl"
-      scrollWheelZoom={false}
+      scrollWheelZoom={true}
     >
       <TileLayer
         attribution='&copy; <a href="https://carto.com/">CARTO</a>'
@@ -43,7 +78,8 @@ export default function MapContent({ position, location }: MapContentProps) {
         subdomains="abcd"
         maxZoom={20}
       />
-      <Marker position={position}>
+      <MapInvalidator />
+      <Marker position={position} icon={customIcon}>
         <Popup>
           <div className="text-sm">
             <strong>{location}</strong>
