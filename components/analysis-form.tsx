@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import LocationPickerDialog from "./location-picker-dialog";
 
 interface AnalysisFormData {
   location: string;
@@ -14,6 +15,17 @@ interface AnalysisFormProps {
   onSubmit: (data: AnalysisFormData) => void;
   onCancel: () => void;
   isLoading?: boolean;
+}
+
+interface LocationSuggestion {
+  display_name: string;
+  lat: string;
+  lon: string;
+  place_id: number;
+  osm_type?: string;
+  osm_id?: number;
+  type?: string;
+  importance?: number;
 }
 
 export default function AnalysisForm({
@@ -33,29 +45,180 @@ export default function AnalysisForm({
     Partial<Record<keyof AnalysisFormData, string>>
   >({});
 
-  const validate = (): boolean => {
-    const newErrors: Partial<Record<keyof AnalysisFormData, string>> = {};
+  const [locationInput, setLocationInput] = useState("");
+  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const debounceTimer = useRef<NodeJS.Timeout | undefined>(undefined);
+  const suggestionBoxRef = useRef<HTMLDivElement>(null);
+  const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
 
-    if (!formData.location.trim()) {
-      newErrors.location = "Lokalita je povinná";
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionBoxRef.current &&
+        !suggestionBoxRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch location suggestions from Nominatim API
+  const fetchLocationSuggestions = useCallback(async (query: string) => {
+    if (query.length < 3) {
+      setSuggestions([]);
+      return;
     }
 
-    if (formData.operatingHours < 1 || formData.operatingHours > 168) {
-      newErrors.operatingHours = "Hodiny musí být mezi 1-168";
+    setIsLoadingSuggestions(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          query
+        )}&countrycodes=cz&limit=5&addressdetails=1`,
+        {
+          headers: {
+            "User-Agent": "SpotonAutApp/1.0",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data: LocationSuggestion[] = await response.json();
+        setSuggestions(Array.isArray(data) ? data : []);
+      } else {
+        setSuggestions([]);
+      }
+    } catch (error) {
+      console.error("Error fetching location suggestions:", error);
+      setSuggestions([]);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  }, []);
+
+  // Handle location input change with debounce
+  const handleLocationChange = (value: string) => {
+    setLocationInput(value);
+    setShowSuggestions(true);
+
+    // Clear previous timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
     }
 
-    if (formData.avgSpend < 1) {
-      newErrors.avgSpend = "Průměrná útrata musí být alespoň 1 Kč";
+    // Set new timer
+    debounceTimer.current = setTimeout(() => {
+      fetchLocationSuggestions(value);
+    }, 300);
+  };
+
+  // Handle suggestion selection
+  const handleSuggestionClick = (suggestion: LocationSuggestion) => {
+    setLocationInput(getShortLocationName(suggestion));
+    setFormData((prev) => ({ ...prev, location: suggestion.display_name }));
+    setShowSuggestions(false);
+    setSuggestions([]);
+    // Clear error when valid location is selected
+    if (errors.location) {
+      setErrors((prev) => ({ ...prev, location: undefined }));
+    }
+  };
+
+  // Handle location picker selection
+  const handleLocationPickerSelect = (location: {
+    address: string;
+    lat: number;
+    lon: number;
+  }) => {
+    const suggestion: LocationSuggestion = {
+      display_name: location.address,
+      lat: location.lat.toString(),
+      lon: location.lon.toString(),
+      place_id: Date.now(), // Temporary ID
+    };
+    setLocationInput(getShortLocationName(suggestion));
+    setFormData((prev) => ({ ...prev, location: location.address }));
+    // Clear error when valid location is selected
+    if (errors.location) {
+      setErrors((prev) => ({ ...prev, location: undefined }));
+    }
+  };
+
+  // Format location name for display - shorter version
+  const getShortLocationName = (suggestion: LocationSuggestion): string => {
+    const parts = suggestion.display_name.split(", ");
+
+    // For Czech addresses, extract: street number, city
+    // Example: "Václavské náměstí 846, Praha" from "Václavské náměstí 846/1, Nové Město, Praha 1, Hlavní město Praha, Praha, Střední Čechy, 110 00, Česko"
+
+    let street = "";
+    let city = "";
+
+    // First part usually contains street name and possibly number
+    if (parts[0]) {
+      street = parts[0];
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    // Find city name - look for major Czech cities or capitalized names
+    city =
+      parts.find(
+        (p) =>
+          p === "Praha" ||
+          p === "Brno" ||
+          p === "Ostrava" ||
+          p === "Plzeň" ||
+          p === "Liberec" ||
+          p === "Olomouc" ||
+          p === "Ústí nad Labem" ||
+          p === "Hradec Králové" ||
+          p === "České Budějovice" ||
+          p === "Pardubice" ||
+          (p.match(
+            /^[A-ZŠČŘŽÝÁÍÉÚŮ][a-zščřžýáíéúů]+(?: [A-ZŠČŘŽÝÁÍÉÚŮ][a-zščřžýáíéúů]+)*$/
+          ) &&
+            !p.includes("Česko") &&
+            !p.includes("Čechy") &&
+            !p.match(/^\d/)) // Not a postal code
+      ) || "";
+
+    if (street && city) {
+      return `${street}, ${city}`;
+    }
+
+    return street || parts[0] || suggestion.display_name;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
-      onSubmit(formData);
+    // Update location from input before validation
+    setFormData((prev) => ({ ...prev, location: locationInput }));
+
+    // Validate with current input
+    const tempFormData = { ...formData, location: locationInput };
+    const newErrors: Partial<Record<keyof AnalysisFormData, string>> = {};
+
+    if (!locationInput.trim()) {
+      newErrors.location = "Lokalita je povinná";
+    }
+
+    if (tempFormData.operatingHours < 1 || tempFormData.operatingHours > 168) {
+      newErrors.operatingHours = "Hodiny musí být mezi 1-168";
+    }
+
+    if (tempFormData.avgSpend < 1) {
+      newErrors.avgSpend = "Průměrná útrata musí být alespoň 1 Kč";
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length === 0) {
+      onSubmit(tempFormData);
     }
   };
 
@@ -83,27 +246,86 @@ export default function AnalysisForm({
 
       <form onSubmit={handleSubmit} className="space-y-3">
         {/* Location */}
-        <div>
+        <div className="relative" ref={suggestionBoxRef}>
           <label
             htmlFor="location"
             className="block text-xs font-medium text-slate-300 mb-1"
           >
             Lokalita *
           </label>
-          <input
-            id="location"
-            type="text"
-            value={formData.location}
-            onChange={(e) => updateField("location", e.target.value)}
-            placeholder="např. Václavské náměstí 1, Praha"
-            disabled={isLoading}
-            className={`w-full bg-slate-900/50 border ${
-              errors.location ? "border-red-500" : "border-slate-600"
-            } text-white text-sm placeholder-slate-500 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50`}
-          />
+          <div className="relative">
+            <input
+              id="location"
+              type="text"
+              value={locationInput}
+              onChange={(e) => handleLocationChange(e.target.value)}
+              placeholder="např. Václavské náměstí, Praha"
+              disabled={isLoading}
+              autoComplete="off"
+              className={`w-full bg-slate-900/50 border ${
+                errors.location ? "border-red-500" : "border-slate-600"
+              } text-white text-sm placeholder-slate-500 rounded-lg px-3 pr-10 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50`}
+            />
+            <button
+              type="button"
+              onClick={() => setIsLocationPickerOpen(true)}
+              disabled={isLoading}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors p-1 disabled:opacity-50"
+              title="Vybrat z mapy"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </button>
+          </div>
           {errors.location && (
             <p className="text-red-400 text-xs mt-0.5">{errors.location}</p>
           )}
+
+          {/* Suggestions Dropdown */}
+          {showSuggestions &&
+            (suggestions.length > 0 || isLoadingSuggestions) && (
+              <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {isLoadingSuggestions ? (
+                  <div className="px-3 py-2 text-slate-400 text-xs">
+                    Načítání...
+                  </div>
+                ) : (
+                  suggestions.map((suggestion) => (
+                    <button
+                      key={`${suggestion.place_id}-${suggestion.osm_type}`}
+                      type="button"
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 transition-colors border-b border-slate-700 last:border-b-0"
+                    >
+                      <div className="font-medium">
+                        {getShortLocationName(suggestion)}
+                      </div>
+                      <div className="text-xs text-slate-400 mt-0.5 truncate">
+                        {suggestion.display_name}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
         </div>
 
         {/* Product Type */}
@@ -245,6 +467,12 @@ export default function AnalysisForm({
           </button>
         </div>
       </form>
+
+      <LocationPickerDialog
+        isOpen={isLocationPickerOpen}
+        onClose={() => setIsLocationPickerOpen(false)}
+        onLocationSelect={handleLocationPickerSelect}
+      />
     </div>
   );
 }
