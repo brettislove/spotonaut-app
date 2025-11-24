@@ -11,11 +11,10 @@ interface AnalysisData {
     lng: number;
   };
   metrics?: {
-    dailyRevenue: number;
-    weeklyRevenue: number;
-    monthlyRevenue: number;
-    yearlyRevenue: number;
     dailyFootTraffic: number;
+    monthlyRevenue: number;
+    revenuePerCustomer: number;
+    periodRevenue: number;
     conversionRate: number;
     competitorCount: number;
   };
@@ -80,10 +79,10 @@ export default function MapView({ data }: MapViewProps) {
 
       {/* Data Overlay */}
       {data.metrics && (
-        <div className="p-3 lg:p-4 bg-slate-900/90 backdrop-blur-sm border-t border-slate-700">
-          <h3 className="text-white font-semibold text-sm lg:text-base mb-2 lg:mb-3 flex items-center gap-2">
+        <div className="p-2 lg:p-4 bg-slate-900/90 backdrop-blur-sm border-t border-slate-700">
+          <h3 className="text-white font-semibold text-xs lg:text-base mb-1.5 lg:mb-3 flex items-center gap-1.5 lg:gap-2">
             <svg
-              className="w-4 h-4 lg:w-5 lg:h-5 text-blue-400"
+              className="w-3 h-3 lg:w-5 lg:h-5 text-blue-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -97,30 +96,63 @@ export default function MapView({ data }: MapViewProps) {
             </svg>
             Hlavní metriky
           </h3>
-          <div className="grid grid-cols-2 gap-2 lg:gap-3">
-            <div className="bg-slate-800/50 rounded-lg p-2 lg:p-3">
-              <div className="text-slate-400 text-xs mb-1">Měsíční příjem</div>
-              <div className="text-white font-bold text-base lg:text-lg">
-                {formatNumber(data.metrics.monthlyRevenue)} Kč
-              </div>
-            </div>
-            <div className="bg-slate-800/50 rounded-lg p-2 lg:p-3">
-              <div className="text-slate-400 text-xs mb-1">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-1.5 lg:gap-3">
+            {/* Daily Foot Traffic - Blue */}
+            <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-lg p-1.5 lg:p-3">
+              <div className="text-blue-300 text-[10px] lg:text-xs mb-0.5 lg:mb-1 font-medium">
                 Denní návštěvnost
               </div>
-              <div className="text-white font-bold text-base lg:text-lg">
+              <div className="text-white font-bold text-sm lg:text-lg">
                 {formatNumber(data.metrics.dailyFootTraffic)}
               </div>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-2 lg:p-3">
-              <div className="text-slate-400 text-xs mb-1">Konverze</div>
-              <div className="text-white font-bold text-base lg:text-lg">
+
+            {/* Monthly Revenue - Purple */}
+            <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 rounded-lg p-1.5 lg:p-3">
+              <div className="text-purple-300 text-[10px] lg:text-xs mb-0.5 lg:mb-1 font-medium">
+                Měsíční příjem
+              </div>
+              <div className="text-white font-bold text-sm lg:text-lg">
+                {formatNumber(data.metrics.monthlyRevenue)} Kč
+              </div>
+            </div>
+
+            {/* Revenue Per Customer - Pink */}
+            <div className="bg-gradient-to-br from-pink-500/10 to-pink-600/5 border border-pink-500/20 rounded-lg p-1.5 lg:p-3">
+              <div className="text-pink-300 text-[10px] lg:text-xs mb-0.5 lg:mb-1 font-medium">
+                Příjem na zákazníka
+              </div>
+              <div className="text-white font-bold text-sm lg:text-lg">
+                {formatNumber(data.metrics.revenuePerCustomer)} Kč
+              </div>
+            </div>
+
+            {/* Period Revenue - Cyan */}
+            <div className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border border-cyan-500/20 rounded-lg p-1.5 lg:p-3">
+              <div className="text-cyan-300 text-[10px] lg:text-xs mb-0.5 lg:mb-1 font-medium">
+                Příjem za období
+              </div>
+              <div className="text-white font-bold text-sm lg:text-lg">
+                {formatNumber(data.metrics.periodRevenue)} Kč
+              </div>
+            </div>
+
+            {/* Conversion Rate - Amber */}
+            <div className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20 rounded-lg p-1.5 lg:p-3">
+              <div className="text-amber-300 text-[10px] lg:text-xs mb-0.5 lg:mb-1 font-medium">
+                Konverze
+              </div>
+              <div className="text-white font-bold text-sm lg:text-lg">
                 {data.metrics.conversionRate}%
               </div>
             </div>
-            <div className="bg-slate-800/50 rounded-lg p-2 lg:p-3">
-              <div className="text-slate-400 text-xs mb-1">Konkurenti</div>
-              <div className="text-white font-bold text-base lg:text-lg">
+
+            {/* Competitor Count - Rose */}
+            <div className="bg-gradient-to-br from-rose-500/10 to-rose-600/5 border border-rose-500/20 rounded-lg p-1.5 lg:p-3">
+              <div className="text-rose-300 text-[10px] lg:text-xs mb-0.5 lg:mb-1 font-medium">
+                Počet konkurentů
+              </div>
+              <div className="text-white font-bold text-sm lg:text-lg">
                 {data.metrics.competitorCount}
               </div>
             </div>

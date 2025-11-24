@@ -113,58 +113,71 @@ export async function POST(request: NextRequest) {
   Buď konkrétní s čísly a odhady. Struktur odpověď přehledně s nadpisy a body.
 
   DŮLEŽITÉ: V analýze musíš uvést následující konkrétní metriky (použij realistický scénář):
-  - Denní příjem v Kč
-  - Týdenní příjem v Kč
-  - Měsíční příjem v Kč
-  - Roční příjem v Kč
   - Denní návštěvnost (počet lidí)
+  - Měsíční příjem v Kč
+  - Průměrná útrata na zákazníka v Kč
+  - Výpočet tržeb za zvolené období
   - Konverzní poměr v %
   - Počet konkurentů v okolí
+
+  📊 METRIKY (POVINNÉ - na samém konci odpovědi)
+    Na úplný konec své odpovědi (za všechny výše uvedené sekce) přidej JSON objekt s přesnými metrikami.
+    Formát JSON:
+    
+    - Začni s: \`\`\`json
+    - Poté objekt s těmito klíči: dailyFootTraffic, monthlyRevenue, revenuePerCustomer, periodRevenue, conversionRate, competitorCount
+    - Všechny hodnoty musí být čísla (ne formátované stringy)
+    - Ukonči s: \`\`\`
+    
+    Příklad struktury (použij své vypočtené hodnoty):
+    \`\`\`json
+    { "dailyRevenue": 5000, "weeklyRevenue": 35000, "monthlyRevenue": 150000, "yearlyRevenue": 1800000, "dailyFootTraffic": 800, "conversionRate": 12.5, "competitorCount": 3 }
+    \`\`\`
+    
+    KRITICKY DŮLEŽITÉ: Tento JSON blok MUSÍ být na úplném konci, až za sekci "Klíčová doporučení". Použij realistický scénář.
 `;
 
     const response = await chatAgent.generate(structuredPrompt);
 
     console.log("Analysis complete");
 
-    // Extract metrics from the text response using regex patterns
+    // Extract metrics from JSON at the end of the response
     const text = response.text || "";
+    let metrics = {
+      dailyFootTraffic: "neznámé",
+      monthlyRevenue: "neznámé",
+      revenuePerCustomer: data.avgSpend,
+      periodRevenue: "neznámé",
+      conversionRate: 10,
+      competitorCount: 2,
+    };
 
-    // Helper function to extract number from Czech formatted text
-    const extractNumber = (pattern: RegExp): number => {
-      const match = text.match(pattern);
-      if (match && match[1]) {
-        // Remove spaces and replace comma with dot for parsing
-        const cleanNumber = match[1].replace(/\s/g, "").replace(",", ".");
-        return parseFloat(cleanNumber) || 0;
+    // Try to extract JSON metrics from the response
+    const jsonMatch = text.match(/```json\s*({[\s\S]*?})\s*```/);
+    if (jsonMatch && jsonMatch[1]) {
+      try {
+        const parsedMetrics = JSON.parse(jsonMatch[1]);
+        metrics = {
+          dailyFootTraffic:
+            parsedMetrics.dailyFootTraffic || metrics.dailyFootTraffic,
+          monthlyRevenue:
+            parsedMetrics.monthlyRevenue || metrics.monthlyRevenue,
+          revenuePerCustomer:
+            parsedMetrics.revenuePerCustomer || metrics.revenuePerCustomer,
+          periodRevenue: parsedMetrics.periodRevenue || metrics.periodRevenue,
+          conversionRate:
+            parsedMetrics.conversionRate || metrics.conversionRate,
+          competitorCount:
+            parsedMetrics.competitorCount || metrics.competitorCount,
+        };
+        console.log("Successfully extracted metrics from JSON:", metrics);
+      } catch (error) {
+        console.error("Failed to parse JSON metrics:", error);
+        // Keep fallback metrics
       }
-      return 0;
-    };
-
-    // Extract metrics with various patterns
-    const metrics = {
-      dailyRevenue:
-        extractNumber(/Denně:\s*([0-9\s,]+)\s*Kč/i) ||
-        extractNumber(/denní příjem[:\s]*([0-9\s,]+)\s*Kč/i) ||
-        data.avgSpend * 100, // Fallback estimate
-      weeklyRevenue:
-        extractNumber(/Týdně:\s*([0-9\s,]+)\s*Kč/i) ||
-        extractNumber(/týdenní příjem[:\s]*([0-9\s,]+)\s*Kč/i) ||
-        data.avgSpend * 700,
-      monthlyRevenue:
-        extractNumber(/Měsíčně:\s*([0-9\s,]+)\s*Kč/i) ||
-        extractNumber(/měsíční příjem[:\s]*([0-9\s,]+)\s*Kč/i) ||
-        data.avgSpend * 3000,
-      yearlyRevenue:
-        extractNumber(/Ročně:\s*([0-9\s,]+)\s*Kč/i) ||
-        extractNumber(/roční příjem[:\s]*([0-9\s,]+)\s*Kč/i) ||
-        data.avgSpend * 36000,
-      dailyFootTraffic:
-        extractNumber(/denní návštěvnost[:\s]*([0-9\s,]+)/i) ||
-        extractNumber(/([0-9\s,]+)\s*lidí denně/i) ||
-        500,
-      conversionRate: extractNumber(/konverz[ní]*[:\s]*([0-9,]+)\s*%/i) || 10,
-      competitorCount: extractNumber(/([0-9]+)[\s-]*konkurent/i) || 2,
-    };
+    } else {
+      console.warn("No JSON metrics found in response, using fallback values");
+    }
 
     return NextResponse.json({
       analysis: text || "Omlouváme se, nepodařilo se vygenerovat analýzu.",

@@ -311,23 +311,7 @@ export default function ChatInterface() {
                   />
                 </div>
               </div>
-            ) : isLoading ? (
-              <div className="flex justify-start">
-                <div className="bg-slate-800/50 border border-slate-700 rounded-xl px-6 py-4">
-                  <div className="flex gap-2">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-                    <div
-                      className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"
-                      style={{ animationDelay: "0.2s" }}
-                    />
-                    <div
-                      className="w-2 h-2 bg-pink-400 rounded-full animate-pulse"
-                      style={{ animationDelay: "0.4s" }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ) : messages.length === 0 ? (
+            ) : messages.length === 0 && !isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center max-w-2xl">
                   <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
@@ -497,10 +481,9 @@ export default function ChatInterface() {
                       <p
                         className="whitespace-pre-wrap text-sm lg:text-base"
                         dangerouslySetInnerHTML={{
-                          __html: message.content.replace(
-                            /\*\*(.+?)\*\*/g,
-                            "<b>$1</b>"
-                          ),
+                          __html: message.content
+                            .replace(/```json[\s\S]*?```/g, "") // Remove JSON blocks
+                            .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>"),
                         }}
                       />
                     </div>

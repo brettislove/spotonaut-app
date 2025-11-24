@@ -151,7 +151,8 @@ export default function LocationPickerDialog({
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
                 <div className="w-3 h-3 bg-white rounded-full" />
               </div>
-              <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-8 bg-gradient-to-b from-purple-500 to-transparent" />
+              <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-8 bg-purple-500" />
+              <div className="absolute top-full left-1/2 -translate-x-1/2 translate-y-8 w-3 h-3 bg-purple-500 rounded-full border-1 border-white shadow-lg" />
             </div>
           </div>
 

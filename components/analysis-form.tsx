@@ -48,6 +48,10 @@ export default function AnalysisForm({
   >({});
 
   const [locationInput, setLocationInput] = useState("");
+  const [fullLocationData, setFullLocationData] = useState<{
+    displayName: string;
+    coordinates: { lat: number; lon: number };
+  } | null>(null);
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
@@ -79,21 +83,28 @@ export default function AnalysisForm({
 
     setIsLoadingSuggestions(true);
     try {
+      // Use our API route to avoid CORS issues
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query
-        )}&countrycodes=cz&limit=5&addressdetails=1`,
-        {
-          headers: {
-            "User-Agent": "SpotonAutApp/1.0",
-          },
-        }
+        `/api/location-search?q=${encodeURIComponent(query)}`
       );
 
-      if (response.ok) {
-        const data: LocationSuggestion[] = await response.json();
-        setSuggestions(Array.isArray(data) ? data : []);
+      if (!response.ok) {
+        console.error(
+          "Location search API error:",
+          response.status,
+          response.statusText
+        );
+        setSuggestions([]);
+        setIsLoadingSuggestions(false);
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.suggestions && Array.isArray(data.suggestions)) {
+        setSuggestions(data.suggestions);
       } else {
+        console.error("Unexpected response format:", data);
         setSuggestions([]);
       }
     } catch (error) {
@@ -122,7 +133,15 @@ export default function AnalysisForm({
 
   // Handle suggestion selection
   const handleSuggestionClick = (suggestion: LocationSuggestion) => {
-    setLocationInput(getShortLocationName(suggestion));
+    const shortName = getShortLocationName(suggestion);
+    setLocationInput(shortName);
+    setFullLocationData({
+      displayName: suggestion.display_name,
+      coordinates: {
+        lat: parseFloat(suggestion.lat),
+        lon: parseFloat(suggestion.lon),
+      },
+    });
     setFormData((prev) => ({ ...prev, location: suggestion.display_name }));
     setShowSuggestions(false);
     setSuggestions([]);
@@ -144,7 +163,15 @@ export default function AnalysisForm({
       lon: location.lon.toString(),
       place_id: Date.now(), // Temporary ID
     };
-    setLocationInput(getShortLocationName(suggestion));
+    const shortName = getShortLocationName(suggestion);
+    setLocationInput(shortName);
+    setFullLocationData({
+      displayName: location.address,
+      coordinates: {
+        lat: location.lat,
+        lon: location.lon,
+      },
+    });
     setFormData((prev) => ({ ...prev, location: location.address }));
     // Clear error when valid location is selected
     if (errors.location) {
@@ -198,11 +225,13 @@ export default function AnalysisForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Update location from input before validation
-    setFormData((prev) => ({ ...prev, location: locationInput }));
+
+    // Use full location data if available, otherwise fall back to input
+    const locationToSubmit = fullLocationData?.displayName || locationInput;
+    setFormData((prev) => ({ ...prev, location: locationToSubmit }));
 
     // Validate with current input
-    const tempFormData = { ...formData, location: locationInput };
+    const tempFormData = { ...formData, location: locationToSubmit };
     const newErrors: Partial<Record<keyof AnalysisFormData, string>> = {};
 
     if (!locationInput.trim()) {
@@ -242,7 +271,7 @@ export default function AnalysisForm({
           Analýza lokality
         </h3>
         <p className="text-slate-400 text-xs">
-          Vyplňte informace o vašem podnikání pro podrobnou analýzu
+          Vyplňte základní informace o vašem podnikání potřebné pro analýzu
         </p>
       </div>
 
@@ -253,7 +282,7 @@ export default function AnalysisForm({
             htmlFor="location"
             className="block text-xs font-medium text-slate-300 mb-1"
           >
-            Lokalita *
+            Cílová lokalita *
           </label>
           <div className="relative">
             <input
@@ -266,18 +295,19 @@ export default function AnalysisForm({
               autoComplete="off"
               className={`w-full bg-slate-900/50 border ${
                 errors.location ? "border-red-500" : "border-slate-600"
-              } text-white text-sm placeholder-slate-500 rounded-lg px-3 pr-10 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50`}
+              } text-white text-sm placeholder-slate-500 rounded-lg px-3 pr-32 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50`}
             />
             <button
               type="button"
               onClick={() => setIsLocationPickerOpen(true)}
               disabled={isLoading}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors p-1 disabled:opacity-50"
+              className="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors px-2 py-1 disabled:opacity-50 flex items-center gap-1.5"
               title="Vybrat z mapy"
             >
+              <span className="text-xs font-medium">Vybrat z mapy</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
+                className="h-4 w-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -361,24 +391,40 @@ export default function AnalysisForm({
           <div>
             <label
               htmlFor="operatingHours"
-              className="block text-xs font-medium text-slate-300 mb-1"
+              className="block text-xs font-medium text-slate-300 mb-2"
             >
-              Hodiny/týden *
+              Otevírací doba (počet hodin za týden) *
             </label>
-            <input
-              id="operatingHours"
-              type="number"
-              min="1"
-              max="168"
-              value={formData.operatingHours}
-              onChange={(e) =>
-                updateField("operatingHours", parseInt(e.target.value) || 0)
-              }
-              disabled={isLoading}
-              className={`w-full bg-slate-900/50 border ${
-                errors.operatingHours ? "border-red-500" : "border-slate-600"
-              } text-white text-sm placeholder-slate-500 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50`}
-            />
+            <div className="space-y-2">
+              <input
+                id="operatingHours"
+                type="range"
+                min="1"
+                max="168"
+                value={formData.operatingHours}
+                onChange={(e) =>
+                  updateField("operatingHours", parseInt(e.target.value))
+                }
+                disabled={isLoading}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500 disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-blue-500 [&::-webkit-slider-thumb]:to-purple-500 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-gradient-to-r [&::-moz-range-thumb]:from-blue-500 [&::-moz-range-thumb]:to-purple-500 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:shadow-lg"
+                style={{
+                  background: `linear-gradient(to right, rgb(59 130 246) 0%, rgb(59 130 246) ${
+                    (formData.operatingHours / 168) * 100
+                  }%, rgb(51 65 85) ${
+                    (formData.operatingHours / 168) * 100
+                  }%, rgb(51 65 85) 100%)`,
+                }}
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">1h</span>
+                <div className="bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-1.5">
+                  <span className="text-sm font-semibold text-white">
+                    {formData.operatingHours}h
+                  </span>
+                </div>
+                <span className="text-xs text-slate-500">168h</span>
+              </div>
+            </div>
             {errors.operatingHours && (
               <p className="text-red-400 text-xs mt-0.5">
                 {errors.operatingHours}
@@ -389,24 +435,40 @@ export default function AnalysisForm({
           <div>
             <label
               htmlFor="avgSpend"
-              className="block text-xs font-medium text-slate-300 mb-1"
+              className="block text-xs font-medium text-slate-300 mb-2"
             >
-              Útrata (Kč) *
+              Průměrná útrata na zákazníka (Kč) *
             </label>
-            <input
-              id="avgSpend"
-              type="number"
-              min="1"
-              step="1"
-              value={formData.avgSpend}
-              onChange={(e) =>
-                updateField("avgSpend", parseInt(e.target.value) || 0)
-              }
-              disabled={isLoading}
-              className={`w-full bg-slate-900/50 border ${
-                errors.avgSpend ? "border-red-500" : "border-slate-600"
-              } text-white text-sm placeholder-slate-500 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50`}
-            />
+            <div className="space-y-2">
+              <input
+                id="avgSpend"
+                type="range"
+                min="1"
+                max="200"
+                value={formData.avgSpend}
+                onChange={(e) =>
+                  updateField("avgSpend", parseInt(e.target.value))
+                }
+                disabled={isLoading}
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500 disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-purple-500 [&::-webkit-slider-thumb]:to-pink-500 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-gradient-to-r [&::-moz-range-thumb]:from-purple-500 [&::-moz-range-thumb]:to-pink-500 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:shadow-lg"
+                style={{
+                  background: `linear-gradient(to right, rgb(168 85 247) 0%, rgb(168 85 247) ${
+                    (formData.avgSpend / 200) * 100
+                  }%, rgb(51 65 85) ${
+                    (formData.avgSpend / 200) * 100
+                  }%, rgb(51 65 85) 100%)`,
+                }}
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">1 Kč</span>
+                <div className="bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-1.5">
+                  <span className="text-sm font-semibold text-white">
+                    {formData.avgSpend} Kč
+                  </span>
+                </div>
+                <span className="text-xs text-slate-500">200 Kč</span>
+              </div>
+            </div>
             {errors.avgSpend && (
               <p className="text-red-400 text-xs mt-0.5">{errors.avgSpend}</p>
             )}
