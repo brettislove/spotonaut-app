@@ -13,6 +13,7 @@
     "@mastra/core": "^0.24.4",
     "@prisma/client": "^6.19.0",
     "@types/leaflet": "^1.9.21",
+    "@vercel/postgres": "^0.10.0",
     "ai": "^5.0.98",
     "leaflet": "^1.9.4",
     "next": "16.0.3",
