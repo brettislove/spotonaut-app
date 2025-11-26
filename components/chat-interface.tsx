@@ -26,11 +26,10 @@ interface AnalysisData {
     lng: number;
   };
   metrics?: {
-    dailyRevenue: number;
-    weeklyRevenue: number;
-    monthlyRevenue: number;
-    yearlyRevenue: number;
     dailyFootTraffic: number;
+    monthlyRevenue: number;
+    revenuePerCustomer: number;
+    periodRevenue: number;
     conversionRate: number;
     competitorCount: number;
   };

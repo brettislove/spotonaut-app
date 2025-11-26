@@ -58,6 +58,8 @@ export default function AnalysisForm({
   const debounceTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   const suggestionBoxRef = useRef<HTMLDivElement>(null);
   const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
+  const productDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -67,6 +69,12 @@ export default function AnalysisForm({
         !suggestionBoxRef.current.contains(event.target as Node)
       ) {
         setShowSuggestions(false);
+      }
+      if (
+        productDropdownRef.current &&
+        !productDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsProductDropdownOpen(false);
       }
     };
 
@@ -265,24 +273,22 @@ export default function AnalysisForm({
   };
 
   return (
-    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 max-w-2xl mx-auto">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-white mb-1">
-          Analýza lokality
-        </h3>
-        <p className="text-slate-400 text-xs">
+    <div className="w-full max-w-2xl mx-auto p-6 bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl">
+      <div className="mb-6">
+        <h3 className="text-xl font-semibold text-white">Analýza lokality</h3>
+        <p className="mt-1 text-sm text-slate-400">
           Vyplňte základní informace o vašem podnikání potřebné pro analýzu
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* Location */}
         <div className="relative" ref={suggestionBoxRef}>
           <label
             htmlFor="location"
-            className="block text-xs font-medium text-slate-300 mb-1"
+            className="block mb-2 text-sm font-medium text-white"
           >
-            Cílová lokalita *
+            Cílová lokalita
           </label>
           <div className="relative">
             <input
@@ -293,21 +299,23 @@ export default function AnalysisForm({
               placeholder="např. Václavské náměstí, Praha"
               disabled={isLoading}
               autoComplete="off"
-              className={`w-full bg-slate-900/50 border ${
-                errors.location ? "border-red-500" : "border-slate-600"
-              } text-white text-sm placeholder-slate-500 rounded-lg px-3 pr-32 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50`}
+              className={`block w-full p-2.5 pr-32 text-sm rounded-lg border bg-slate-800 border-slate-600 placeholder-slate-500 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
+                errors.location
+                  ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                  : ""
+              }`}
             />
             <button
               type="button"
               onClick={() => setIsLocationPickerOpen(true)}
               disabled={isLoading}
-              className="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors px-2 py-1 disabled:opacity-50 flex items-center gap-1.5"
+              className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-400 hover:text-blue-400 transition-colors disabled:opacity-50"
               title="Vybrat z mapy"
             >
-              <span className="text-xs font-medium">Vybrat z mapy</span>
+              <span>Vybrat z mapy</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
+                className="w-4 h-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -328,74 +336,148 @@ export default function AnalysisForm({
             </button>
           </div>
           {errors.location && (
-            <p className="text-red-400 text-xs mt-0.5">{errors.location}</p>
+            <p className="mt-2 text-sm text-red-500">{errors.location}</p>
           )}
 
           {/* Suggestions Dropdown */}
           {showSuggestions &&
             (suggestions.length > 0 || isLoadingSuggestions) && (
-              <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                 {isLoadingSuggestions ? (
-                  <div className="px-3 py-2 text-slate-400 text-xs">
+                  <div className="px-4 py-3 text-sm text-slate-400">
                     Načítání...
                   </div>
                 ) : (
-                  suggestions.map((suggestion) => (
-                    <button
-                      key={`${suggestion.place_id}-${suggestion.osm_type}`}
-                      type="button"
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 transition-colors border-b border-slate-700 last:border-b-0"
-                    >
-                      <div className="font-medium">
-                        {getShortLocationName(suggestion)}
-                      </div>
-                      <div className="text-xs text-slate-400 mt-0.5 truncate">
-                        {suggestion.display_name}
-                      </div>
-                    </button>
-                  ))
+                  <ul className="py-2 text-sm">
+                    {suggestions.map((suggestion) => (
+                      <li key={`${suggestion.place_id}-${suggestion.osm_type}`}>
+                        <button
+                          type="button"
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          className="flex flex-col items-start w-full px-4 py-2 text-left hover:bg-slate-700 transition-colors"
+                        >
+                          <span className="text-sm font-medium text-white">
+                            {getShortLocationName(suggestion)}
+                          </span>
+                          <span className="text-xs text-gray-400 mt-0.5 truncate w-full">
+                            {suggestion.display_name}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             )}
         </div>
 
         {/* Product Type */}
-        <div>
+        <div className="relative" ref={productDropdownRef}>
           <label
             htmlFor="productType"
-            className="block text-xs font-medium text-slate-300 mb-1"
+            className="block mb-2 text-sm font-medium text-white"
           >
-            Typ produktu *
+            Typ produktu
           </label>
-          <select
-            id="productType"
-            value={formData.productType}
-            onChange={(e) =>
-              updateField(
-                "productType",
-                e.target.value as AnalysisFormData["productType"]
-              )
-            }
+          <button
+            type="button"
+            onClick={() => setIsProductDropdownOpen(!isProductDropdownOpen)}
             disabled={isLoading}
-            className="w-full bg-slate-900/50 border border-slate-600 text-white text-sm rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
+            className="inline-flex items-center justify-between w-full p-2.5 text-sm font-medium text-white bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 focus:ring-2 focus:outline-none focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            <option value="coffee">Káva / Teplé nápoje</option>
-            <option value="snacks">Snacky</option>
-            <option value="cold_drinks">Studené nápoje</option>
-          </select>
+            <span>
+              {formData.productType === "coffee"
+                ? "Káva / Teplé nápoje"
+                : formData.productType === "snacks"
+                ? "Snacky"
+                : "Studené nápoje"}
+            </span>
+            <svg
+              className={`w-2.5 h-2.5 ms-3 transition-transform ${
+                isProductDropdownOpen ? "rotate-180" : ""
+              }`}
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 10 6"
+            >
+              <path
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="m1 1 4 4 4-4"
+              />
+            </svg>
+          </button>
+
+          {/* Dropdown menu */}
+          {isProductDropdownOpen && (
+            <div className="absolute z-50 w-full mt-2 bg-slate-800 border border-slate-600 rounded-lg shadow-xl divide-y divide-slate-700">
+              <ul className="py-2 text-sm text-slate-200">
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateField("productType", "coffee");
+                      setIsProductDropdownOpen(false);
+                    }}
+                    className={`block w-full px-4 py-2 text-left hover:bg-slate-700 hover:text-white transition-colors ${
+                      formData.productType === "coffee"
+                        ? "bg-slate-700 text-white"
+                        : ""
+                    }`}
+                  >
+                    Káva / Teplé nápoje
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateField("productType", "snacks");
+                      setIsProductDropdownOpen(false);
+                    }}
+                    className={`block w-full px-4 py-2 text-left hover:bg-slate-700 hover:text-white transition-colors ${
+                      formData.productType === "snacks"
+                        ? "bg-slate-700 text-white"
+                        : ""
+                    }`}
+                  >
+                    Snacky
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateField("productType", "cold_drinks");
+                      setIsProductDropdownOpen(false);
+                    }}
+                    className={`block w-full px-4 py-2 text-left hover:bg-slate-700 hover:text-white transition-colors ${
+                      formData.productType === "cold_drinks"
+                        ? "bg-slate-700 text-white"
+                        : ""
+                    }`}
+                  >
+                    Studené nápoje
+                  </button>
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Operating Hours and Average Spend - Side by Side */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label
               htmlFor="operatingHours"
-              className="block text-xs font-medium text-slate-300 mb-2"
+              className="block mb-2 text-sm font-medium text-white"
             >
-              Otevírací doba (počet hodin za týden) *
+              Otevírací doba (hodin/týden)
             </label>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <input
                 id="operatingHours"
                 type="range"
@@ -406,27 +488,25 @@ export default function AnalysisForm({
                   updateField("operatingHours", parseInt(e.target.value))
                 }
                 disabled={isLoading}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500 disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-blue-500 [&::-webkit-slider-thumb]:to-purple-500 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-gradient-to-r [&::-moz-range-thumb]:from-blue-500 [&::-moz-range-thumb]:to-purple-500 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:shadow-lg"
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   background: `linear-gradient(to right, rgb(59 130 246) 0%, rgb(59 130 246) ${
-                    (formData.operatingHours / 168) * 100
-                  }%, rgb(51 65 85) ${
-                    (formData.operatingHours / 168) * 100
-                  }%, rgb(51 65 85) 100%)`,
+                    ((formData.operatingHours - 1) / 167) * 100
+                  }%, rgb(55 65 81) ${
+                    ((formData.operatingHours - 1) / 167) * 100
+                  }%, rgb(55 65 81) 100%)`,
                 }}
               />
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500">1h</span>
-                <div className="bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-1.5">
-                  <span className="text-sm font-semibold text-white">
-                    {formData.operatingHours}h
-                  </span>
-                </div>
-                <span className="text-xs text-slate-500">168h</span>
+                <span className="text-sm text-slate-500">1h</span>
+                <span className="px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 border border-blue-500 rounded-lg">
+                  {formData.operatingHours}h
+                </span>
+                <span className="text-sm text-slate-500">168h</span>
               </div>
             </div>
             {errors.operatingHours && (
-              <p className="text-red-400 text-xs mt-0.5">
+              <p className="mt-2 text-sm text-red-500">
                 {errors.operatingHours}
               </p>
             )}
@@ -435,11 +515,11 @@ export default function AnalysisForm({
           <div>
             <label
               htmlFor="avgSpend"
-              className="block text-xs font-medium text-slate-300 mb-2"
+              className="block mb-2 text-sm font-medium text-slate-200"
             >
-              Průměrná útrata na zákazníka (Kč) *
+              Průměrná útrata (Kč)
             </label>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <input
                 id="avgSpend"
                 type="range"
@@ -450,27 +530,25 @@ export default function AnalysisForm({
                   updateField("avgSpend", parseInt(e.target.value))
                 }
                 disabled={isLoading}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500 disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-purple-500 [&::-webkit-slider-thumb]:to-pink-500 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-gradient-to-r [&::-moz-range-thumb]:from-purple-500 [&::-moz-range-thumb]:to-pink-500 [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:shadow-lg"
+                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                  background: `linear-gradient(to right, rgb(168 85 247) 0%, rgb(168 85 247) ${
-                    (formData.avgSpend / 200) * 100
-                  }%, rgb(51 65 85) ${
-                    (formData.avgSpend / 200) * 100
-                  }%, rgb(51 65 85) 100%)`,
+                  background: `linear-gradient(to right, rgb(139 92 246) 0%, rgb(139 92 246) ${
+                    ((formData.avgSpend - 1) / 199) * 100
+                  }%, rgb(55 65 81) ${
+                    ((formData.avgSpend - 1) / 199) * 100
+                  }%, rgb(55 65 81) 100%)`,
                 }}
               />
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500">1 Kč</span>
-                <div className="bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-1.5">
-                  <span className="text-sm font-semibold text-white">
-                    {formData.avgSpend} Kč
-                  </span>
-                </div>
-                <span className="text-xs text-slate-500">200 Kč</span>
+                <span className="text-sm text-slate-500">1 Kč</span>
+                <span className="px-3 py-1.5 text-sm font-semibold text-white bg-purple-600 border border-purple-500 rounded-lg">
+                  {formData.avgSpend} Kč
+                </span>
+                <span className="text-sm text-slate-500">200 Kč</span>
               </div>
             </div>
             {errors.avgSpend && (
-              <p className="text-red-400 text-xs mt-0.5">{errors.avgSpend}</p>
+              <p className="mt-2 text-sm text-red-500">{errors.avgSpend}</p>
             )}
           </div>
         </div>
@@ -479,16 +557,16 @@ export default function AnalysisForm({
         <div>
           <label
             htmlFor="timeframe"
-            className="block text-xs font-medium text-slate-300 mb-1"
+            className="block mb-2 text-sm font-medium text-white"
           >
-            Období analýzy *
+            Období analýzy
           </label>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="inline-flex rounded-lg shadow-sm" role="group">
             {[
-              { value: "day", label: "Den" },
-              { value: "week", label: "Týden" },
-              { value: "month", label: "Měsíc" },
-              { value: "year", label: "Rok" },
+              { value: "day", label: "Den", position: "first" },
+              { value: "week", label: "Týden", position: "middle" },
+              { value: "month", label: "Měsíc", position: "middle" },
+              { value: "year", label: "Rok", position: "last" },
             ].map((option) => (
               <button
                 key={option.value}
@@ -500,10 +578,16 @@ export default function AnalysisForm({
                   )
                 }
                 disabled={isLoading}
-                className={`py-1.5 px-3 rounded-lg font-medium text-xs transition-all disabled:opacity-50 ${
+                className={`px-4 py-2 text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  option.position === "first"
+                    ? "rounded-s-lg border-r-0"
+                    : option.position === "last"
+                    ? "rounded-e-lg"
+                    : "border-r-0"
+                } ${
                   formData.timeframe === option.value
-                    ? "bg-blue-500 text-white"
-                    : "bg-slate-900/50 border border-slate-600 text-slate-300 hover:border-slate-500"
+                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-lg"
+                    : "bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700 hover:text-white"
                 }`}
               >
                 {option.label}
@@ -513,13 +597,13 @@ export default function AnalysisForm({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2 pt-2">
+        <div className="flex gap-3 pt-4">
           {showCancelButton && (
             <button
               type="button"
               onClick={onCancel}
               disabled={isLoading}
-              className="flex-1 bg-slate-700 text-white font-semibold text-sm px-4 py-2 rounded-lg hover:bg-slate-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-5 py-2.5 text-sm font-medium text-white bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 focus:ring-2 focus:outline-none focus:ring-slate-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Zrušit
             </button>
@@ -527,7 +611,7 @@ export default function AnalysisForm({
           <button
             type="submit"
             disabled={isLoading}
-            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold text-sm px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:outline-none focus:ring-blue-500 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? "Analyzuji..." : "Analyzovat"}
           </button>
