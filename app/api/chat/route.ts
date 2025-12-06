@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatAgent } from "@/lib/mastra/agent";
+import { auth } from "@/app/api/auth/[...nextauth]/route";
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await auth();
+
+    if (!session) {
+      return NextResponse.json(
+        {
+          error: "Pro pokračování v konverzaci se musíte přihlásit",
+          requiresAuth: true,
+        },
+        { status: 401 }
+      );
+    }
+
     const { messages } = await request.json();
 
     console.log("Received messages:", messages);
