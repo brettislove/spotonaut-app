@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import AnalysisForm from "./analysis-form";
 import MapView from "./map-view";
+import AuthModal from "./auth-modal";
+import { getOrCreateFingerprint } from "@/lib/fingerprint";
 
 interface Message {
   id: string;
@@ -21,21 +24,20 @@ interface AnalysisFormData {
 
 interface AnalysisData {
   location: string;
+  locationName: string;
   coordinates?: {
     lat: number;
     lng: number;
   };
   metrics?: {
-    dailyFootTraffic: number;
-    monthlyRevenue: number;
-    revenuePerCustomer: number;
-    periodRevenue: number;
-    conversionRate: number;
-    competitorCount: number;
+    localityScore: number;
+    footfallScore: number;
+    recommendedHours: string;
   };
 }
 
 export default function ChatInterface() {
+  const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -43,8 +45,18 @@ export default function ChatInterface() {
   const [showMapView, setShowMapView] = useState(false);
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
   const [hasCompletedAnalysis, setHasCompletedAnalysis] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<"login" | "signup">(
+    "signup"
+  );
+  const [fingerprint, setFingerprint] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
+
+  // Generate fingerprint on mount
+  useEffect(() => {
+    getOrCreateFingerprint().then(setFingerprint);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -76,6 +88,13 @@ export default function ChatInterface() {
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !hasCompletedAnalysis) return;
+
+    // Check if user is authenticated
+    if (!session) {
+      setAuthModalMode("login");
+      setShowAuthModal(true);
+      return;
+    }
 
     // Check rate limit
     if (!checkRateLimit()) {
@@ -147,6 +166,16 @@ export default function ChatInterface() {
   };
 
   const handleAnalysisSubmit = async (data: AnalysisFormData) => {
+    // Check if user has already used free analysis and is not authenticated
+    if (!session) {
+      const hasUsedFree = localStorage.getItem("hasUsedFreeAnalysis");
+      if (hasUsedFree === "true") {
+        setAuthModalMode("signup");
+        setShowAuthModal(true);
+        return;
+      }
+    }
+
     setShowAnalysisForm(false);
 
     // Check rate limit
@@ -170,13 +199,28 @@ export default function ChatInterface() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          fingerprint,
+        }),
       });
 
       const result = await response.json();
 
       if (!response.ok) {
+        // Check if it's a usage limit error
+        if (response.status === 403 && result.requiresAuth) {
+          setAuthModalMode("signup");
+          setShowAuthModal(true);
+          setShowAnalysisForm(true);
+          return;
+        }
         throw new Error(result.error || "Failed to get analysis");
+      }
+
+      // Mark that free analysis has been used (for anonymous users)
+      if (!session) {
+        localStorage.setItem("hasUsedFreeAnalysis", "true");
       }
 
       const assistantMessage: Message = {
@@ -556,6 +600,13 @@ export default function ChatInterface() {
           </form>
         </div>
       </main>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        mode={authModalMode}
+      />
     </div>
   );
 }

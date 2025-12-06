@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatAgent } from "@/lib/mastra/agent";
+import { PrismaClient } from "@prisma/client";
+import { auth } from "@/app/api/auth/[...nextauth]/route";
+
+const prisma = new PrismaClient();
 
 interface AnalysisRequest {
   location: string;
@@ -7,6 +11,7 @@ interface AnalysisRequest {
   operatingHours: number;
   avgSpend: number;
   timeframe: "day" | "week" | "month" | "year";
+  fingerprint?: string;
 }
 
 const productTypeLabels = {
@@ -25,6 +30,38 @@ const timeframeLabels = {
 export async function POST(request: NextRequest) {
   try {
     const data: AnalysisRequest = await request.json();
+
+    // Get session to check if user is authenticated
+    const session = await auth();
+
+    // Get IP address from headers
+    const forwarded = request.headers.get("x-forwarded-for");
+    const ip = forwarded
+      ? forwarded.split(",")[0].trim()
+      : request.headers.get("x-real-ip") || "unknown";
+
+    // Check usage limits for anonymous users
+    if (!session && data.fingerprint && ip !== "unknown") {
+      const existingUsage = await prisma.anonymousUsage.findUnique({
+        where: {
+          ipAddress_fingerprint: {
+            ipAddress: ip,
+            fingerprint: data.fingerprint,
+          },
+        },
+      });
+
+      if (existingUsage && existingUsage.analysisCount >= 1) {
+        return NextResponse.json(
+          {
+            error:
+              "Dosáhli jste limitu pro anonymní analýzy. Zaregistrujte se pro neomezený přístup.",
+            requiresAuth: true,
+          },
+          { status: 403 }
+        );
+      }
+    }
 
     // Validate required fields
     if (
@@ -59,6 +96,9 @@ export async function POST(request: NextRequest) {
 
     // Geocode the location
     let coordinates = null;
+    let geocodeData:
+      | { lat: string; lon: string; display_name: string }[]
+      | null = null;
     try {
       const geocodeResponse = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
@@ -70,7 +110,7 @@ export async function POST(request: NextRequest) {
           },
         }
       );
-      const geocodeData = await geocodeResponse.json();
+      geocodeData = await geocodeResponse.json();
       if (geocodeData && geocodeData.length > 0) {
         coordinates = {
           lat: parseFloat(geocodeData[0].lat),
@@ -85,7 +125,7 @@ export async function POST(request: NextRequest) {
 
     // Create structured prompt with all data and request for structured metrics
     const structuredPrompt = `
-  Proveď komplexní analýzu obchodní lokality s následujícími daty:
+  Proveď STRUČNOU analýzu obchodní lokality s následujícími daty:
 
   **VSTUPNÍ DATA:**
   - Lokalita: ${data.location}
@@ -95,46 +135,25 @@ export async function POST(request: NextRequest) {
   - Časový rámec analýzy: ${timeframeLabels[data.timeframe]}
 
   **POŽADOVANÁ ANALÝZA:**
-  Poskytni podrobnou analýzu zahrnující:
-
-  1. **Přehled lokality** - krátké zhodnocení lokality a jejího potenciálu
-  2. **Analýza provozu** - odhad návštěvnosti, špičkové hodiny, vzorce provozu
-  3. **Projekce příjmů** - konkrétní finanční odhady pro zvolený časový rámec (${
-    timeframeLabels[data.timeframe]
-  })
-    - Optimistický scénář
-    - Realistický scénář
-    - Pesimistický scénář
-  4. **Cenová strategie** - doporučení ohledně cen a průměrné útraty
-  5. **Analýza konkurence** - odhad počtu konkurentů, jejich vliv
-  6. **Klíčová doporučení** - 3-5 konkrétních praktických doporučení
-
-  Použij reálné české tržní podmínky a sezónní faktory. Všechna čísla formátuj česky (mezera jako oddělovač tisíců, čárka jako desetinná).
-  Buď konkrétní s čísly a odhady. Struktur odpověď přehledně s nadpisy a body.
-
-  DŮLEŽITÉ: V analýze musíš uvést následující konkrétní metriky (použij realistický scénář):
-  - Denní návštěvnost (počet lidí)
-  - Měsíční příjem v Kč
-  - Průměrná útrata na zákazníka v Kč
-  - Výpočet tržeb za zvolené období
-  - Konverzní poměr v %
-  - Počet konkurentů v okolí
+  Napiš pouze 2-3 věty shrnující klíčové poznatky o této lokalitě - její typ, potenciál a hlavní doporučení.
 
   📊 METRIKY (POVINNÉ - na samém konci odpovědi)
-    Na úplný konec své odpovědi (za všechny výše uvedené sekce) přidej JSON objekt s přesnými metrikami.
+    Na konec své odpovědi přidej JSON objekt s přesnými metrikami.
     Formát JSON:
     
     - Začni s: \`\`\`json
-    - Poté objekt s těmito klíči: dailyFootTraffic, monthlyRevenue, revenuePerCustomer, periodRevenue, conversionRate, competitorCount
-    - Všechny hodnoty musí být čísla (ne formátované stringy)
+    - Poté objekt s těmito PŘESNÝMI klíči:
+      * localityScore: číslo 1-100 (celkové hodnocení lokality)
+      * footfallScore: číslo 1-100 (hodnocení návštěvnosti)
+      * recommendedHours: string ve formátu "7-22" (doporučené provozní hodiny)
     - Ukonči s: \`\`\`
     
     Příklad struktury (použij své vypočtené hodnoty):
     \`\`\`json
-    { "dailyRevenue": 5000, "weeklyRevenue": 35000, "monthlyRevenue": 150000, "yearlyRevenue": 1800000, "dailyFootTraffic": 800, "conversionRate": 12.5, "competitorCount": 3 }
+    { "localityScore": 78, "footfallScore": 82, "recommendedHours": "6-22" }
     \`\`\`
     
-    KRITICKY DŮLEŽITÉ: Tento JSON blok MUSÍ být na úplném konci, až za sekci "Klíčová doporučení". Použij realistický scénář.
+    KRITICKY DŮLEŽITÉ: Tento JSON blok MUSÍ být na konci odpovědi.
 `;
 
     const response = await chatAgent.generate(structuredPrompt);
@@ -144,12 +163,9 @@ export async function POST(request: NextRequest) {
     // Extract metrics from JSON at the end of the response
     const text = response.text || "";
     let metrics = {
-      dailyFootTraffic: "neznámé",
-      monthlyRevenue: "neznámé",
-      revenuePerCustomer: data.avgSpend,
-      periodRevenue: "neznámé",
-      conversionRate: 10,
-      competitorCount: 2,
+      localityScore: 50,
+      footfallScore: 50,
+      recommendedHours: "8-20",
     };
 
     // Try to extract JSON metrics from the response
@@ -158,17 +174,10 @@ export async function POST(request: NextRequest) {
       try {
         const parsedMetrics = JSON.parse(jsonMatch[1]);
         metrics = {
-          dailyFootTraffic:
-            parsedMetrics.dailyFootTraffic || metrics.dailyFootTraffic,
-          monthlyRevenue:
-            parsedMetrics.monthlyRevenue || metrics.monthlyRevenue,
-          revenuePerCustomer:
-            parsedMetrics.revenuePerCustomer || metrics.revenuePerCustomer,
-          periodRevenue: parsedMetrics.periodRevenue || metrics.periodRevenue,
-          conversionRate:
-            parsedMetrics.conversionRate || metrics.conversionRate,
-          competitorCount:
-            parsedMetrics.competitorCount || metrics.competitorCount,
+          localityScore: parsedMetrics.localityScore || metrics.localityScore,
+          footfallScore: parsedMetrics.footfallScore || metrics.footfallScore,
+          recommendedHours:
+            parsedMetrics.recommendedHours || metrics.recommendedHours,
         };
         console.log("Successfully extracted metrics from JSON:", metrics);
       } catch (error) {
@@ -179,10 +188,60 @@ export async function POST(request: NextRequest) {
       console.warn("No JSON metrics found in response, using fallback values");
     }
 
+    // Get location name from geocoding data
+    const locationName =
+      geocodeData && geocodeData.length > 0
+        ? geocodeData[0].display_name
+        : data.location;
+
+    // Save analysis to database
+    try {
+      await prisma.analysis.create({
+        data: {
+          userId: session?.user?.id || null,
+          locationName,
+          location: data.location,
+          coordinates: coordinates || undefined,
+          metrics: metrics,
+        },
+      });
+    } catch (dbError) {
+      console.error("Failed to save analysis:", dbError);
+      // Continue even if save fails
+    }
+
+    // Update anonymous usage tracking
+    if (!session && data.fingerprint && ip !== "unknown") {
+      try {
+        await prisma.anonymousUsage.upsert({
+          where: {
+            ipAddress_fingerprint: {
+              ipAddress: ip,
+              fingerprint: data.fingerprint,
+            },
+          },
+          update: {
+            analysisCount: { increment: 1 },
+            lastAnalysisAt: new Date(),
+          },
+          create: {
+            ipAddress: ip,
+            fingerprint: data.fingerprint,
+            analysisCount: 1,
+            lastAnalysisAt: new Date(),
+          },
+        });
+      } catch (usageError) {
+        console.error("Failed to update usage tracking:", usageError);
+        // Continue even if tracking fails
+      }
+    }
+
     return NextResponse.json({
       analysis: text || "Omlouváme se, nepodařilo se vygenerovat analýzu.",
       data: {
         location: data.location,
+        locationName,
         coordinates,
         metrics,
       },
