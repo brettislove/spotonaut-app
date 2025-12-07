@@ -290,25 +290,16 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-slate-950 font-sans relative overflow-hidden">
+    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] bg-slate-950 font-sans relative overflow-hidden">
       {/* Ambient glow effects */}
       <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
       <div className="fixed bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Header - Fixed on top for mobile, hidden on desktop */}
-      <div className="lg:hidden fixed top-0 left-0 w-full bg-slate-950/95 backdrop-blur-sm z-20 px-4 py-4">
-        <h1 className="text-2xl font-bold text-white mb-1">
-          <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Spotonaut Assistant
-          </span>
-        </h1>
-      </div>
-
-      {/* Map View - Fixed on mobile below header, Left on desktop */}
+      {/* Map View - Left on desktop, top on mobile */}
       <div
         className={`transition-all duration-700 ease-in-out z-10 ${
           showMapView
-            ? "fixed lg:relative top-[88px] lg:top-0 left-0 h-[calc(50vh-88px)] lg:h-screen w-full lg:w-1/2 opacity-100 p-4 lg:p-8"
+            ? "lg:relative h-[40vh] lg:h-auto w-full lg:w-1/2 opacity-100 p-4 lg:p-8"
             : "h-0 w-0 opacity-0 overflow-hidden absolute"
         }`}
       >
@@ -319,26 +310,14 @@ export default function ChatInterface() {
         )}
       </div>
 
-      {/* Chat Interface - Bottom on mobile with top padding, Right on desktop */}
+      {/* Chat Interface - Right on desktop, bottom on mobile */}
       <main
         className={`flex flex-col z-10 transition-all duration-700 ease-in-out ${
           showMapView
-            ? "min-h-screen lg:h-screen w-full lg:w-1/2 pt-[50vh] lg:pt-0 lg:py-8 px-4 pb-4"
-            : "h-screen w-full max-w-4xl mx-auto py-8 px-4 pt-[88px] lg:pt-8"
+            ? "min-h-[60vh] lg:h-auto w-full lg:w-1/2 lg:py-8 px-4 pb-4 lg:px-8"
+            : "min-h-[calc(100vh-4rem)] w-full max-w-4xl mx-auto py-8 px-4"
         }`}
       >
-        {/* Header - Only visible on desktop */}
-        <div className="hidden lg:block mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Spotonaut Assistant
-            </span>
-          </h1>
-          <p className="text-slate-400 text-base">
-            Váš inteligentní AI lokační specialista
-          </p>
-        </div>
-
         {/* Chat container */}
         <div className="flex-1 bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-3 lg:p-6 flex flex-col overflow-hidden">
           {/* Messages */}
