@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Spotonaut - Víme, kde podnikat.",
   description: "Víme, kde podnikat.",
+  themeColor: "#A43BFE",
 };
 
 export const viewport: Viewport = {
@@ -33,6 +34,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="theme-color" content="#A43BFE" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

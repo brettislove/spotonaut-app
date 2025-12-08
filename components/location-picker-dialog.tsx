@@ -43,6 +43,9 @@ export default function LocationPickerDialog({
           center: currentCenter,
           zoom: 15,
           zoomControl: true,
+          scrollWheelZoom: true,
+          dragging: true,
+          touchZoom: true,
         });
 
         L.tileLayer(
@@ -203,8 +206,8 @@ export default function LocationPickerDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col m-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
+      <div className="bg-slate-800 border-0 sm:border border-slate-700 rounded-none sm:rounded-xl shadow-2xl w-full max-w-3xl h-full sm:h-auto sm:max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
           <div>
@@ -237,10 +240,10 @@ export default function LocationPickerDialog({
         </div>
 
         {/* Map Container */}
-        <div className="flex-1 relative min-h-[500px]">
+        <div className="flex-1 relative min-h-[300px] sm:min-h-[500px]">
           <div
             ref={mapContainerRef}
-            className="absolute inset-0 rounded-b-xl overflow-hidden"
+            className="absolute inset-0 rounded-none sm:rounded-b-xl overflow-hidden"
           />
 
           {/* Center Pin */}
@@ -255,7 +258,7 @@ export default function LocationPickerDialog({
           </div>
 
           {/* Address Display */}
-          <div className="absolute bottom-4 left-4 right-4 bg-slate-900/90 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 z-[1000] max-w-md">
+          <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 bg-slate-900/90 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 z-[1000] max-w-md backdrop-blur-sm">
             {isLoadingCurrentAddress ? (
               <div className="flex items-center gap-2 text-slate-400">
                 <svg
@@ -315,17 +318,17 @@ export default function LocationPickerDialog({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-700 flex gap-3">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-700 flex gap-2 sm:gap-3">
           <button
             onClick={onClose}
-            className="flex-1 bg-slate-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg hover:bg-slate-600 active:scale-95 transition-all"
+            className="flex-1 bg-slate-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg hover:bg-slate-600 active:scale-95 transition-all touch-manipulation"
           >
             Zrušit
           </button>
           <button
             onClick={handleConfirmLocation}
             disabled={isLoadingAddress}
-            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold text-sm px-4 py-2.5 rounded-lg hover:from-blue-600 hover:to-purple-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold text-sm px-4 py-2.5 rounded-lg hover:from-blue-600 hover:to-purple-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
           >
             {isLoadingAddress ? "Načítání..." : "Potvrdit lokalitu"}
           </button>
