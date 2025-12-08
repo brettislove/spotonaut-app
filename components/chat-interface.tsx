@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import AnalysisForm from "./analysis-form";
-import MapView from "./map-view";
 import AuthModal from "./auth-modal";
+import AnalysisResultsMobile from "./analysis-results-mobile";
+import MapView from "./map-view";
 import { getOrCreateFingerprint } from "@/lib/fingerprint";
 
 interface Message {
@@ -50,12 +51,24 @@ export default function ChatInterface() {
     "signup"
   );
   const [fingerprint, setFingerprint] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
 
   // Generate fingerprint on mount
   useEffect(() => {
     getOrCreateFingerprint().then(setFingerprint);
+  }, []);
+
+  // Detect mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   const scrollToBottom = () => {
@@ -176,8 +189,6 @@ export default function ChatInterface() {
       }
     }
 
-    setShowAnalysisForm(false);
-
     // Check rate limit
     if (!checkRateLimit()) {
       const rateLimitMessage: Message = {
@@ -237,6 +248,8 @@ export default function ChatInterface() {
         setAnalysisData(result.data);
         setShowMapView(true);
         setHasCompletedAnalysis(true);
+        // Hide form only after successful analysis
+        setShowAnalysisForm(false);
       }
     } catch (error) {
       console.error("Error getting analysis:", error);
@@ -262,324 +275,384 @@ export default function ChatInterface() {
     }
   };
 
-  const shouldShowFormHint = (content: string): boolean => {
-    const formTriggerKeywords = [
-      "lokalit",
-      "adres",
-      "míst",
-      "informac",
-      "podnikán",
-      "podnik",
-      "typ prodeje",
-      "provozní hodiny",
-      "útrata",
-      "potřebuj",
-      "vyplň",
-      "zadej",
-      "pověz mi",
-      "řekněte mi",
-      "jaká je",
-      "kde",
-      "který",
-      "kolik",
-    ];
-
-    return formTriggerKeywords.some((keyword) =>
-      content.toLowerCase().includes(keyword)
-    );
+  const handleNewAnalysis = () => {
+    setShowMapView(false);
+    setShowAnalysisForm(true);
+    setAnalysisData(null);
+    setMessages([]);
+    setHasCompletedAnalysis(false);
   };
 
+  // Mobile Results View
+  if (showMapView && isMobile && analysisData) {
+    return (
+      <>
+        <AnalysisResultsMobile
+          analysisData={analysisData}
+          messages={messages}
+          input={input}
+          isLoading={isLoading}
+          onInputChange={setInput}
+          onSendMessage={sendMessage}
+          onNewAnalysis={handleNewAnalysis}
+        />
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          mode={authModalMode}
+        />
+      </>
+    );
+  }
+
+  // Desktop/Tablet View
   return (
-    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] bg-slate-950 font-sans relative overflow-hidden">
+    <div className="min-h-[calc(100vh-4rem)] bg-slate-950 font-sans relative overflow-hidden">
       {/* Ambient glow effects */}
       <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
       <div className="fixed bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Map View - Left on desktop, top on mobile */}
-      <div
-        className={`transition-all duration-700 ease-in-out z-10 ${
-          showMapView
-            ? "lg:relative h-[40vh] lg:h-auto w-full lg:w-1/2 opacity-100 p-4 lg:p-8"
-            : "h-0 w-0 opacity-0 overflow-hidden absolute"
-        }`}
-      >
-        {showMapView && analysisData && (
-          <div className="h-full">
-            <MapView data={analysisData} />
-          </div>
-        )}
-      </div>
-
-      {/* Chat Interface - Right on desktop, bottom on mobile */}
-      <main
-        className={`flex flex-col z-10 transition-all duration-700 ease-in-out ${
-          showMapView
-            ? "min-h-[60vh] lg:h-auto w-full lg:w-1/2 lg:py-8 px-4 pb-4 lg:px-8"
-            : "min-h-[calc(100vh-4rem)] w-full max-w-4xl mx-auto py-8 px-4"
-        }`}
-      >
-        {/* Chat container */}
-        <div className="flex-1 bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-3 lg:p-6 flex flex-col overflow-hidden">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto mb-3 lg:mb-4 space-y-3 lg:space-y-4">
-            {showAnalysisForm ? (
-              <div className="flex justify-start">
-                <div className="w-full lg:max-w-[85%]">
-                  <AnalysisForm
-                    onSubmit={handleAnalysisSubmit}
-                    onCancel={handleAnalysisCancel}
-                    isLoading={isLoading}
-                    showCancelButton={hasCompletedAnalysis}
-                  />
-                </div>
+      {showMapView ? (
+        <div className="flex items-center justify-center h-[calc(100vh-4rem)] p-4 lg:p-8">
+          <div className="w-full max-w-6xl h-full flex flex-col lg:flex-row gap-4 lg:gap-6">
+            {/* Map View with Chat Sidebar */}
+            <div className="flex-1 flex flex-col lg:flex-row bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl overflow-hidden">
+              {/* Map Content */}
+              <div className="w-full lg:w-1/2 p-4 lg:p-6 overflow-hidden">
+                <MapView data={analysisData!} />
               </div>
-            ) : messages.length === 0 && !isLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center max-w-2xl">
-                  <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <svg
-                      className="w-7 h-7 text-blue-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                      />
-                    </svg>
-                  </div>
-                  <p className="text-slate-300 font-semibold mb-2">
-                    Začněte konverzaci
-                  </p>
-                  <p className="text-slate-500 text-sm max-w-md mx-auto mb-6">
-                    Pošlete zprávu a začněte chatovat s naším AI asistentem
-                  </p>
 
-                  {/* Hints section */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-8">
-                    <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <svg
-                            className="w-4 h-4 text-blue-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                            />
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                            />
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="text-slate-200 font-medium text-sm mb-1">
-                            Analýza lokality
-                          </h3>
-                          <p className="text-slate-500 text-xs">
-                            Zadejte adresu nebo místo pro získání podrobné
-                            analýzy návštěvnosti a potenciálu
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <svg
-                            className="w-4 h-4 text-purple-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="text-slate-200 font-medium text-sm mb-1">
-                            Projekce příjmů
-                          </h3>
-                          <p className="text-slate-500 text-xs">
-                            Získejte odhady denních, týdenních a měsíčních
-                            příjmů pro váš podnik
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-pink-500/10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <svg
-                            className="w-4 h-4 text-pink-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                            />
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="text-slate-200 font-medium text-sm mb-1">
-                            Analýza konkurence
-                          </h3>
-                          <p className="text-slate-500 text-xs">
-                            Zjistěte počet, blízkost a dopad konkurence v okolí
-                            vaší lokality
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-cyan-500/10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <svg
-                            className="w-4 h-4 text-cyan-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-                            />
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="text-slate-200 font-medium text-sm mb-1">
-                            Cenová strategie
-                          </h3>
-                          <p className="text-slate-500 text-xs">
-                            Doporučení optimálních cen a strategie pro
-                            maximalizaci zisku
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <>
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex flex-col ${
-                      message.role === "user" ? "items-end" : "items-start"
-                    }`}
-                  >
+              {/* Chat Sidebar - Attached to map */}
+              <div className="w-full lg:w-1/2 border-t lg:border-t-0 lg:border-l border-slate-700 bg-slate-900/80 flex flex-col">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {messages.map((message) => (
                     <div
-                      className={`max-w-[95%] lg:max-w-[80%] rounded-xl px-4 lg:px-6 py-3 lg:py-4 ${
+                      key={message.id}
+                      className={`flex ${
                         message.role === "user"
-                          ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
-                          : "bg-slate-800/50 border border-slate-700 text-slate-300"
+                          ? "justify-end"
+                          : "justify-start"
                       }`}
                     >
-                      <p
-                        className="whitespace-pre-wrap text-sm lg:text-base"
-                        dangerouslySetInnerHTML={{
-                          __html: message.content
-                            .replace(/```json[\s\S]*?```/g, "") // Remove JSON blocks
-                            .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>"),
-                        }}
-                      />
-                    </div>
-                    {message.role === "assistant" &&
-                      shouldShowFormHint(message.content) && (
-                        <button
-                          onClick={() => setShowAnalysisForm(true)}
-                          className="mt-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 hover:cursor-pointer border border-blue-500/30 text-blue-400 text-sm rounded-lg transition-all flex items-center gap-2 group"
+                      <div
+                        className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                          message.role === "user"
+                            ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+                            : "bg-slate-800 text-slate-100 border border-slate-700"
+                        }`}
+                      >
+                        <div
+                          className="text-sm leading-relaxed"
+                          dangerouslySetInnerHTML={{
+                            __html: message.content
+                              .replace(/```[\s\S]*?```/g, "")
+                              .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                              .replace(/\n/g, "<br>"),
+                          }}
+                        />
+                        <div
+                          className={`text-xs mt-2 ${
+                            message.role === "user"
+                              ? "text-blue-100/70"
+                              : "text-slate-500"
+                          }`}
                         >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                          </svg>
-                          <span>Vyplnit formulář pro novou analýzu</span>
-                        </button>
-                      )}
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-slate-800/50 border border-slate-700 rounded-xl px-6 py-4">
-                      <div className="flex gap-2">
-                        <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-                        <div
-                          className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"
-                          style={{ animationDelay: "0.2s" }}
-                        />
-                        <div
-                          className="w-2 h-2 bg-pink-400 rounded-full animate-pulse"
-                          style={{ animationDelay: "0.4s" }}
-                        />
+                          {message.timestamp.toLocaleTimeString("cs-CZ", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </>
-            )}
+                  ))}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                            <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                            <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"></div>
+                          </div>
+                          <span className="text-slate-400 text-sm">
+                            Píšu...
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Chat Input */}
+                <div className="p-4 border-t border-slate-700">
+                  <form onSubmit={sendMessage} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder="Napište svou zprávu..."
+                      disabled={isLoading}
+                      className="flex-1 bg-slate-800/50 border border-slate-600 text-white placeholder-slate-400 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isLoading || !input.trim()}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Odeslat
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
           </div>
-
-          {/* Input form */}
-          <form onSubmit={sendMessage} className="flex gap-2 lg:gap-3">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={
-                hasCompletedAnalysis
-                  ? "Napište svou zprávu..."
-                  : "Dokončete analýzu pro zahájení chatu..."
-              }
-              disabled={isLoading || !hasCompletedAnalysis}
-              className="flex-1 bg-slate-900/50 border border-slate-700 text-white placeholder-slate-400 rounded-xl px-4 lg:px-6 py-3 lg:py-4 text-sm lg:text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={!input.trim() || isLoading || !hasCompletedAnalysis}
-              className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold px-6 lg:px-8 py-3 lg:py-4 rounded-xl text-sm lg:text-base hover:from-blue-600 hover:to-purple-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Odeslat
-            </button>
-          </form>
         </div>
-      </main>
+      ) : (
+        <main
+          className={`flex flex-col z-10 transition-all duration-700 ease-in-out ${
+            showAnalysisForm
+              ? "h-[calc(100vh-4rem)] w-full mx-auto overflow-y-auto"
+              : "min-h-[calc(100vh-4rem)] w-full max-w-4xl mx-auto py-8 px-4"
+          }`}
+        >
+          {showAnalysisForm ? (
+            <div className="w-full max-w-7xl mx-auto px-4 py-8 lg:py-12">
+              {/* Heading - visible on mobile only, at the top */}
+              <div className="space-y-4 mb-8 lg:hidden">
+                <h1 className="text-4xl font-bold text-white leading-tight">
+                  Víme, kde{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
+                    podnikat
+                  </span>
+                  .
+                </h1>
+                <p className="text-lg text-slate-400 leading-relaxed">
+                  Spotonaut využívá pokročilou AI analýzu k vyhodnocení
+                  potenciálu vaší lokality. Získejte data o návštěvnosti,
+                  konkurenci a odhadovaných tržbách během několika sekund.
+                </p>
+              </div>
 
+              {/* Form - mobile first */}
+              <div className="relative mb-8 lg:hidden">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-20"></div>
+                <div className="relative">
+                  {isLoading || messages.length > 0 ? (
+                    <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl p-6">
+                      <div className="flex items-center justify-center gap-3 mb-4">
+                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-white font-medium">
+                          Analyzuji lokalitu...
+                        </span>
+                      </div>
+                      {messages.length > 0 && (
+                        <div className="space-y-3 mt-4">
+                          {messages.map((message) => (
+                            <div
+                              key={message.id}
+                              className={`p-3 rounded-lg ${
+                                message.role === "user"
+                                  ? "bg-blue-500/20 text-blue-100"
+                                  : "bg-slate-800 text-slate-200"
+                              }`}
+                            >
+                              <div className="text-sm">
+                                {message.content.substring(0, 150)}
+                                {message.content.length > 150 ? "..." : ""}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <AnalysisForm
+                      onSubmit={handleAnalysisSubmit}
+                      onCancel={handleAnalysisCancel}
+                      isLoading={isLoading}
+                      showCancelButton={hasCompletedAnalysis}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+                <div className="space-y-8 lg:pt-8">
+                  {/* Heading - desktop only */}
+                  <div className="space-y-4 hidden lg:block">
+                    <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight">
+                      Víme, kde{" "}
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
+                        podnikat
+                      </span>
+                      .
+                    </h1>
+                    <p className="text-lg text-slate-400 leading-relaxed">
+                      Spotonaut využívá pokročilou AI analýzu k vyhodnocení
+                      potenciálu vaší lokality. Získejte data o návštěvnosti,
+                      konkurenci a odhadovaných tržbách během několika sekund.
+                    </p>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
+                      <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center mb-3">
+                        <svg
+                          className="w-6 h-6 text-blue-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-white font-semibold mb-1">
+                        AI Analýza
+                      </h3>
+                      <p className="text-slate-400 text-sm">
+                        Pokročilé algoritmy pro přesné výsledky
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
+                      <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center mb-3">
+                        <svg
+                          className="w-6 h-6 text-purple-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-white font-semibold mb-1">
+                        Lokalita
+                      </h3>
+                      <p className="text-slate-400 text-sm">
+                        Hodnocení potenciálu vybrané oblasti
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
+                      <div className="w-10 h-10 bg-pink-500/10 rounded-lg flex items-center justify-center mb-3">
+                        <svg
+                          className="w-6 h-6 text-pink-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-white font-semibold mb-1">Tržby</h3>
+                      <p className="text-slate-400 text-sm">
+                        Odhad potenciálních příjmů
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
+                      <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center mb-3">
+                        <svg
+                          className="w-6 h-6 text-green-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-white font-semibold mb-1">
+                        Rychlost
+                      </h3>
+                      <p className="text-slate-400 text-sm">
+                        Výsledky během několika sekund
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form - desktop only */}
+                <div className="relative hidden lg:block">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-20"></div>
+                  <div className="relative">
+                    {isLoading || messages.length > 0 ? (
+                      <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl p-6">
+                        <div className="flex items-center justify-center gap-3 mb-4">
+                          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          <span className="text-white font-medium">
+                            Analyzuji lokalitu...
+                          </span>
+                        </div>
+                        {messages.length > 0 && (
+                          <div className="space-y-3 mt-4 max-h-96 overflow-y-auto">
+                            {messages.map((message) => (
+                              <div
+                                key={message.id}
+                                className={`p-3 rounded-lg ${
+                                  message.role === "user"
+                                    ? "bg-blue-500/20 text-blue-100"
+                                    : "bg-slate-800 text-slate-200"
+                                }`}
+                              >
+                                <div
+                                  className="text-sm"
+                                  dangerouslySetInnerHTML={{
+                                    __html: message.content
+                                      .replace(/```[\s\S]*?```/g, "")
+                                      .replace(
+                                        /\*\*(.*?)\*\*/g,
+                                        "<strong>$1</strong>"
+                                      )
+                                      .replace(/\n/g, "<br>"),
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <AnalysisForm
+                        onSubmit={handleAnalysisSubmit}
+                        onCancel={handleAnalysisCancel}
+                        isLoading={isLoading}
+                        showCancelButton={hasCompletedAnalysis}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </main>
+      )}
       {/* Auth Modal */}
       <AuthModal
         isOpen={showAuthModal}

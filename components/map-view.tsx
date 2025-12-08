@@ -78,9 +78,9 @@ export default function MapView({ data }: MapViewProps) {
         />
       </div>
 
-      {/* Data Overlay */}
+      {/* Data Overlay - Desktop Only */}
       {data.metrics && (
-        <div className="p-3 lg:p-4 bg-slate-900/90 backdrop-blur-sm border-t border-slate-700">
+        <div className="hidden lg:block p-3 lg:p-4 bg-slate-900/90 backdrop-blur-sm border-t border-slate-700">
           {/* Location Name */}
           <div className="mb-3 lg:mb-4">
             <h2 className="text-white font-semibold text-sm lg:text-lg mb-1 flex items-center gap-2">

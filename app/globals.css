@@ -24,3 +24,80 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Vaul drawer styles */
+[vaul-drawer] {
+  touch-action: none;
+  will-change: transform;
+}
+
+[vaul-drawer][vaul-drawer-visible='true'][vaul-overlay] {
+  opacity: 1;
+}
+
+[vaul-overlay] {
+  opacity: 0;
+  transition: opacity 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+[vaul-drawer]::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  background: inherit;
+  background-color: inherit;
+  left: 0;
+  right: 0;
+  height: 200%;
+}
+
+/* Smooth scrolling for drawer content */
+.overscroll-contain {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom scrollbar for drawer */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* Screen reader only - for accessibility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Fix for mobile keyboard pushing drawer down */
+[vaul-drawer] {
+  position: fixed !important;
+  bottom: 0 !important;
+}
+
+/* Prevent iOS Safari from resizing viewport on keyboard open */
+@supports (-webkit-touch-callout: none) {
+  [vaul-drawer][data-vaul-drawer] {
+    position: fixed !important;
+    height: auto !important;
+  }
+}

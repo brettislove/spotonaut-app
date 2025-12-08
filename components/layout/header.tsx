@@ -424,33 +424,6 @@ export default function Header() {
                 </Link>
               ))}
             </nav>
-
-            {/* Divider */}
-            <div className="my-4 mx-3 border-t border-slate-800" />
-
-            {/* Quick action - New Analysis */}
-            <div className="px-3">
-              <Link
-                href="/"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                Nová analýza
-              </Link>
-            </div>
           </div>
 
           {/* Mobile Auth Section - Bottom */}
