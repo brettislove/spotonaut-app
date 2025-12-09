@@ -83,17 +83,34 @@ model AnonymousUsage {
 }
 
 model Analysis {
-  id           String   @id @default(cuid())
-  userId       String? // Nullable for anonymous analyses
-  locationName String
-  location     String
-  coordinates  Json? // { lat: number, lng: number }
-  metrics      Json // { localityScore, footfallScore, recommendedHours }
-  createdAt    DateTime @default(now())
+  id                String   @id @default(cuid())
+  userId            String? // Nullable for anonymous analyses
+  locationName      String
+  location          String
+  coordinates       Json? // { lat: number, lng: number }
+  metrics           Json // { localityScore, footfallScore, recommendedHours }
+  groundingSources  Json? // [{ placeId, title, uri }] from Google Maps grounding
+  usedMapsGrounding Boolean  @default(false)
+  createdAt         DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([createdAt])
   @@map("analyses")
+}
+
+// Global daily quota tracking for Google Maps grounding
+model GoogleMapsUsage {
+  id         String   @id @default(cuid())
+  date       String   @unique // "YYYY-MM-DD" format
+  count      Int      @default(0)
+  dailyLimit Int      @default(500)
+  archived   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([date])
+  @@index([archived, date])
+  @@map("google_maps_usage")
 }

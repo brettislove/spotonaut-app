@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import MapView from "./map-view";
+import { GroundingSources } from "./grounding-sources";
 
 interface Message {
   id: string;
@@ -22,6 +23,7 @@ interface AnalysisData {
     footfallScore: number;
     recommendedHours: string;
   };
+  sources?: Array<{ title: string; uri: string }>;
 }
 
 interface AnalysisResultsMobileProps {
@@ -371,6 +373,11 @@ function MetricsTab({
           </p>
         </div>
       </div>
+
+      {/* Grounding Sources */}
+      {data.sources && data.sources.length > 0 && (
+        <GroundingSources sources={data.sources} />
+      )}
 
       {/* Additional Info */}
       <div className="pt-2 pb-4">

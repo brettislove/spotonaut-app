@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import type { LatLngExpression } from "leaflet";
+import { GroundingSources } from "./grounding-sources";
 
 interface AnalysisData {
   location: string;
@@ -16,6 +17,7 @@ interface AnalysisData {
     footfallScore: number;
     recommendedHours: string;
   };
+  sources?: Array<{ title: string; uri: string }>;
 }
 
 interface MapViewProps {
@@ -55,10 +57,6 @@ export default function MapView({ data }: MapViewProps) {
       ? [data.coordinates.lat, data.coordinates.lng]
       : [50.0755, 14.4378];
   }, [data.coordinates]);
-
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat("cs-CZ").format(num);
-  };
 
   if (!isMounted) {
     return (
@@ -184,6 +182,11 @@ export default function MapView({ data }: MapViewProps) {
               </div>
             </div>
           </div>
+
+          {/* Grounding Sources */}
+          {data.sources && data.sources.length > 0 && (
+            <GroundingSources sources={data.sources} className="mt-4" />
+          )}
         </div>
       )}
     </div>

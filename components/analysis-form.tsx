@@ -60,6 +60,15 @@ export default function AnalysisForm({
   const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
   const productDropdownRef = useRef<HTMLDivElement>(null);
+  const [loadingTextIndex, setLoadingTextIndex] = useState(0);
+
+  const loadingTexts = [
+    "Analyzuji lokalitu...",
+    "Zjišťuji hustotu provozu...",
+    "Mapuji konkurenci...",
+    "Počítám potenciální tržby...",
+    "Vyhodnocuji data...",
+  ];
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -81,6 +90,20 @@ export default function AnalysisForm({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Cycle through loading texts
+  useEffect(() => {
+    if (!isLoading) {
+      setLoadingTextIndex(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setLoadingTextIndex((prev) => (prev + 1) % loadingTexts.length);
+    }, 2000); // Change text every 2 seconds
+
+    return () => clearInterval(interval);
+  }, [isLoading, loadingTexts.length]);
 
   // Fetch location suggestions from Nominatim API
   const fetchLocationSuggestions = useCallback(async (query: string) => {
@@ -613,7 +636,7 @@ export default function AnalysisForm({
             disabled={isLoading}
             className="flex-1 px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:outline-none focus:ring-blue-500 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? "Analyzuji..." : "Analyzovat"}
+            {isLoading ? loadingTexts[loadingTextIndex] : "Analyzovat"}
           </button>
         </div>
       </form>
