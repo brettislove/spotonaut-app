@@ -35,6 +35,7 @@ interface AnalysisData {
     footfallScore: number;
     recommendedHours: string;
   };
+  sources?: Array<{ title: string; uri: string }>;
 }
 
 export default function ChatInterface() {
@@ -245,7 +246,10 @@ export default function ChatInterface() {
 
       // Show map view with analysis data
       if (result.data) {
-        setAnalysisData(result.data);
+        setAnalysisData({
+          ...result.data,
+          sources: result.sources || [],
+        });
         setShowMapView(true);
         setHasCompletedAnalysis(true);
         // Hide form only after successful analysis

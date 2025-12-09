@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chatAgent } from "@/lib/mastra/agent";
 import { PrismaClient } from "@prisma/client";
 import { auth } from "@/app/api/auth/[...nextauth]/route";
+import {
+  generateWithMaps,
+  BASIC_SYSTEM_PROMPT,
+  MAPS_ENHANCED_SYSTEM_PROMPT,
+} from "@/lib/google-ai/client";
+import {
+  checkGlobalMapsQuota,
+  incrementGlobalMapsUsage,
+  archiveOldRecordsIfNeeded,
+  hasGroundingMetadata,
+  extractGroundingSources,
+  type GroundingSource,
+} from "@/lib/google-ai/usage";
 
 const prisma = new PrismaClient();
 
@@ -156,12 +168,77 @@ export async function POST(request: NextRequest) {
     KRITICKY DŮLEŽITÉ: Tento JSON blok MUSÍ být na konci odpovědi.
 `;
 
-    const response = await chatAgent.generate(structuredPrompt);
+    // Track whether Maps grounding was used and extracted sources
+    let usedMapsGrounding = false;
+    let groundingSources: GroundingSource[] = [];
+    let text = "";
+
+    // Run archive check opportunistically
+    await archiveOldRecordsIfNeeded(prisma);
+
+    // Determine if we can use Maps grounding
+    const canUseMaps = session && coordinates;
+    let quotaStatus = null;
+
+    if (canUseMaps) {
+      quotaStatus = await checkGlobalMapsQuota(prisma);
+    }
+
+    // Try Maps-grounded analysis for authenticated users with coordinates and quota
+    if (canUseMaps && quotaStatus?.allowed && coordinates) {
+      try {
+        console.log("Attempting Maps-grounded analysis...");
+        const mapsResponse = await generateWithMaps(structuredPrompt, {
+          enableMaps: true,
+          latitude: coordinates.lat,
+          longitude: coordinates.lng,
+          systemPrompt: MAPS_ENHANCED_SYSTEM_PROMPT,
+        });
+
+        text = mapsResponse.text || "";
+
+        // Check if Maps grounding was actually used
+        if (hasGroundingMetadata(mapsResponse)) {
+          usedMapsGrounding = true;
+          groundingSources = extractGroundingSources(mapsResponse);
+          await incrementGlobalMapsUsage(prisma);
+          console.log(
+            "Maps grounding successful, sources:",
+            groundingSources.length
+          );
+        } else {
+          console.log(
+            "Maps grounding returned no metadata, using response anyway"
+          );
+        }
+      } catch (mapsError) {
+        console.error(
+          "Maps grounding failed, falling back to basic:",
+          mapsError
+        );
+        // Silent fallback - will try basic analysis below
+        text = "";
+      }
+    }
+
+    // Fallback to basic analysis if Maps failed or not available
+    if (!text) {
+      console.log("Using basic analysis (no Maps grounding)");
+      try {
+        const basicResponse = await generateWithMaps(structuredPrompt, {
+          enableMaps: false,
+          systemPrompt: BASIC_SYSTEM_PROMPT,
+        });
+        text = basicResponse.text || "";
+      } catch (basicError) {
+        console.error("Basic analysis also failed:", basicError);
+        text = "";
+      }
+    }
 
     console.log("Analysis complete");
 
     // Extract metrics from JSON at the end of the response
-    const text = response.text || "";
     let metrics = {
       localityScore: 50,
       footfallScore: 50,
@@ -203,6 +280,11 @@ export async function POST(request: NextRequest) {
           location: data.location,
           coordinates: coordinates || undefined,
           metrics: metrics,
+          usedMapsGrounding,
+          groundingSources:
+            groundingSources.length > 0
+              ? JSON.parse(JSON.stringify(groundingSources))
+              : undefined,
         },
       });
     } catch (dbError) {
@@ -245,6 +327,8 @@ export async function POST(request: NextRequest) {
         coordinates,
         metrics,
       },
+      sources: groundingSources,
+      usedMapsGrounding,
     });
   } catch (error) {
     console.error("Analysis API Error:", error);

@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chatAgent } from "@/lib/mastra/agent";
 import { auth } from "@/app/api/auth/[...nextauth]/route";
+import { generateChatWithMaps } from "@/lib/google-ai/client";
+import {
+  checkGlobalMapsQuota,
+  incrementGlobalMapsUsage,
+  archiveOldRecordsIfNeeded,
+  extractGroundingSources,
+} from "@/lib/google-ai/usage";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,13 +74,44 @@ Odpověz na aktuální dotaz s ohledem na předchozí konverzaci. Pokud se dotaz
 `;
     }
 
-    // Generate response using Mastra agent
-    const response = await chatAgent.generate(contextualPrompt);
+    // Check quota and archive old records
+    await archiveOldRecordsIfNeeded(prisma);
+    const canUseMaps = await checkGlobalMapsQuota(prisma);
 
-    console.log("Agent response:", response);
+    let text: string | undefined;
+    let groundingSources: Array<{ title: string; uri: string }> = [];
+
+    if (canUseMaps) {
+      // Try with Maps grounding
+      try {
+        const response = await generateChatWithMaps(contextualPrompt, {
+          enableMaps: true,
+        });
+        text = response.text;
+        groundingSources = extractGroundingSources(response);
+        await incrementGlobalMapsUsage(prisma);
+      } catch (mapsError) {
+        console.error(
+          "Maps grounding failed, falling back to basic:",
+          mapsError
+        );
+        // Silent fallback to basic generation
+        const response = await generateChatWithMaps(contextualPrompt, {
+          enableMaps: false,
+        });
+        text = response.text;
+      }
+    } else {
+      // Quota exceeded, use basic generation
+      const response = await generateChatWithMaps(contextualPrompt, {
+        enableMaps: false,
+      });
+      text = response.text;
+    }
 
     return NextResponse.json({
-      message: response.text || "Sorry, I could not generate a response.",
+      message: text || "Omlouváme se, nepodařilo se vygenerovat odpověď.",
+      sources: groundingSources,
     });
   } catch (error) {
     console.error("Chat API Error:", error);
