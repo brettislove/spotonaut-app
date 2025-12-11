@@ -18,7 +18,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Spotonaut - Poradíme, kde (ne)podnikat.",
   description: "Poradíme, kde (ne)podnikat.",
-  themeColor: "#A43BFE",
 };
 
 export const viewport: Viewport = {
@@ -26,6 +25,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: "#A43BFE",
 };
 
 export default function RootLayout({

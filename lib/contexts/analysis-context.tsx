@@ -52,6 +52,7 @@ interface AnalysisContextType {
   setShowAnalysisForm: React.Dispatch<React.SetStateAction<boolean>>;
   resetAnalysis: () => void;
   navigateHome: () => void;
+  clearRestoredState: () => void;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(
@@ -111,7 +112,29 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     if (!storageKey) return;
 
     try {
-      const stored = localStorage.getItem(storageKey);
+      // Check for pending analysis first - it takes priority
+      const pendingAnalysis = localStorage.getItem("pendingAnalysis");
+
+      // If there's a pending analysis, don't restore old state
+      if (pendingAnalysis) {
+        // The pending analysis will be handled by ChatInterface
+        return;
+      }
+
+      let stored = localStorage.getItem(storageKey);
+
+      // If user just authenticated, try to find data from fingerprint storage
+      if (!stored && session?.user?.email && fingerprint) {
+        const fingerprintKey = `analysis_${fingerprint}`;
+        stored = localStorage.getItem(fingerprintKey);
+
+        // If found, migrate to email-based key and clean up old one
+        if (stored) {
+          localStorage.setItem(storageKey, stored);
+          localStorage.removeItem(fingerprintKey);
+        }
+      }
+
       if (stored) {
         const parsed: PersistedState = JSON.parse(stored);
         // Use startTransition to indicate this is an intentional state update from external source
@@ -196,6 +219,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     }
   }, [getStorageKey]);
 
+  // Clear restored state to prevent it from being applied
+  const clearRestoredState = useCallback(() => {
+    setRestoredState(null);
+  }, []);
+
   // Navigate to home and reset
   const navigateHome = useCallback(() => {
     resetAnalysis();
@@ -222,6 +250,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     setShowAnalysisForm,
     resetAnalysis,
     navigateHome,
+    clearRestoredState,
   };
 
   return (
