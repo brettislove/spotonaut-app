@@ -54,9 +54,20 @@ export default function AuthModal({
         throw new Error(data.error || "Registrace se nezdařila");
       }
 
-      setSuccess("Účet byl vytvořen! Nyní se můžete přihlásit.");
-      setActiveTab("login");
-      setPassword("");
+      // Auto-login after successful signup
+      const loginResult = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (loginResult?.ok) {
+        window.location.reload();
+      } else {
+        setSuccess("Účet byl vytvořen! Nyní se můžete přihlásit.");
+        setActiveTab("login");
+        setPassword("");
+      }
     } catch (error) {
       setError(
         error instanceof Error ? error.message : "Registrace se nezdařila"
