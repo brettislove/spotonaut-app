@@ -7,6 +7,7 @@ import AuthModal from "./auth-modal";
 import AnalysisResultsMobile from "./analysis-results-mobile";
 import MapView from "./map-view";
 import RotatingText from "./ui/rotating-text";
+import SwitchingText from "./ui/switching-text";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import Image from "next/image";
 
@@ -550,33 +551,56 @@ export default function ChatInterface() {
               <div className="relative mb-8 lg:hidden">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-20"></div>
                 <div className="relative">
-                  {isLoading || messages.length > 0 ? (
-                    <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl p-6">
-                      <div className="flex items-center justify-center gap-3 mb-4">
-                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-white font-medium">
-                          Analyzuji lokalitu...
-                        </span>
+                  {isLoading ? (
+                    <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl p-6 min-h-[600px] flex flex-col items-center justify-center">
+                      <div className="mb-8">
+                        <Image
+                          src="/spotonaut_character.svg"
+                          alt="Spotonaut"
+                          width={120}
+                          height={120}
+                          className="w-32 h-32 animate-pulse"
+                        />
                       </div>
-                      {messages.length > 0 && (
-                        <div className="space-y-3 mt-4">
-                          {messages.map((message) => (
-                            <div
-                              key={message.id}
-                              className={`p-3 rounded-lg ${
-                                message.role === "user"
-                                  ? "bg-blue-500/20 text-blue-100"
-                                  : "bg-slate-800 text-slate-200"
-                              }`}
-                            >
-                              <div className="text-sm">
-                                {message.content.substring(0, 150)}
-                                {message.content.length > 150 ? "..." : ""}
-                              </div>
+                      <div className="text-center space-y-4">
+                        <h3 className="text-2xl font-bold text-white">
+                          <SwitchingText
+                            words={[
+                              "Analyzuji lokalitu...",
+                              "Zjišťuji hustotu provozu...",
+                              "Mapuji konkurenci...",
+                              "Počítám potenciální tržby...",
+                              "Vyhodnocuji data...",
+                            ]}
+                            className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600"
+                            interval={3000}
+                          />
+                        </h3>
+                        <p className="text-slate-400 text-sm max-w-md">
+                          Náš AI agent zpracovává vaše data a připravuje
+                          komplexní analýzu lokality.
+                        </p>
+                      </div>
+                    </div>
+                  ) : messages.length > 0 ? (
+                    <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl p-6">
+                      <div className="space-y-3">
+                        {messages.map((message) => (
+                          <div
+                            key={message.id}
+                            className={`p-3 rounded-lg ${
+                              message.role === "user"
+                                ? "bg-blue-500/20 text-blue-100"
+                                : "bg-slate-800 text-slate-200"
+                            }`}
+                          >
+                            <div className="text-sm">
+                              {message.content.substring(0, 150)}
+                              {message.content.length > 150 ? "..." : ""}
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ) : (
                     <AnalysisForm
@@ -717,41 +741,64 @@ export default function ChatInterface() {
                 <div className="relative hidden lg:block">
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-20"></div>
                   <div className="relative">
-                    {isLoading || messages.length > 0 ? (
-                      <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl p-6">
-                        <div className="flex items-center justify-center gap-3 mb-4">
-                          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                          <span className="text-white font-medium">
-                            Analyzuji lokalitu...
-                          </span>
+                    {isLoading ? (
+                      <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl p-8 min-h-[600px] flex flex-col items-center justify-center">
+                        <div className="mb-8">
+                          <Image
+                            src="/spotonaut_character.svg"
+                            alt="Spotonaut"
+                            width={140}
+                            height={140}
+                            className="w-36 h-36 animate-pulse"
+                          />
                         </div>
-                        {messages.length > 0 && (
-                          <div className="space-y-3 mt-4 max-h-96 overflow-y-auto">
-                            {messages.map((message) => (
+                        <div className="text-center space-y-4">
+                          <h3 className="text-3xl font-bold text-white">
+                            <SwitchingText
+                              words={[
+                                "Analyzuji lokalitu...",
+                                "Zjišťuji hustotu provozu...",
+                                "Mapuji konkurenci...",
+                                "Počítám potenciální tržby...",
+                                "Vyhodnocuji data...",
+                              ]}
+                              className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600"
+                              interval={3000}
+                            />
+                          </h3>
+                          <p className="text-slate-400 max-w-md">
+                            Náš AI agent zpracovává vaše data a připravuje
+                            komplexní analýzu lokality.
+                          </p>
+                        </div>
+                      </div>
+                    ) : messages.length > 0 ? (
+                      <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl p-6">
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                          {messages.map((message) => (
+                            <div
+                              key={message.id}
+                              className={`p-3 rounded-lg ${
+                                message.role === "user"
+                                  ? "bg-blue-500/20 text-blue-100"
+                                  : "bg-slate-800 text-slate-200"
+                              }`}
+                            >
                               <div
-                                key={message.id}
-                                className={`p-3 rounded-lg ${
-                                  message.role === "user"
-                                    ? "bg-blue-500/20 text-blue-100"
-                                    : "bg-slate-800 text-slate-200"
-                                }`}
-                              >
-                                <div
-                                  className="text-sm"
-                                  dangerouslySetInnerHTML={{
-                                    __html: message.content
-                                      .replace(/```[\s\S]*?```/g, "")
-                                      .replace(
-                                        /\*\*(.*?)\*\*/g,
-                                        "<strong>$1</strong>"
-                                      )
-                                      .replace(/\n/g, "<br>"),
-                                  }}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                                className="text-sm"
+                                dangerouslySetInnerHTML={{
+                                  __html: message.content
+                                    .replace(/```[\s\S]*?```/g, "")
+                                    .replace(
+                                      /\*\*(.*?)\*\*/g,
+                                      "<strong>$1</strong>"
+                                    )
+                                    .replace(/\n/g, "<br>"),
+                                }}
+                              />
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ) : (
                       <AnalysisForm
