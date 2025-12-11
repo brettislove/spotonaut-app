@@ -509,7 +509,7 @@ function ChatTab({
                       <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
                       <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"></div>
                     </div>
-                    <span className="text-slate-400 text-sm">Píšu...</span>
+                    <span className="text-slate-400 text-sm">Přemýšlím...</span>
                   </div>
                 </div>
               </div>
