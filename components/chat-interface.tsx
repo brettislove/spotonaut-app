@@ -40,6 +40,7 @@ export default function ChatInterface() {
     setShowAnalysisForm,
     fingerprint,
     navigateHome,
+    clearRestoredState,
   } = useAnalysis();
 
   const [input, setInput] = useState("");
@@ -67,27 +68,56 @@ export default function ChatInterface() {
 
   // Handle pending actions after authentication
   useEffect(() => {
-    if (session && fingerprint) {
-      // Check for pending analysis
-      const storedAnalysis = localStorage.getItem("pendingAnalysis");
-      if (storedAnalysis) {
-        try {
-          const data: AnalysisFormData = JSON.parse(storedAnalysis);
-          localStorage.removeItem("pendingAnalysis");
-          setPendingAnalysisData(data);
-        } catch (error) {
-          console.error("Failed to restore pending analysis:", error);
-        }
-      }
-
-      // Check for pending chat message
+    if (session) {
+      // Check for pending chat message immediately (doesn't need fingerprint)
       const storedMessage = localStorage.getItem("pendingChatMessage");
       if (storedMessage) {
         localStorage.removeItem("pendingChatMessage");
         setInput(storedMessage);
       }
+
+      // Check for pending analysis (needs fingerprint for submission)
+      if (fingerprint) {
+        const pendingAnalysis = localStorage.getItem("pendingAnalysis");
+        if (pendingAnalysis) {
+          try {
+            const data: AnalysisFormData = JSON.parse(pendingAnalysis);
+            localStorage.removeItem("pendingAnalysis");
+
+            // Clear any old persisted state now that we're about to submit new one
+            if (session?.user?.email) {
+              localStorage.removeItem(`analysis_${session.user.email}`);
+            }
+            localStorage.removeItem(`analysis_${fingerprint}`);
+
+            // Clear restored state to prevent context from applying old data
+            clearRestoredState();
+
+            // Reset UI state for new analysis
+            setShowAnalysisForm(true);
+            setShowMapView(false);
+            setHasCompletedAnalysis(false);
+            setMessages([]);
+            setAnalysisData(null);
+
+            // Set pending data to trigger auto-submit
+            setPendingAnalysisData(data);
+          } catch (error) {
+            console.error("Failed to restore pending analysis:", error);
+          }
+        }
+      }
     }
-  }, [session, fingerprint]);
+  }, [
+    session,
+    fingerprint,
+    setShowAnalysisForm,
+    setShowMapView,
+    setHasCompletedAnalysis,
+    setMessages,
+    setAnalysisData,
+    clearRestoredState,
+  ]);
 
   // Auto-submit pending analysis when it's set
   useEffect(() => {
