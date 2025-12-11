@@ -26,9 +26,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { messages } = await request.json();
+    const { messages, coordinates } = await request.json();
 
     console.log("Received messages:", messages);
+    console.log("Coordinates for Maps grounding:", coordinates);
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
@@ -86,6 +87,8 @@ Odpověz na aktuální dotaz s ohledem na předchozí konverzaci. Pokud se dotaz
       try {
         const response = await generateChatWithMaps(contextualPrompt, {
           enableMaps: true,
+          latitude: coordinates?.lat,
+          longitude: coordinates?.lng,
         });
         text = response.text;
         groundingSources = extractGroundingSources(response);

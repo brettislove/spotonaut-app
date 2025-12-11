@@ -6,6 +6,7 @@ import AnalysisForm from "./analysis-form";
 import AuthModal from "./auth-modal";
 import AnalysisResultsMobile from "./analysis-results-mobile";
 import MapView from "./map-view";
+import RotatingText from "./ui/rotating-text";
 import { getOrCreateFingerprint } from "@/lib/fingerprint";
 
 interface Message {
@@ -145,6 +146,7 @@ export default function ChatInterface() {
             role: m.role,
             content: m.content,
           })),
+          coordinates: analysisData?.coordinates,
         }),
       });
 
@@ -425,11 +427,14 @@ export default function ChatInterface() {
               {/* Heading - visible on mobile only, at the top */}
               <div className="space-y-4 mb-8 lg:hidden">
                 <h1 className="text-4xl font-bold text-white leading-tight">
-                  Víme, kde{" "}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
-                    podnikat
-                  </span>
-                  .
+                  Zjisti, kde{" "}
+                  <RotatingText
+                    words={["otevřít", "vydělat", "začít", "růst"]}
+                    className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600"
+                    typingSpeed={80}
+                    deletingSpeed={40}
+                    delayBetweenWords={2500}
+                  />
                 </h1>
                 <p className="text-lg text-slate-400 leading-relaxed">
                   Spotonaut využívá pokročilou AI analýzu k vyhodnocení
@@ -486,11 +491,14 @@ export default function ChatInterface() {
                   {/* Heading - desktop only */}
                   <div className="space-y-4 hidden lg:block">
                     <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight">
-                      Víme, kde{" "}
-                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">
-                        podnikat
-                      </span>
-                      .
+                      Zjisti, kde{" "}
+                      <RotatingText
+                        words={["otevřít", "vydělat", "začít", "růst"]}
+                        className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600"
+                        typingSpeed={80}
+                        deletingSpeed={40}
+                        delayBetweenWords={2500}
+                      />
                     </h1>
                     <p className="text-lg text-slate-400 leading-relaxed">
                       Spotonaut využívá pokročilou AI analýzu k vyhodnocení

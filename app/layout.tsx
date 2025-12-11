@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Spotonaut - Víme, kde podnikat.",
-  description: "Víme, kde podnikat.",
+  title: "Spotonaut - Poradíme, kde (ne)podnikat.",
+  description: "Poradíme, kde (ne)podnikat.",
   themeColor: "#A43BFE",
 };
 
