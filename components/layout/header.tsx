@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import AuthModal from "@/components/auth-modal";
 
 export default function Header() {
@@ -16,11 +17,13 @@ export default function Header() {
     "login"
   );
   const [showProfileSettings, setShowProfileSettings] = useState(false);
+  const [, startTransition] = useTransition();
 
   // Close mobile menu on route change
-  // eslint-disable-next-line react-compiler/react-compiler
   useEffect(() => {
-    setIsMobileMenuOpen(false);
+    startTransition(() => {
+      setIsMobileMenuOpen(false);
+    });
   }, [pathname]);
 
   // Close dropdowns when clicking outside
@@ -52,7 +55,7 @@ export default function Header() {
 
   const navigationLinks = [
     { href: "/how-it-works", label: "Jak to funguje" },
-    { href: "/pricing", label: "Pricing" },
+    // { href: "/pricing", label: "Pricing" },
     { href: "/blog", label: "Blog" },
     { href: "/kontakt", label: "Kontakt" },
   ];
@@ -83,30 +86,27 @@ export default function Header() {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Spotonaut
+            <Link href="/" className="flex items-center group">
+              <span
+                className="text-xl font-bold"
+                style={{ color: "rgb(164, 59, 254)" }}
+              >
+                Spot
+              </span>
+              <Image
+                src="/spotonaut_logo.png"
+                alt="SpotOnaut"
+                width={32}
+                height={32}
+                className="inline-block mx-0.5"
+                priority
+                unoptimized
+              />
+              <span
+                className="text-xl font-bold"
+                style={{ color: "rgb(47, 61, 214)" }}
+              >
+                naut
               </span>
             </Link>
 
@@ -226,15 +226,16 @@ export default function Header() {
                 <>
                   <button
                     onClick={() => handleAuthClick("login")}
-                    className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
+                    className="px-4 py-2 hover:cursor-pointer text-sm font-medium text-slate-300 hover:text-white transition-colors"
                   >
                     Přihlásit se
                   </button>
                   <button
                     onClick={() => handleAuthClick("signup")}
-                    className="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all"
+                    className="group relative px-4 py-2 hover:cursor-pointer text-sm font-semibold bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg overflow-hidden"
                   >
-                    Registrovat se
+                    <span className="relative z-10">Registrovat se</span>
+                    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 bg-gradient-to-r from-transparent via-white/25 to-transparent" />
                   </button>
                 </>
               )}
@@ -293,31 +294,28 @@ export default function Header() {
             <Link
               href="/"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-2"
+              className="flex items-center"
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </div>
-              <span className="text-lg font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Spotonaut
+              <span
+                className="text-lg font-bold"
+                style={{ color: "rgb(164, 59, 254)" }}
+              >
+                Spot
+              </span>
+              <Image
+                src="/spotonaut_logo.png"
+                alt="SpotOnaut"
+                width={28}
+                height={28}
+                className="inline-block mx-0.5"
+                priority
+                unoptimized
+              />
+              <span
+                className="text-lg font-bold"
+                style={{ color: "rgb(47, 61, 214)" }}
+              >
+                naut
               </span>
             </Link>
             <button
@@ -510,9 +508,10 @@ export default function Header() {
                     handleAuthClick("signup");
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all"
+                  className="group relative w-full px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg overflow-hidden"
                 >
-                  Registrovat se
+                  <span className="relative z-10">Registrovat se</span>
+                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 bg-gradient-to-r from-transparent via-white/25 to-transparent" />
                 </button>
               </div>
             )}
