@@ -10,6 +10,7 @@ import RotatingText from "./ui/rotating-text";
 import SwitchingText from "./ui/switching-text";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import Image from "next/image";
+import type { BusinessType } from "@/lib/constants/business-types";
 
 interface Message {
   id: string;
@@ -20,11 +21,13 @@ interface Message {
 
 interface AnalysisFormData {
   location: string;
-  productType: "coffee" | "snacks" | "cold_drinks";
+  businessType: BusinessType;
   operatingHours: number;
-  avgSpend: number;
   timeframe: "day" | "week" | "month" | "year";
 }
+
+// Character limit for chat messages
+const MAX_MESSAGE_LENGTH = 2000;
 
 export default function ChatInterface() {
   const { data: session } = useSession();
@@ -159,6 +162,18 @@ export default function ChatInterface() {
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !hasCompletedAnalysis) return;
+
+    // Validate message length
+    if (input.length > MAX_MESSAGE_LENGTH) {
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: `Vaše zpráva je příliš dlouhá (${input.length} znaků). Maximální délka je ${MAX_MESSAGE_LENGTH} znaků. Zkuste svůj dotaz zkrátit.`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+      return;
+    }
 
     // Check if user is authenticated
     if (!session) {
@@ -496,22 +511,36 @@ export default function ChatInterface() {
 
                 {/* Chat Input */}
                 <div className="p-4 border-t border-slate-700">
-                  <form onSubmit={sendMessage} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      placeholder="Napište svou zprávu..."
-                      disabled={isLoading}
-                      className="flex-1 bg-slate-800/50 border border-slate-600 text-white placeholder-slate-400 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isLoading || !input.trim()}
-                      className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Odeslat
-                    </button>
+                  <form onSubmit={sendMessage} className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Napište svou zprávu..."
+                        disabled={isLoading}
+                        maxLength={MAX_MESSAGE_LENGTH}
+                        className="flex-1 bg-slate-800/50 border border-slate-600 text-white placeholder-slate-400 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isLoading || !input.trim()}
+                        className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Odeslat
+                      </button>
+                    </div>
+                    {input.length > MAX_MESSAGE_LENGTH * 0.8 && (
+                      <div
+                        className={`text-xs text-right ${
+                          input.length > MAX_MESSAGE_LENGTH
+                            ? "text-red-400"
+                            : "text-slate-400"
+                        }`}
+                      >
+                        {input.length} / {MAX_MESSAGE_LENGTH} znaků
+                      </div>
+                    )}
                   </form>
                 </div>
               </div>
