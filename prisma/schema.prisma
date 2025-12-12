@@ -23,6 +23,7 @@ model User {
   accounts            Account[]
   analyses            Analysis[]
   passwordResetTokens PasswordResetToken[]
+  feedbacks           Feedback[]
 
   @@map("users")
 }
@@ -93,7 +94,8 @@ model Analysis {
   usedMapsGrounding Boolean  @default(false)
   createdAt         DateTime @default(now())
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  feedbacks Feedback[]
 
   @@index([userId])
   @@index([createdAt])
@@ -113,4 +115,23 @@ model GoogleMapsUsage {
   @@index([date])
   @@index([archived, date])
   @@map("google_maps_usage")
+}
+
+model Feedback {
+  id           String   @id @default(cuid())
+  userId       String? // Nullable for anonymous feedback
+  analysisId   String? // Link to specific analysis
+  rating       Int // 1-5 star rating
+  comment      String? // Optional user comment
+  feedbackType String? // "accuracy", "chat", "general"
+  fingerprint  String? // For anonymous user tracking
+  createdAt    DateTime @default(now())
+
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  analysis Analysis? @relation(fields: [analysisId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([analysisId])
+  @@index([createdAt])
+  @@map("feedback")
 }
