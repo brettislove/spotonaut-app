@@ -11,6 +11,9 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Character limit for messages (same as frontend)
+const MAX_MESSAGE_LENGTH = 2000;
+
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
@@ -44,6 +47,16 @@ export async function POST(request: NextRequest) {
     if (!lastMessage || !lastMessage.content) {
       return NextResponse.json(
         { error: "Invalid message format" },
+        { status: 400 }
+      );
+    }
+
+    // Validate message length
+    if (lastMessage.content.length > MAX_MESSAGE_LENGTH) {
+      return NextResponse.json(
+        {
+          error: `Zpráva je příliš dlouhá (${lastMessage.content.length} znaků). Maximální délka je ${MAX_MESSAGE_LENGTH} znaků.`,
+        },
         { status: 400 }
       );
     }
