@@ -14,23 +14,17 @@ import {
   extractGroundingSources,
   type GroundingSource,
 } from "@/lib/google-ai/usage";
+import type { BusinessType } from "@/lib/constants/business-types";
 
 const prisma = new PrismaClient();
 
 interface AnalysisRequest {
   location: string;
-  productType: "coffee" | "snacks" | "cold_drinks";
+  businessType: BusinessType;
   operatingHours: number;
-  avgSpend: number;
   timeframe: "day" | "week" | "month" | "year";
   fingerprint?: string;
 }
-
-const productTypeLabels = {
-  coffee: "Káva / Teplé nápoje",
-  snacks: "Snacky",
-  cold_drinks: "Studené nápoje",
-};
 
 const timeframeLabels = {
   day: "den",
@@ -78,9 +72,8 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (
       !data.location ||
-      !data.productType ||
+      !data.businessType ||
       !data.operatingHours ||
-      !data.avgSpend ||
       !data.timeframe
     ) {
       return NextResponse.json(
@@ -93,13 +86,6 @@ export async function POST(request: NextRequest) {
     if (data.operatingHours < 1 || data.operatingHours > 168) {
       return NextResponse.json(
         { error: "Provozní hodiny musí být mezi 1-168" },
-        { status: 400 }
-      );
-    }
-
-    if (data.avgSpend < 1) {
-      return NextResponse.json(
-        { error: "Průměrná útrata musí být alespoň 1 Kč" },
         { status: 400 }
       );
     }
@@ -141,9 +127,11 @@ export async function POST(request: NextRequest) {
 
   **VSTUPNÍ DATA:**
   - Lokalita: ${data.location}
-  - Typ produktu: ${productTypeLabels[data.productType]}
+  - Typ podnikání: ${data.businessType.type}
+  - Kategorie: ${data.businessType.category}
   - Provozní hodiny za týden: ${data.operatingHours} hodin
-  - Průměrná útrata zákazníka: ${data.avgSpend} Kč
+  - Průměrná útrata zákazníka: ${data.businessType.avgSpend} Kč
+  - Konverzní poměr: ${(data.businessType.conversionRate * 100).toFixed(1)}%
   - Časový rámec analýzy: ${timeframeLabels[data.timeframe]}
 
   **POŽADOVANÁ ANALÝZA:**

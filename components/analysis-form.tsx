@@ -2,12 +2,13 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import LocationPickerDialog from "./location-picker-dialog";
+import BusinessTypeSelect from "./ui/business-type-select";
+import type { BusinessType } from "@/lib/constants/business-types";
 
 interface AnalysisFormData {
   location: string;
-  productType: "coffee" | "snacks" | "cold_drinks";
+  businessType: BusinessType;
   operatingHours: number;
-  avgSpend: number;
   timeframe: "day" | "week" | "month" | "year";
 }
 
@@ -35,11 +36,10 @@ export default function AnalysisForm({
   isLoading = false,
   showCancelButton = true,
 }: AnalysisFormProps) {
-  const [formData, setFormData] = useState<AnalysisFormData>({
+  const [formData, setFormData] = useState<Partial<AnalysisFormData>>({
     location: "",
-    productType: "coffee",
+    businessType: undefined,
     operatingHours: 40,
-    avgSpend: 50,
     timeframe: "month",
   });
 
@@ -58,8 +58,6 @@ export default function AnalysisForm({
   const debounceTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   const suggestionBoxRef = useRef<HTMLDivElement>(null);
   const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
-  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
-  const productDropdownRef = useRef<HTMLDivElement>(null);
   const [loadingTextIndex, setLoadingTextIndex] = useState(0);
 
   const loadingTexts = [
@@ -78,12 +76,6 @@ export default function AnalysisForm({
         !suggestionBoxRef.current.contains(event.target as Node)
       ) {
         setShowSuggestions(false);
-      }
-      if (
-        productDropdownRef.current &&
-        !productDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsProductDropdownOpen(false);
       }
     };
 
@@ -262,25 +254,33 @@ export default function AnalysisForm({
     setFormData((prev) => ({ ...prev, location: locationToSubmit }));
 
     // Validate with current input
-    const tempFormData = { ...formData, location: locationToSubmit };
     const newErrors: Partial<Record<keyof AnalysisFormData, string>> = {};
 
     if (!locationInput.trim()) {
       newErrors.location = "Lokalita je povinná";
     }
 
-    if (tempFormData.operatingHours < 1 || tempFormData.operatingHours > 168) {
-      newErrors.operatingHours = "Hodiny musí být mezi 1-168";
+    if (!formData.businessType) {
+      newErrors.businessType = "Typ podnikání je povinný";
     }
 
-    if (tempFormData.avgSpend < 1) {
-      newErrors.avgSpend = "Průměrná útrata musí být alespoň 1 Kč";
+    if (
+      !formData.operatingHours ||
+      formData.operatingHours < 1 ||
+      formData.operatingHours > 168
+    ) {
+      newErrors.operatingHours = "Hodiny musí být mezi 1-168";
     }
 
     setErrors(newErrors);
 
-    if (Object.keys(newErrors).length === 0) {
-      onSubmit(tempFormData);
+    if (Object.keys(newErrors).length === 0 && formData.businessType) {
+      onSubmit({
+        location: locationToSubmit,
+        businessType: formData.businessType,
+        operatingHours: formData.operatingHours!,
+        timeframe: formData.timeframe!,
+      });
     }
   };
 
@@ -394,111 +394,22 @@ export default function AnalysisForm({
             )}
         </div>
 
-        {/* Product Type */}
-        <div className="relative" ref={productDropdownRef}>
-          <label
-            htmlFor="productType"
-            className="block mb-2 text-sm font-medium text-white"
-          >
-            Typ produktu
-          </label>
-          <button
-            type="button"
-            onClick={() => setIsProductDropdownOpen(!isProductDropdownOpen)}
-            disabled={isLoading}
-            className="inline-flex items-center justify-between w-full p-2.5 text-sm font-medium text-white bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 focus:ring-2 focus:outline-none focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          >
-            <span>
-              {formData.productType === "coffee"
-                ? "Káva / Teplé nápoje"
-                : formData.productType === "snacks"
-                ? "Snacky"
-                : "Studené nápoje"}
-            </span>
-            <svg
-              className={`w-2.5 h-2.5 ms-3 transition-transform ${
-                isProductDropdownOpen ? "rotate-180" : ""
-              }`}
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 10 6"
-            >
-              <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="m1 1 4 4 4-4"
-              />
-            </svg>
-          </button>
+        {/* Business Type */}
+        <BusinessTypeSelect
+          value={formData.businessType || null}
+          onChange={(businessType) => updateField("businessType", businessType)}
+          disabled={isLoading}
+          error={errors.businessType}
+        />
 
-          {/* Dropdown menu */}
-          {isProductDropdownOpen && (
-            <div className="absolute z-50 w-full mt-2 bg-slate-800 border border-slate-600 rounded-lg shadow-xl divide-y divide-slate-700">
-              <ul className="py-2 text-sm text-slate-200">
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      updateField("productType", "coffee");
-                      setIsProductDropdownOpen(false);
-                    }}
-                    className={`block w-full px-4 py-2 text-left hover:bg-slate-700 hover:text-white transition-colors ${
-                      formData.productType === "coffee"
-                        ? "bg-slate-700 text-white"
-                        : ""
-                    }`}
-                  >
-                    Káva / Teplé nápoje
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      updateField("productType", "snacks");
-                      setIsProductDropdownOpen(false);
-                    }}
-                    className={`block w-full px-4 py-2 text-left hover:bg-slate-700 hover:text-white transition-colors ${
-                      formData.productType === "snacks"
-                        ? "bg-slate-700 text-white"
-                        : ""
-                    }`}
-                  >
-                    Snacky
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      updateField("productType", "cold_drinks");
-                      setIsProductDropdownOpen(false);
-                    }}
-                    className={`block w-full px-4 py-2 text-left hover:bg-slate-700 hover:text-white transition-colors ${
-                      formData.productType === "cold_drinks"
-                        ? "bg-slate-700 text-white"
-                        : ""
-                    }`}
-                  >
-                    Studené nápoje
-                  </button>
-                </li>
-              </ul>
-            </div>
-          )}
-        </div>
-
-        {/* Operating Hours and Average Spend - Side by Side */}
+        {/* Operating Hours and Timeframe - Side by Side */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label
               htmlFor="operatingHours"
               className="block mb-2 text-sm font-medium text-white"
             >
-              Otevírací doba (hodin/týden)
+              Plánovaná otevírací doba (hodin/týden)
             </label>
             <div className="space-y-3">
               <input
@@ -514,16 +425,16 @@ export default function AnalysisForm({
                 className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   background: `linear-gradient(to right, rgb(59 130 246) 0%, rgb(59 130 246) ${
-                    ((formData.operatingHours - 1) / 167) * 100
+                    (((formData.operatingHours || 40) - 1) / 167) * 100
                   }%, rgb(55 65 81) ${
-                    ((formData.operatingHours - 1) / 167) * 100
+                    (((formData.operatingHours || 40) - 1) / 167) * 100
                   }%, rgb(55 65 81) 100%)`,
                 }}
               />
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-500">1h</span>
                 <span className="px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 border border-blue-500 rounded-lg">
-                  {formData.operatingHours}h
+                  {formData.operatingHours || 40}h
                 </span>
                 <span className="text-sm text-slate-500">168h</span>
               </div>
@@ -535,7 +446,7 @@ export default function AnalysisForm({
             )}
           </div>
 
-          <div>
+          {/* <div>
             <label
               htmlFor="avgSpend"
               className="block mb-2 text-sm font-medium text-slate-200"
@@ -573,49 +484,48 @@ export default function AnalysisForm({
             {errors.avgSpend && (
               <p className="mt-2 text-sm text-red-500">{errors.avgSpend}</p>
             )}
-          </div>
-        </div>
-
-        {/* Timeframe */}
-        <div>
-          <label
-            htmlFor="timeframe"
-            className="block mb-2 text-sm font-medium text-white"
-          >
-            Období analýzy
-          </label>
-          <div className="inline-flex rounded-lg shadow-sm" role="group">
-            {[
-              { value: "day", label: "Den", position: "first" },
-              { value: "week", label: "Týden", position: "middle" },
-              { value: "month", label: "Měsíc", position: "middle" },
-              { value: "year", label: "Rok", position: "last" },
-            ].map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() =>
-                  updateField(
-                    "timeframe",
-                    option.value as AnalysisFormData["timeframe"]
-                  )
-                }
-                disabled={isLoading}
-                className={`px-4 py-2 text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                  option.position === "first"
-                    ? "rounded-s-lg border-r-0"
-                    : option.position === "last"
-                    ? "rounded-e-lg"
-                    : "border-r-0"
-                } ${
-                  formData.timeframe === option.value
-                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-lg"
-                    : "bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700 hover:text-white"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
+          </div> */}
+          {/* Timeframe */}
+          <div>
+            <label
+              htmlFor="timeframe"
+              className="block mb-2 text-sm font-medium text-white"
+            >
+              Období analýzy
+            </label>
+            <div className="inline-flex rounded-lg shadow-sm" role="group">
+              {[
+                { value: "day", label: "Den", position: "first" },
+                { value: "week", label: "Týden", position: "middle" },
+                { value: "month", label: "Měsíc", position: "middle" },
+                { value: "year", label: "Rok", position: "last" },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() =>
+                    updateField(
+                      "timeframe",
+                      option.value as AnalysisFormData["timeframe"]
+                    )
+                  }
+                  disabled={isLoading}
+                  className={`px-4 py-2 text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    option.position === "first"
+                      ? "rounded-s-lg border-r-0"
+                      : option.position === "last"
+                      ? "rounded-e-lg"
+                      : "border-r-0"
+                  } ${
+                    formData.timeframe === option.value
+                      ? "bg-purple-600 text-white border-purple-600 hover:bg-purple-700 shadow-lg"
+                      : "bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700 hover:text-white"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
