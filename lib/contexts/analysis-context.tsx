@@ -21,6 +21,7 @@ interface Message {
 }
 
 interface AnalysisData {
+  id?: string;
   location: string;
   locationName: string;
   coordinates?: {
@@ -43,6 +44,8 @@ interface AnalysisContextType {
   showMapView: boolean;
   showAnalysisForm: boolean;
   fingerprint: string | null;
+  showFeedbackModal: boolean;
+  toastMessage: string;
 
   // Actions
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
@@ -53,6 +56,14 @@ interface AnalysisContextType {
   resetAnalysis: () => void;
   navigateHome: () => void;
   clearRestoredState: () => void;
+  triggerFeedbackIfEligible: () => void;
+  dismissFeedback: () => void;
+  submitFeedback: (
+    rating: number,
+    comment: string,
+    feedbackType: string
+  ) => Promise<void>;
+  showToast: (message: string) => void;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(
@@ -86,6 +97,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const [hasCompletedAnalysis, setHasCompletedAnalysis] = useState(false);
   const [showMapView, setShowMapView] = useState(false);
   const [showAnalysisForm, setShowAnalysisForm] = useState(true);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   // Generate fingerprint on mount
   useEffect(() => {
@@ -236,6 +249,76 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     // State management handled by user actions (resetAnalysis, navigateHome)
   }, [pathname]);
 
+  // Check if user is eligible for feedback prompt
+  const shouldShowFeedback = useCallback((): boolean => {
+    try {
+      const lastFeedbackDate = localStorage.getItem("lastFeedbackDate");
+      if (!lastFeedbackDate) return true;
+
+      const daysSinceLastFeedback =
+        (Date.now() - new Date(lastFeedbackDate).getTime()) /
+        (1000 * 60 * 60 * 24);
+      return daysSinceLastFeedback >= 7;
+    } catch {
+      return true;
+    }
+  }, []);
+
+  // Trigger feedback modal if eligible
+  const triggerFeedbackIfEligible = useCallback(() => {
+    if (hasCompletedAnalysis && shouldShowFeedback()) {
+      setShowFeedbackModal(true);
+    }
+  }, [hasCompletedAnalysis, shouldShowFeedback]);
+
+  // Dismiss feedback modal and update localStorage
+  const dismissFeedback = useCallback(() => {
+    setShowFeedbackModal(false);
+    try {
+      localStorage.setItem("lastFeedbackDate", new Date().toISOString());
+    } catch (error) {
+      console.error("Failed to save feedback date:", error);
+    }
+  }, []);
+
+  // Submit feedback to API
+  const submitFeedback = useCallback(
+    async (rating: number, comment: string, feedbackType: string) => {
+      try {
+        const response = await fetch("/api/feedback", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(fingerprint ? { "x-fingerprint": fingerprint } : {}),
+          },
+          body: JSON.stringify({
+            rating,
+            comment,
+            feedbackType,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to submit feedback");
+        }
+
+        // Show success toast
+        setToastMessage("Signál úspěšně přijat, díky za pomoc! 📡");
+        // Dismiss modal
+        dismissFeedback();
+      } catch (error) {
+        console.error("Failed to submit feedback:", error);
+        throw error;
+      }
+    },
+    [fingerprint, dismissFeedback]
+  );
+
+  // Show toast notification
+  const showToast = useCallback((message: string) => {
+    setToastMessage(message);
+  }, []);
+
   const value: AnalysisContextType = {
     messages,
     analysisData,
@@ -243,6 +326,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     showMapView,
     showAnalysisForm,
     fingerprint,
+    showFeedbackModal,
+    toastMessage,
     setMessages,
     setAnalysisData,
     setHasCompletedAnalysis,
@@ -251,6 +336,10 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     resetAnalysis,
     navigateHome,
     clearRestoredState,
+    triggerFeedbackIfEligible,
+    dismissFeedback,
+    submitFeedback,
+    showToast,
   };
 
   return (
