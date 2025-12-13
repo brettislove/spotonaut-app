@@ -31,6 +31,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files - only ignore files with secrets
+.env
 .env.local
 .env*.local
 .env.production.local
