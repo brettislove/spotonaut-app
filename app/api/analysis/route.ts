@@ -16,6 +16,17 @@ import {
 } from "@/lib/google-ai/usage";
 import type { BusinessType } from "@/lib/constants/business-types";
 
+// Debug: Log DATABASE_URL to check what Vercel is using
+console.log("DATABASE_URL in analysis route:", process.env.DATABASE_URL);
+console.log(
+  "DATABASE_URL starts with postgres:",
+  process.env.DATABASE_URL?.startsWith("postgres")
+);
+console.log(
+  "All env vars:",
+  Object.keys(process.env).filter((k) => k.includes("DATABASE"))
+);
+
 const prisma = new PrismaClient();
 
 interface AnalysisRequest {
