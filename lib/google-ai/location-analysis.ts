@@ -21,6 +21,7 @@ export interface GroundedCompetitor {
   userRatingsTotal?: number;
   priceLevel?: number;
   mapsUrl?: string;
+  openingHours?: string;
 }
 
 export interface GroundedFootfallProxy {
@@ -99,7 +100,8 @@ PŘESNÁ STRUKTURA JSON:
       "rating": number | null,
       "userRatingsTotal": number | null,
       "priceLevel": number | null,
-      "mapsUrl": string | null
+      "mapsUrl": string | null,
+      "openingHours": string | null
     }
   ],
   "footfallProxies": [
@@ -245,8 +247,9 @@ v České republice a vrať POUZE JSON objekt podle zadaného schématu.
   const rawText = (response as any).text || "";
 
   const jsonBlock = extractJsonBlock(rawText);
-  const parsed =
-    jsonBlock && safelyParseJson<GroundedLocationData>(jsonBlock);
+  const parsed = jsonBlock && safelyParseJson<GroundedLocationData>(jsonBlock);
+
+  console.log("Flash grounding response:", parsed);
 
   const usedMaps = hasGroundingMetadata(response);
   const sources = extractGroundingSources(response);
@@ -256,8 +259,7 @@ v České republice a vrať POUZE JSON objekt podle zadaného schématu.
         ...parsed,
         locationQuery: parsed.locationQuery || location,
         groundingStatus:
-          parsed.groundingStatus ||
-          (usedMaps ? "used" : "insufficient"),
+          parsed.groundingStatus || (usedMaps ? "used" : "insufficient"),
       }
     : {
         locationQuery: location,
@@ -292,8 +294,13 @@ interface ProAnalysisParams {
 export async function generateProAnalysisWithGrounding(
   params: ProAnalysisParams
 ): Promise<{ text: string; metrics: BusinessAnalysisMetrics }> {
-  const { location, businessType, operatingHours, timeframe, groundedLocation } =
-    params;
+  const {
+    location,
+    businessType,
+    operatingHours,
+    timeframe,
+    groundedLocation,
+  } = params;
 
   const timeframeLabels = {
     day: "den",
@@ -347,6 +354,56 @@ Formát JSON:
   return { text, metrics };
 }
 
+interface ProChatParams {
+  messages: Array<{ role: "user" | "model"; content: string }>;
+  groundedLocation: GroundedLocationData;
+}
+
+export async function generateProChatWithGrounding(
+  params: ProChatParams
+): Promise<{ text: string }> {
+  const { messages, groundedLocation } = params;
+
+  // Build conversation context
+  const conversationContext = messages
+    .slice(0, -1) // All messages except the last one
+    .map(
+      (msg) =>
+        `${msg.role === "user" ? "Uživatel" : "Asistent"}: ${msg.content}`
+    )
+    .join("\n\n");
+
+  const lastMessage = messages[messages.length - 1];
+  const currentQuery = lastMessage.content;
+
+  const structuredPrompt = `
+KONTEXT KONVERZACE:
+${conversationContext || "(žádný předchozí kontext)"}
+
+AKTUÁLNÍ DOTAZ:
+${currentQuery}
+
+**DODATEČNÁ STRUKTUROVANÁ DATA Z GOOGLE MAPS (locationData):**
+${JSON.stringify(groundedLocation, null, 2)}
+
+Tato data považuj za hlavní zdroj pravdy o konkrétní lokalitě. NEVYMÝŠLEJ si konkrétní geografická fakta, která nejsou v těchto datech zřejmá.
+
+Odpověz na aktuální dotaz s ohledem na předchozí konverzaci. Pokud se dotaz týká dříve provedené analýzy, odkazuj na konkrétní data a doporučení z té analýzy. Pokud se dotaz týká konkrétní lokality nebo míst v okolí, použij výhradně data z locationData výše. Pokud data nejsou k dispozici, jasně to uveď.
+`;
+
+  const proResponse = await genai.models.generateContent({
+    model: "gemini-2.5-pro",
+    contents: structuredPrompt,
+    config: {
+      systemInstruction: HYBRID_PRO_SYSTEM_PROMPT,
+    },
+  });
+
+  const text = (proResponse as any).text || "";
+
+  return { text };
+}
+
 interface OrchestratorParams {
   location: string;
   businessType: BusinessType;
@@ -359,8 +416,14 @@ interface OrchestratorParams {
 export async function analyzeLocationBusinessPotential(
   params: OrchestratorParams
 ): Promise<HybridAnalysisResult> {
-  const { location, businessType, operatingHours, timeframe, coordinates, useMapsGrounding } =
-    params;
+  const {
+    location,
+    businessType,
+    operatingHours,
+    timeframe,
+    coordinates,
+    useMapsGrounding,
+  } = params;
 
   let groundedLocation: GroundedLocationData;
   let usedMapsGrounding = false;
@@ -430,5 +493,3 @@ export async function analyzeLocationBusinessPotential(
     sources,
   };
 }
-
-

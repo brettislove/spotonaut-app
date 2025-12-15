@@ -231,6 +231,7 @@ export default function ChatInterface() {
             content: m.content,
           })),
           coordinates: analysisData?.coordinates,
+          groundedLocationData: analysisData?.groundedLocationData,
         }),
       });
 
@@ -339,6 +340,7 @@ export default function ChatInterface() {
           setAnalysisData({
             ...result.data,
             sources: result.sources || [],
+            groundedLocationData: result.groundedLocationData,
           });
           setShowMapView(true);
           setHasCompletedAnalysis(true);

@@ -195,7 +195,7 @@ export async function generateChatWithMaps(
   }
 
   const config: Parameters<typeof genai.models.generateContent>[0] = {
-    model: "gemini-2.5-flash",
+    model: "gemini-2.5-pro",
     contents,
     config: {
       systemInstruction: enableMaps

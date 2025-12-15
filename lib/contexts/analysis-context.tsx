@@ -35,6 +35,7 @@ interface AnalysisData {
     recommendedHours: string;
   };
   sources?: Array<{ title: string; uri: string }>;
+  groundedLocationData?: import("@/lib/google-ai/location-analysis").GroundedLocationData;
 }
 
 interface AnalysisContextType {

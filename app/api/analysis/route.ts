@@ -223,6 +223,7 @@ export async function POST(request: NextRequest) {
       },
       sources: groundingSources,
       usedMapsGrounding,
+      groundedLocationData: hybridResult.groundedLocation,
     });
   } catch (error) {
     console.error("Analysis API Error:", error);
