@@ -13,7 +13,7 @@ import SwitchingText from "./ui/switching-text";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import Image from "next/image";
 import type { BusinessType } from "@/lib/constants/business-types";
-import { Roboto } from "next/font/google";
+import { renderSourceLink } from "./grounding-sources";
 
 interface Message {
   id: string;
@@ -394,45 +394,6 @@ export default function ChatInterface() {
   const confirmNewAnalysis = () => {
     setShowConfirmDialog(false);
     navigateHome();
-  };
-
-  // Helper to render source links and apply Google Maps attribution styling when appropriate
-  const renderSourceLink = (source: { title: string; uri: string }) => {
-    const isGoogleMaps =
-      /maps\.google\.com/.test(source.uri) || source.title === "Google Maps";
-
-    // Button-like tab that shows a small heading and the source title
-    // For Google Maps links we add translate="no" and the GMP-attribution class
-    return (
-      <a
-        href={source.uri}
-        target="_blank"
-        rel="noopener noreferrer"
-        translate={isGoogleMaps ? "no" : undefined}
-        className={`inline-flex items-start gap-3 p-2 rounded-lg transition-colors text-left ${
-          isGoogleMaps
-            ? "GMP-attribution bg-slate-900/60 hover:bg-slate-900/80"
-            : "border-slate-700 bg-slate-800/60 hover:bg-slate-700"
-        }`}
-      >
-        <div className="flex flex-col">
-          <span className="text-[10px] leading-none text-slate-400 font-medium">
-            {isGoogleMaps
-              ? "Google Maps"
-              : (() => {
-                  try {
-                    return new URL(source.uri).hostname;
-                  } catch (e) {
-                    return source.title || "Source";
-                  }
-                })()}
-          </span>
-          <span className="text-sm text-slate-100 max-w-xs truncate">
-            {source.title}
-          </span>
-        </div>
-      </a>
-    );
   };
 
   // Mobile Results View
