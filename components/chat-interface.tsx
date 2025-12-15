@@ -13,12 +13,14 @@ import SwitchingText from "./ui/switching-text";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import Image from "next/image";
 import type { BusinessType } from "@/lib/constants/business-types";
+import { Roboto } from "next/font/google";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  sources?: Array<{ title: string; uri: string }>;
 }
 
 interface AnalysisFormData {
@@ -243,6 +245,7 @@ export default function ChatInterface() {
         role: "assistant",
         content: data.message,
         timestamp: new Date(),
+        sources: data.sources || [], // Include sources in the message
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -393,6 +396,45 @@ export default function ChatInterface() {
     navigateHome();
   };
 
+  // Helper to render source links and apply Google Maps attribution styling when appropriate
+  const renderSourceLink = (source: { title: string; uri: string }) => {
+    const isGoogleMaps =
+      /maps\.google\.com/.test(source.uri) || source.title === "Google Maps";
+
+    // Button-like tab that shows a small heading and the source title
+    // For Google Maps links we add translate="no" and the GMP-attribution class
+    return (
+      <a
+        href={source.uri}
+        target="_blank"
+        rel="noopener noreferrer"
+        translate={isGoogleMaps ? "no" : undefined}
+        className={`inline-flex items-start gap-3 p-2 rounded-lg transition-colors text-left ${
+          isGoogleMaps
+            ? "GMP-attribution bg-slate-900/60 hover:bg-slate-900/80"
+            : "border-slate-700 bg-slate-800/60 hover:bg-slate-700"
+        }`}
+      >
+        <div className="flex flex-col">
+          <span className="text-[10px] leading-none text-slate-400 font-medium">
+            {isGoogleMaps
+              ? "Google Maps"
+              : (() => {
+                  try {
+                    return new URL(source.uri).hostname;
+                  } catch (e) {
+                    return source.title || "Source";
+                  }
+                })()}
+          </span>
+          <span className="text-sm text-slate-100 max-w-xs truncate">
+            {source.title}
+          </span>
+        </div>
+      </a>
+    );
+  };
+
   // Mobile Results View
   if (showMapView && isMobile && analysisData) {
     return (
@@ -477,6 +519,7 @@ export default function ChatInterface() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {/* Google Maps attribution styles moved to `app/globals.css` */}
                   {messages.map((message) => (
                     <div
                       key={message.id}
@@ -514,6 +557,52 @@ export default function ChatInterface() {
                             minute: "2-digit",
                           })}
                         </div>
+
+                        {/* Sources - collapsible section */}
+                        {message.sources && message.sources.length > 0 && (
+                          <div className="mt-2">
+                            <button
+                              onClick={() => {
+                                const contentDiv = document.getElementById(
+                                  `sources-content-${message.id}`
+                                );
+                                if (contentDiv) {
+                                  contentDiv.classList.toggle("hidden");
+                                }
+                              }}
+                              aria-controls={`sources-content-${message.id}`}
+                              aria-expanded={false}
+                              className="inline-flex items-center cursor-pointer gap-2 text-sm px-2 py-1 bg-slate-800/30 border border-slate-700 rounded-md text-slate-200 hover:bg-slate-700 transition-colors"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="w-4 h-4 text-slate-300"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                aria-hidden
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              <span>Zobrazit zdroje</span>
+                            </button>
+                            <div
+                              id={`sources-content-${message.id}`}
+                              className="hidden mt-2 text-sm text-slate-400"
+                            >
+                              <div className="flex flex-wrap gap-2">
+                                {message.sources.map((source, index) => (
+                                  <div key={index}>
+                                    {renderSourceLink(source)}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -650,10 +739,64 @@ export default function ChatInterface() {
                                 : "bg-slate-800 text-slate-200"
                             }`}
                           >
-                            <div className="text-sm">
-                              {message.content.substring(0, 150)}
-                              {message.content.length > 150 ? "..." : ""}
-                            </div>
+                            <div
+                              className="text-sm"
+                              dangerouslySetInnerHTML={{
+                                __html: message.content
+                                  .replace(/```[\s\S]*?```/g, "")
+                                  .replace(
+                                    /\*\*(.*?)\*\*/g,
+                                    "<strong>$1</strong>"
+                                  )
+                                  .replace(/\n/g, "<br>"),
+                              }}
+                            />
+
+                            {/* Collapsible Sources Section */}
+                            {message.sources && message.sources.length > 0 && (
+                              <div className="mt-2">
+                                <button
+                                  onClick={() => {
+                                    const content = document.getElementById(
+                                      `sources-content-${message.id}`
+                                    );
+                                    if (content) {
+                                      content.classList.toggle("hidden");
+                                    }
+                                  }}
+                                  aria-controls={`sources-content-${message.id}`}
+                                  aria-expanded={false}
+                                  className="inline-flex items-center gap-2 text-sm px-2 py-1 bg-slate-800/30 border border-slate-700 rounded-md text-slate-200 hover:bg-slate-800/60 transition-colors"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="w-4 h-4 text-slate-300"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    aria-hidden
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  <span>Zobrazit zdroje</span>
+                                </button>
+                                <div
+                                  id={`sources-content-${message.id}`}
+                                  className="hidden mt-2 pl-4 text-sm text-slate-400"
+                                >
+                                  <div className="flex flex-wrap gap-2">
+                                    {message.sources.map((source, index) => (
+                                      <div key={index}>
+                                        {renderSourceLink(source)}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -852,6 +995,40 @@ export default function ChatInterface() {
                                     .replace(/\n/g, "<br>"),
                                 }}
                               />
+
+                              {/* Collapsible Sources Section */}
+                              {message.sources &&
+                                message.sources.length > 0 && (
+                                  <div className="mt-2">
+                                    <button
+                                      onClick={() => {
+                                        const content = document.getElementById(
+                                          `sources-content-${message.id}`
+                                        );
+                                        if (content) {
+                                          content.classList.toggle("hidden");
+                                        }
+                                      }}
+                                      className="text-blue-500 underline text-sm"
+                                    >
+                                      Zobrazit/Zavřít zdroje
+                                    </button>
+                                    <div
+                                      id={`sources-content-${message.id}`}
+                                      className="hidden mt-2 pl-4 text-sm text-slate-400"
+                                    >
+                                      <div className="flex flex-wrap gap-2">
+                                        {message.sources.map(
+                                          (source, index) => (
+                                            <div key={index}>
+                                              {renderSourceLink(source)}
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                             </div>
                           ))}
                         </div>

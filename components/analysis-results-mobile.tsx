@@ -9,6 +9,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  sources?: Array<{ title: string; uri: string }>;
 }
 
 interface AnalysisData {

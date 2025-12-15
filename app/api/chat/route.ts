@@ -105,7 +105,21 @@ Odpověz na aktuální dotaz s ohledem na předchozí konverzaci. Pokud se dotaz
         });
         text = response.text;
         groundingSources = extractGroundingSources(response);
+        console.log("Grounding sources extracted:", groundingSources);
         await incrementGlobalMapsUsage(prisma);
+
+        // Log maps grounding data for debugging
+        const grounding = response?.candidates?.[0]?.groundingMetadata;
+        console.log("response candidates", response?.candidates);
+        if (grounding?.groundingChunks) {
+          console.log("-".repeat(40));
+          console.log("Sources:");
+          for (const chunk of grounding.groundingChunks) {
+            if (chunk.maps) {
+              console.log(`- [${chunk.maps.title}](${chunk.maps.uri})`);
+            }
+          }
+        }
       } catch (mapsError) {
         console.error(
           "Maps grounding failed, falling back to basic:",

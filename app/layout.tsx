@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Roboto } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/auth-provider";
 import { AnalysisProvider } from "@/lib/contexts/analysis-context";
