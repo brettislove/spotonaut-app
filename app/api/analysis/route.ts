@@ -23,13 +23,6 @@ interface AnalysisRequest {
   fingerprint?: string;
 }
 
-const timeframeLabels = {
-  day: "den",
-  week: "týden",
-  month: "měsíc",
-  year: "rok",
-};
-
 export async function POST(request: NextRequest) {
   try {
     const data: AnalysisRequest = await request.json();
@@ -119,22 +112,22 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("Processing analysis request:", data);
- 
+
     // Run archive check opportunistically
     await archiveOldRecordsIfNeeded(prisma);
- 
+
     // Determine if we can use Maps grounding
     const canUseMaps = session && coordinates;
     let quotaStatus = null;
- 
+
     if (canUseMaps) {
       quotaStatus = await checkGlobalMapsQuota(prisma);
     }
- 
+
     const useMapsGrounding = Boolean(
-      canUseMaps && quotaStatus && (quotaStatus as any).allowed && coordinates
+      canUseMaps && quotaStatus && quotaStatus.allowed && coordinates
     );
- 
+
     // Run hybrid analysis (Flash grounding + Pro reasoning)
     const hybridResult = await analyzeLocationBusinessPotential({
       location: data.location,
@@ -144,12 +137,13 @@ export async function POST(request: NextRequest) {
       coordinates: coordinates || undefined,
       useMapsGrounding,
     });
- 
+
     const text = hybridResult.analysisText;
     const metrics: BusinessAnalysisMetrics = hybridResult.metrics;
-    let usedMapsGrounding = hybridResult.usedMapsGrounding;
-    let groundingSources: GroundingSource[] = hybridResult.sources || [];
- 
+
+    const usedMapsGrounding = hybridResult.usedMapsGrounding;
+    const groundingSources: GroundingSource[] = hybridResult.sources || [];
+
     // If Maps grounding was actually used, increment quota usage
     if (usedMapsGrounding) {
       try {
@@ -165,6 +159,13 @@ export async function POST(request: NextRequest) {
         ? geocodeData[0].display_name
         : data.location;
 
+    // Transform BusinessAnalysisMetrics into InputJsonObject
+    const metricsJsonObject = {
+      localityScore: metrics.localityScore,
+      footfallScore: metrics.footfallScore,
+      recommendedHours: metrics.recommendedHours,
+    };
+
     // Save analysis to database
     try {
       await prisma.analysis.create({
@@ -173,7 +174,7 @@ export async function POST(request: NextRequest) {
           locationName,
           location: data.location,
           coordinates: coordinates || undefined,
-          metrics: metrics,
+          metrics: metricsJsonObject, // Use transformed object here
           usedMapsGrounding,
           groundingSources:
             groundingSources.length > 0
