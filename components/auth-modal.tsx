@@ -17,6 +17,10 @@ export default function AuthModal({
   const [activeTab, setActiveTab] = useState<"login" | "signup">(mode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState(""); // added
+  const [confirmPasswordValid, setConfirmPasswordValid] = useState<
+    boolean | null
+  >(null); // new: null = untouched
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -40,6 +44,18 @@ export default function AuthModal({
     setIsLoading(true);
     setError("");
     setSuccess("");
+
+    // Basic validation: minimal length and matching confirm password
+    if (password.length < 6) {
+      setError("Heslo musí mít alespoň 6 znaků");
+      setIsLoading(false);
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Hesla se neshodují");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch("/api/auth/signup", {
@@ -67,6 +83,8 @@ export default function AuthModal({
         setSuccess("Účet byl vytvořen! Nyní se můžete přihlásit.");
         setActiveTab("login");
         setPassword("");
+        setConfirmPassword(""); // clear confirm after signup
+        setConfirmPasswordValid(null);
       }
     } catch (error) {
       setError(
@@ -142,6 +160,8 @@ export default function AuthModal({
               setActiveTab("login");
               setError("");
               setSuccess("");
+              setConfirmPassword(""); // clear confirm when switching
+              setConfirmPasswordValid(null);
             }}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
               activeTab === "login"
@@ -156,6 +176,8 @@ export default function AuthModal({
               setActiveTab("signup");
               setError("");
               setSuccess("");
+              setConfirmPassword(""); // clear confirm when switching
+              setConfirmPasswordValid(null);
             }}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
               activeTab === "signup"
@@ -259,7 +281,16 @@ export default function AuthModal({
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setPassword(val);
+                // Re-validate confirm immediately when password changes (only in signup mode)
+                if (activeTab === "signup") {
+                  setConfirmPasswordValid(
+                    confirmPassword ? val === confirmPassword : null
+                  );
+                }
+              }}
               required
               className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
               placeholder={
@@ -269,9 +300,48 @@ export default function AuthModal({
             />
           </div>
 
+          {activeTab === "signup" && (
+            <div className="mb-6">
+              <label className="block text-slate-300 text-sm font-medium mb-2">
+                Potvrzení hesla
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setConfirmPassword(val);
+                  setConfirmPasswordValid(password === val);
+                }}
+                required
+                className={`w-full bg-slate-800 text-white rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all ${
+                  confirmPasswordValid === false
+                    ? "border-red-500"
+                    : confirmPasswordValid === true
+                    ? "border-green-500"
+                    : "border-slate-700"
+                }`}
+                placeholder="Zopakujte heslo"
+                disabled={isLoading}
+              />
+
+              {/* Inline validation */}
+              {confirmPasswordValid === false && (
+                <p className="mt-2 text-sm text-red-400">Hesla se neshodují</p>
+              )}
+              {confirmPasswordValid === true && (
+                <p className="mt-2 text-sm text-green-400">Hesla se shodují</p>
+              )}
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={
+              isLoading ||
+              (activeTab === "signup" &&
+                (password.length < 6 || confirmPasswordValid !== true))
+            }
             className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
