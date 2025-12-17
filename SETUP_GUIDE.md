@@ -53,8 +53,6 @@ Your local database is at `prisma/dev.db`.
 
 ### 2. Environment Variables Setup
 
-### 2. Environment Variables Setup
-
 For local development, update `.env`:
 
 ```bash
