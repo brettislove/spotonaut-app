@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/api/auth/[...nextauth]/route";
-import { generateChatWithMaps } from "@/lib/google-ai/client";
 import {
-  checkGlobalMapsQuota,
-  incrementGlobalMapsUsage,
-  archiveOldRecordsIfNeeded,
-  extractGroundingSources,
-} from "@/lib/google-ai/usage";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+  generateProChatWithGrounding,
+  type GroundedLocationData,
+} from "@/lib/google-ai/location-analysis";
 
 // Character limit for messages (same as frontend)
 const MAX_MESSAGE_LENGTH = 2000;
@@ -29,14 +23,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { messages, coordinates } = await request.json();
+    const { messages, groundedLocationData } = await request.json();
 
     console.log("Received messages:", messages);
-    console.log("Coordinates for Maps grounding:", coordinates);
+    console.log("Grounded location data provided:", !!groundedLocationData);
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
         { error: "Messages array is required" },
+        { status: 400 }
+      );
+    }
+
+    // Require grounded location data
+    if (!groundedLocationData) {
+      return NextResponse.json(
+        {
+          error:
+            "Grounded location data is required. Please complete an analysis first.",
+        },
         { status: 400 }
       );
     }
@@ -63,72 +68,47 @@ export async function POST(request: NextRequest) {
 
     console.log("Generating response for:", lastMessage.content);
 
-    // Build context from conversation history
-    // Include all messages to provide full context about the analysis
-    let contextualPrompt = lastMessage.content;
-
-    if (messages.length > 1) {
-      // Add context from previous messages
-      const conversationContext = messages
-        .slice(0, -1) // All messages except the last one
-        .map(
-          (msg: { role: string; content: string }) =>
-            `${msg.role === "user" ? "Uživatel" : "Asistent"}: ${msg.content}`
-        )
-        .join("\n\n");
-
-      contextualPrompt = `
-KONTEXT KONVERZACE:
-${conversationContext}
-
-AKTUÁLNÍ DOTAZ:
-${lastMessage.content}
-
-Odpověz na aktuální dotaz s ohledem na předchozí konverzaci. Pokud se dotaz týká dříve provedené analýzy, odkazuj na konkrétní data a doporučení z té analýzy.
-`;
-    }
-
-    // Check quota and archive old records
-    await archiveOldRecordsIfNeeded(prisma);
-    const canUseMaps = await checkGlobalMapsQuota(prisma);
-
-    let text: string | undefined;
-    let groundingSources: Array<{ title: string; uri: string }> = [];
-
-    if (canUseMaps) {
-      // Try with Maps grounding
-      try {
-        const response = await generateChatWithMaps(contextualPrompt, {
-          enableMaps: true,
-          latitude: coordinates?.lat,
-          longitude: coordinates?.lng,
-        });
-        text = response.text;
-        groundingSources = extractGroundingSources(response);
-        await incrementGlobalMapsUsage(prisma);
-      } catch (mapsError) {
-        console.error(
-          "Maps grounding failed, falling back to basic:",
-          mapsError
-        );
-        // Silent fallback to basic generation
-        const response = await generateChatWithMaps(contextualPrompt, {
-          enableMaps: false,
-        });
-        text = response.text;
-      }
-    } else {
-      // Quota exceeded, use basic generation
-      const response = await generateChatWithMaps(contextualPrompt, {
-        enableMaps: false,
+    // Use Pro model with stored grounded location data
+    // This prevents hallucinations and doesn't require additional Maps API calls
+    try {
+      console.log("Using Pro model with stored grounded location data");
+      const proResult = await generateProChatWithGrounding({
+        messages: messages.map((msg: { role: string; content: string }) => ({
+          role: msg.role === "user" ? "user" : "model",
+          content: msg.content,
+        })),
+        groundedLocation: groundedLocationData as GroundedLocationData,
       });
-      text = response.text;
-    }
 
-    return NextResponse.json({
-      message: text || "Omlouváme se, nepodařilo se vygenerovat odpověď.",
-      sources: groundingSources,
-    });
+      const text = proResult.text;
+      // Extract sources from the grounded location data if available
+      const groundingSources: Array<{ title: string; uri: string }> = [];
+      if (groundedLocationData.primaryMapsUrl) {
+        groundingSources.push({
+          title:
+            groundedLocationData.resolvedAddress ||
+            groundedLocationData.locationQuery,
+          uri: groundedLocationData.primaryMapsUrl,
+        });
+      }
+
+      return NextResponse.json({
+        message: text || "Omlouváme se, nepodařilo se vygenerovat odpověď.",
+        sources: groundingSources,
+      });
+    } catch (proError) {
+      console.error("Pro chat with grounding failed:", proError);
+      return NextResponse.json(
+        {
+          error: "Nepodařilo se vygenerovat odpověď",
+          details:
+            proError instanceof Error
+              ? proError.message
+              : "Unknown error occurred",
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error("Chat API Error:", error);
     const errorMessage =

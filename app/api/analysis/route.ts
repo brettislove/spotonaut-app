@@ -2,19 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { auth } from "@/app/api/auth/[...nextauth]/route";
 import {
-  generateWithMaps,
-  BASIC_SYSTEM_PROMPT,
-  MAPS_ENHANCED_SYSTEM_PROMPT,
-} from "@/lib/google-ai/client";
-import {
   checkGlobalMapsQuota,
   incrementGlobalMapsUsage,
   archiveOldRecordsIfNeeded,
-  hasGroundingMetadata,
-  extractGroundingSources,
   type GroundingSource,
 } from "@/lib/google-ai/usage";
 import type { BusinessType } from "@/lib/constants/business-types";
+import {
+  analyzeLocationBusinessPotential,
+  type BusinessAnalysisMetrics,
+} from "@/lib/google-ai/location-analysis";
 
 // Debug: Log DATABASE_URL to check what Vercel is using
 console.log("DATABASE_URL in analysis route:", process.env.DATABASE_URL);
@@ -36,13 +33,6 @@ interface AnalysisRequest {
   timeframe: "day" | "week" | "month" | "year";
   fingerprint?: string;
 }
-
-const timeframeLabels = {
-  day: "den",
-  week: "týden",
-  month: "měsíc",
-  year: "rok",
-};
 
 export async function POST(request: NextRequest) {
   try {
@@ -132,45 +122,7 @@ export async function POST(request: NextRequest) {
       // Continue without coordinates
     }
 
-    // Create structured prompt with all data and request for structured metrics
-    const structuredPrompt = `
-  Proveď STRUČNOU analýzu obchodní lokality s následujícími daty:
-
-  **VSTUPNÍ DATA:**
-  - Lokalita: ${data.location}
-  - Typ podnikání: ${data.businessType.type}
-  - Kategorie: ${data.businessType.category}
-  - Provozní hodiny za týden: ${data.operatingHours} hodin
-  - Průměrná útrata zákazníka: ${data.businessType.avgSpend} Kč
-  - Konverzní poměr: ${(data.businessType.conversionRate * 100).toFixed(1)}%
-  - Časový rámec analýzy: ${timeframeLabels[data.timeframe]}
-
-  **POŽADOVANÁ ANALÝZA:**
-  Napiš pouze 2-3 věty shrnující klíčové poznatky o této lokalitě - její typ, potenciál a hlavní doporučení.
-
-  📊 METRIKY (POVINNÉ - na samém konci odpovědi)
-    Na konec své odpovědi přidej JSON objekt s přesnými metrikami.
-    Formát JSON:
-    
-    - Začni s: \`\`\`json
-    - Poté objekt s těmito PŘESNÝMI klíči:
-      * localityScore: číslo 1-100 (celkové hodnocení lokality)
-      * footfallScore: číslo 1-100 (hodnocení návštěvnosti)
-      * recommendedHours: string ve formátu "7-22" (doporučené provozní hodiny)
-    - Ukonči s: \`\`\`
-    
-    Příklad struktury (použij své vypočtené hodnoty):
-    \`\`\`json
-    { "localityScore": 78, "footfallScore": 82, "recommendedHours": "6-22" }
-    \`\`\`
-    
-    KRITICKY DŮLEŽITÉ: Tento JSON blok MUSÍ být na konci odpovědi.
-`;
-
-    // Track whether Maps grounding was used and extracted sources
-    let usedMapsGrounding = false;
-    let groundingSources: GroundingSource[] = [];
-    let text = "";
+    console.log("Processing analysis request:", data);
 
     // Run archive check opportunistically
     await archiveOldRecordsIfNeeded(prisma);
@@ -183,85 +135,33 @@ export async function POST(request: NextRequest) {
       quotaStatus = await checkGlobalMapsQuota(prisma);
     }
 
-    // Try Maps-grounded analysis for authenticated users with coordinates and quota
-    if (canUseMaps && quotaStatus?.allowed && coordinates) {
+    const useMapsGrounding = Boolean(
+      canUseMaps && quotaStatus && quotaStatus.allowed && coordinates
+    );
+
+    // Run hybrid analysis (Flash grounding + Pro reasoning)
+    const hybridResult = await analyzeLocationBusinessPotential({
+      location: data.location,
+      businessType: data.businessType,
+      operatingHours: data.operatingHours,
+      timeframe: data.timeframe,
+      coordinates: coordinates || undefined,
+      useMapsGrounding,
+    });
+
+    const text = hybridResult.analysisText;
+    const metrics: BusinessAnalysisMetrics = hybridResult.metrics;
+
+    const usedMapsGrounding = hybridResult.usedMapsGrounding;
+    const groundingSources: GroundingSource[] = hybridResult.sources || [];
+
+    // If Maps grounding was actually used, increment quota usage
+    if (usedMapsGrounding) {
       try {
-        console.log("Attempting Maps-grounded analysis...");
-        const mapsResponse = await generateWithMaps(structuredPrompt, {
-          enableMaps: true,
-          latitude: coordinates.lat,
-          longitude: coordinates.lng,
-          systemPrompt: MAPS_ENHANCED_SYSTEM_PROMPT,
-        });
-
-        text = mapsResponse.text || "";
-
-        // Check if Maps grounding was actually used
-        if (hasGroundingMetadata(mapsResponse)) {
-          usedMapsGrounding = true;
-          groundingSources = extractGroundingSources(mapsResponse);
-          await incrementGlobalMapsUsage(prisma);
-          console.log(
-            "Maps grounding successful, sources:",
-            groundingSources.length
-          );
-        } else {
-          console.log(
-            "Maps grounding returned no metadata, using response anyway"
-          );
-        }
-      } catch (mapsError) {
-        console.error(
-          "Maps grounding failed, falling back to basic:",
-          mapsError
-        );
-        // Silent fallback - will try basic analysis below
-        text = "";
+        await incrementGlobalMapsUsage(prisma);
+      } catch (quotaError) {
+        console.error("Failed to increment Maps usage:", quotaError);
       }
-    }
-
-    // Fallback to basic analysis if Maps failed or not available
-    if (!text) {
-      console.log("Using basic analysis (no Maps grounding)");
-      try {
-        const basicResponse = await generateWithMaps(structuredPrompt, {
-          enableMaps: false,
-          systemPrompt: BASIC_SYSTEM_PROMPT,
-        });
-        text = basicResponse.text || "";
-      } catch (basicError) {
-        console.error("Basic analysis also failed:", basicError);
-        text = "";
-      }
-    }
-
-    console.log("Analysis complete");
-
-    // Extract metrics from JSON at the end of the response
-    let metrics = {
-      localityScore: 50,
-      footfallScore: 50,
-      recommendedHours: "8-20",
-    };
-
-    // Try to extract JSON metrics from the response
-    const jsonMatch = text.match(/```json\s*({[\s\S]*?})\s*```/);
-    if (jsonMatch && jsonMatch[1]) {
-      try {
-        const parsedMetrics = JSON.parse(jsonMatch[1]);
-        metrics = {
-          localityScore: parsedMetrics.localityScore || metrics.localityScore,
-          footfallScore: parsedMetrics.footfallScore || metrics.footfallScore,
-          recommendedHours:
-            parsedMetrics.recommendedHours || metrics.recommendedHours,
-        };
-        console.log("Successfully extracted metrics from JSON:", metrics);
-      } catch (error) {
-        console.error("Failed to parse JSON metrics:", error);
-        // Keep fallback metrics
-      }
-    } else {
-      console.warn("No JSON metrics found in response, using fallback values");
     }
 
     // Get location name from geocoding data
@@ -269,6 +169,13 @@ export async function POST(request: NextRequest) {
       geocodeData && geocodeData.length > 0
         ? geocodeData[0].display_name
         : data.location;
+
+    // Transform BusinessAnalysisMetrics into InputJsonObject
+    const metricsJsonObject = {
+      localityScore: metrics.localityScore,
+      footfallScore: metrics.footfallScore,
+      recommendedHours: metrics.recommendedHours,
+    };
 
     // Save analysis to database
     try {
@@ -278,7 +185,7 @@ export async function POST(request: NextRequest) {
           locationName,
           location: data.location,
           coordinates: coordinates || undefined,
-          metrics: metrics,
+          metrics: metricsJsonObject, // Use transformed object here
           usedMapsGrounding,
           groundingSources:
             groundingSources.length > 0
@@ -328,6 +235,7 @@ export async function POST(request: NextRequest) {
       },
       sources: groundingSources,
       usedMapsGrounding,
+      groundedLocationData: hybridResult.groundedLocation,
     });
   } catch (error) {
     console.error("Analysis API Error:", error);

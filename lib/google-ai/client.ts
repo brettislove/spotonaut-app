@@ -68,11 +68,6 @@ export const BASIC_SYSTEM_PROMPT = `
   - Obytná čtvrť: "6-20" (ráno + večer)
   - Dopravní uzel (nádraží): "5-23" (dlouhé hodiny)
   
-  Přizpůsob podle typu produktu:
-  - Káva: důraz na ranní hodiny (6-10)
-  - Snacky: odpolední špička (14-18)
-  - Studené nápoje: delší rozsah v létě
-  
   Pravidla:
   1. Text analýzy: pouze 2-3 věty, stručně a jasně
   2. JSON metriky: MUSÍ být na konci
@@ -116,7 +111,7 @@ export const BASIC_SYSTEM_PROMPT = `
 export const MAPS_ENHANCED_SYSTEM_PROMPT = `${BASIC_SYSTEM_PROMPT}
 
   DODATEČNÉ INSTRUKCE PRO MAPS GROUNDING:
-  Pokud máš přístup k datům Google Maps, zahrň do analýzy:
+  Pokud máš přístup k datům Google Maps, MUSÍŠ zahrnout do analýzy:
   - Počet podobných podniků v okolí 500m (konkurence)
   - Převládající sentiment z recenzí zákazníků (pozitivní/neutrální/negativní)
   - Typické provozní hodiny konkurence pro srovnání

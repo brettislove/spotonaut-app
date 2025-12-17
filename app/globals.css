@@ -115,3 +115,17 @@ body {
 .animate-blink {
   animation: blink 1s step-end infinite;
 }
+
+/* Google Maps attribution styling (per Google Maps attribution guidelines) */
+.GMP-attribution {
+  font-family: Roboto, Sans-Serif;
+  font-style: normal;
+  font-weight: 400;
+  /* 0.75rem chosen (≈12px). Guidelines: min 12sp, max 16sp. */
+  font-size: 0.75rem;
+  letter-spacing: normal;
+  white-space: nowrap; /* Do not wrap "Google Maps" text */
+  color: white; /* acceptable gray per guidelines */
+  text-decoration: none;
+}
+
