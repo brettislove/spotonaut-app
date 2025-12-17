@@ -15,13 +15,13 @@ export interface Coordinates {
 
 export interface GroundedCompetitor {
   name: string;
-  category?: string;
-  distanceMeters?: number;
-  rating?: number;
-  userRatingsTotal?: number;
-  priceLevel?: number;
-  mapsUrl?: string;
-  openingHours?: string;
+  category?: string | null;
+  distanceMeters?: number | null;
+  rating?: number | null;
+  userRatingsTotal?: number | null;
+  priceLevel?: number | null;
+  mapsUrl?: string | null;
+  openingHours?: string | null;
 }
 
 export interface GroundedFootfallProxy {
@@ -38,19 +38,19 @@ export interface GroundedLocationData {
   /**
    * Resolved human-readable address/name of the primary place
    */
-  resolvedAddress?: string;
-  coordinates?: Coordinates;
-  primaryPlaceId?: string;
-  primaryMapsUrl?: string;
-  categories?: string[];
+  resolvedAddress?: string | null;
+  coordinates?: Coordinates | null;
+  primaryPlaceId?: string | null;
+  primaryMapsUrl?: string | null;
+  categories?: string[] | null;
 
   competitors: GroundedCompetitor[];
   footfallProxies: GroundedFootfallProxy[];
 
-  averageRating?: number;
+  averageRating?: number | null;
   reviewSentiment?: "positive" | "mixed" | "negative" | "unknown";
 
-  notes?: string;
+  notes?: string | null;
   groundingStatus: GroundingStatus;
 }
 
@@ -244,7 +244,7 @@ v České republice a vrať POUZE JSON objekt podle zadaného schématu.
   }
 
   const response = await genai.models.generateContent(config);
-  const rawText = (response as any).text || "";
+  const rawText = response.text || "";
 
   const jsonBlock = extractJsonBlock(rawText);
   const parsed = jsonBlock && safelyParseJson<GroundedLocationData>(jsonBlock);
@@ -348,7 +348,7 @@ Formát JSON:
     },
   });
 
-  const text = (proResponse as any).text || "";
+  const text = proResponse.text || "";
   const metrics = extractMetricsFromText(text);
 
   return { text, metrics };
@@ -399,7 +399,7 @@ Odpověz na aktuální dotaz s ohledem na předchozí konverzaci. Pokud se dotaz
     },
   });
 
-  const text = (proResponse as any).text || "";
+  const text = proResponse.text || "";
 
   return { text };
 }
