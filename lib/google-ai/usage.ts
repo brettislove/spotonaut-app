@@ -169,14 +169,14 @@ export function extractGroundingSources(
     }
 
     return groundingMetadata.groundingChunks
-      .filter((chunk) => chunk.web?.uri || chunk.retrievedContext?.uri)
+      .filter((chunk) => chunk.maps?.uri || chunk.retrievedContext?.uri)
       .map((chunk) => {
         // Handle different chunk types
-        if (chunk.web) {
+        if (chunk.maps) {
           return {
             placeId: "",
-            title: chunk.web.title || "Google Maps",
-            uri: chunk.web.uri || "",
+            title: chunk.maps.title || "Google Maps",
+            uri: chunk.maps.uri || "",
           };
         }
         return {

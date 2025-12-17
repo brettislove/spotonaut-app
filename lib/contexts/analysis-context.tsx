@@ -18,6 +18,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  sources?: Array<{ title: string; uri: string }>;
 }
 
 interface AnalysisData {
@@ -34,6 +35,7 @@ interface AnalysisData {
     recommendedHours: string;
   };
   sources?: Array<{ title: string; uri: string }>;
+  groundedLocationData?: import("@/lib/google-ai/location-analysis").GroundedLocationData;
 }
 
 interface AnalysisContextType {
