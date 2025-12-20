@@ -332,7 +332,7 @@ export default function AnalysisForm({
               type="button"
               onClick={() => setIsLocationPickerOpen(true)}
               disabled={isLoading}
-              className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-400 hover:text-blue-400 transition-colors disabled:opacity-50"
+              className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-400 hover:text-blue-400 transition-colors disabled:opacity-50"
               title="Vybrat z mapy"
             >
               <span>Vybrat z mapy</span>
@@ -446,45 +446,6 @@ export default function AnalysisForm({
             )}
           </div>
 
-          {/* <div>
-            <label
-              htmlFor="avgSpend"
-              className="block mb-2 text-sm font-medium text-slate-200"
-            >
-              Průměrná útrata (Kč)
-            </label>
-            <div className="space-y-3">
-              <input
-                id="avgSpend"
-                type="range"
-                min="1"
-                max="200"
-                value={formData.avgSpend}
-                onChange={(e) =>
-                  updateField("avgSpend", parseInt(e.target.value))
-                }
-                disabled={isLoading}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: `linear-gradient(to right, rgb(139 92 246) 0%, rgb(139 92 246) ${
-                    ((formData.avgSpend - 1) / 199) * 100
-                  }%, rgb(55 65 81) ${
-                    ((formData.avgSpend - 1) / 199) * 100
-                  }%, rgb(55 65 81) 100%)`,
-                }}
-              />
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500">1 Kč</span>
-                <span className="px-3 py-1.5 text-sm font-semibold text-white bg-purple-600 border border-purple-500 rounded-lg">
-                  {formData.avgSpend} Kč
-                </span>
-                <span className="text-sm text-slate-500">200 Kč</span>
-              </div>
-            </div>
-            {errors.avgSpend && (
-              <p className="mt-2 text-sm text-red-500">{errors.avgSpend}</p>
-            )}
-          </div> */}
           {/* Timeframe */}
           <div>
             <label
