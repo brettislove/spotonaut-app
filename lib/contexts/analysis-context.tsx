@@ -64,7 +64,7 @@ interface AnalysisContextType {
     rating: number,
     comment: string,
     feedbackType: string
-  ) => Promise<void>;
+  ) => Promise<boolean>;
   showToast: (message: string) => void;
 }
 
@@ -328,7 +328,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         setToastMessage("Signál úspěšně přijat, díky za pomoc! 📡");
         // Dismiss modal
         dismissFeedback();
-        
+
         // Return true to indicate successful submission
         return true;
       } catch (error) {
