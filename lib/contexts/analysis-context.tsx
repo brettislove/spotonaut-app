@@ -58,7 +58,7 @@ interface AnalysisContextType {
   resetAnalysis: () => void;
   navigateHome: () => void;
   clearRestoredState: () => void;
-  triggerFeedbackIfEligible: () => void;
+  triggerFeedbackIfEligible: () => boolean;
   dismissFeedback: () => void;
   submitFeedback: (
     rating: number,
@@ -136,6 +136,13 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Check if user explicitly wants to start fresh (e.g., clicked logo)
+      const shouldSkipRestore = sessionStorage.getItem("skipAnalysisRestore");
+      if (shouldSkipRestore === "true") {
+        sessionStorage.removeItem("skipAnalysisRestore");
+        return;
+      }
+
       let stored = localStorage.getItem(storageKey);
 
       // If user just authenticated, try to find data from fingerprint storage
@@ -147,6 +154,15 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         if (stored) {
           localStorage.setItem(storageKey, stored);
           localStorage.removeItem(fingerprintKey);
+        }
+      }
+
+      // Don't restore if user is logged out but data belongs to a logged-in user
+      if (stored && !session?.user?.email) {
+        // Check if this is email-based storage (belongs to logged-in user)
+        if (storageKey.startsWith("analysis_") && storageKey.includes("@")) {
+          // This is email-based storage, don't restore for logged-out users
+          return;
         }
       }
 
@@ -241,6 +257,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
 
   // Navigate to home and reset
   const navigateHome = useCallback(() => {
+    // Set flag to skip restoration on next page load
+    sessionStorage.setItem("skipAnalysisRestore", "true");
     resetAnalysis();
     router.push("/");
   }, [resetAnalysis, router]);
@@ -267,10 +285,12 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Trigger feedback modal if eligible
-  const triggerFeedbackIfEligible = useCallback(() => {
+  const triggerFeedbackIfEligible = useCallback((): boolean => {
     if (hasCompletedAnalysis && shouldShowFeedback()) {
       setShowFeedbackModal(true);
+      return true;
     }
+    return false;
   }, [hasCompletedAnalysis, shouldShowFeedback]);
 
   // Dismiss feedback modal and update localStorage
@@ -308,6 +328,9 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         setToastMessage("Signál úspěšně přijat, díky za pomoc! 📡");
         // Dismiss modal
         dismissFeedback();
+        
+        // Return true to indicate successful submission
+        return true;
       } catch (error) {
         console.error("Failed to submit feedback:", error);
         throw error;

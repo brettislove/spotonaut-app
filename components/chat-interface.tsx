@@ -10,6 +10,7 @@ import AnalysisResultsMobile from "./analysis-results-mobile";
 import MapView from "./map-view";
 import RotatingText from "./ui/rotating-text";
 import SwitchingText from "./ui/switching-text";
+import AnalysisProgress, { type ProgressStep } from "./analysis-progress";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import Image from "next/image";
 import type { BusinessType } from "@/lib/constants/business-types";
@@ -67,6 +68,12 @@ export default function ChatInterface() {
   const [pendingAnalysisData, setPendingAnalysisData] =
     useState<AnalysisFormData | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingNewAnalysis, setPendingNewAnalysis] = useState(false);
+  const [progressStep, setProgressStep] = useState<ProgressStep>("geocoding");
+  const [streamingText, setStreamingText] = useState("");
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
+    null
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
 
@@ -295,6 +302,9 @@ export default function ChatInterface() {
       }
 
       setIsLoading(true);
+      setProgressStep("geocoding");
+      setStreamingText("");
+      setStreamingMessageId(null);
 
       try {
         const response = await fetch("/api/analysis", {
@@ -308,44 +318,143 @@ export default function ChatInterface() {
           }),
         });
 
-        const result = await response.json();
-
         if (!response.ok) {
-          // Check if it's a usage limit error
-          if (response.status === 403 && result.requiresAuth) {
+          const errorData = await response.json().catch(() => ({}));
+          if (response.status === 403 && errorData.requiresAuth) {
             setAuthModalMode("signup");
             setShowAuthModal(true);
             setShowAnalysisForm(true);
+            setIsLoading(false);
             return;
           }
-          throw new Error(result.error || "Failed to get analysis");
+          throw new Error(errorData.error || "Failed to get analysis");
         }
 
-        // Mark that free analysis has been used (for anonymous users)
-        if (!session) {
-          localStorage.setItem("hasUsedFreeAnalysis", "true");
-        }
+        // Check if response is streaming (text/event-stream)
+        const contentType = response.headers.get("content-type");
+        if (contentType?.includes("text/event-stream")) {
+          // Handle streaming response
+          const reader = response.body?.getReader();
+          const decoder = new TextDecoder();
 
-        const assistantMessage: Message = {
-          id: Date.now().toString(),
-          role: "assistant",
-          content: result.analysis,
-          timestamp: new Date(),
-        };
+          if (!reader) {
+            throw new Error("No response body");
+          }
 
-        setMessages((prev) => [...prev, assistantMessage]);
+          // Create streaming message
+          const messageId = Date.now().toString();
+          setStreamingMessageId(messageId);
+          const assistantMessage: Message = {
+            id: messageId,
+            role: "assistant",
+            content: "",
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, assistantMessage]);
 
-        // Show map view with analysis data
-        if (result.data) {
-          setAnalysisData({
-            ...result.data,
-            sources: result.sources || [],
-            groundedLocationData: result.groundedLocationData,
-          });
-          setShowMapView(true);
-          setHasCompletedAnalysis(true);
-          // Hide form only after successful analysis
-          setShowAnalysisForm(false);
+          let buffer = "";
+          let fullAnalysisText = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+
+                  if (data.type === "progress") {
+                    setProgressStep(data.step);
+                  } else if (data.type === "chunk") {
+                    fullAnalysisText += data.text;
+                    setStreamingText(fullAnalysisText);
+                    // Update message content
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === messageId
+                          ? { ...msg, content: fullAnalysisText }
+                          : msg
+                      )
+                    );
+                  } else if (data.type === "done") {
+                    // Mark that free analysis has been used (for anonymous users)
+                    if (!session) {
+                      localStorage.setItem("hasUsedFreeAnalysis", "true");
+                    }
+
+                    // Update final message
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === messageId
+                          ? {
+                              ...msg,
+                              content: data.analysis,
+                              sources: data.sources || [],
+                            }
+                          : msg
+                      )
+                    );
+
+                    // Show map view with analysis data
+                    if (data.data) {
+                      setAnalysisData({
+                        ...data.data,
+                        sources: data.sources || [],
+                        groundedLocationData: data.groundedLocationData,
+                      });
+                      setShowMapView(true);
+                      setHasCompletedAnalysis(true);
+                      setShowAnalysisForm(false);
+                    }
+
+                    setStreamingText("");
+                    setStreamingMessageId(null);
+                    setProgressStep("complete");
+                  } else if (data.type === "error") {
+                    throw new Error(
+                      data.error || data.details || "Analysis failed"
+                    );
+                  }
+                } catch (parseError) {
+                  console.error("Error parsing SSE data:", parseError);
+                }
+              }
+            }
+          }
+        } else {
+          // Fallback to non-streaming response (for backward compatibility)
+          const result = await response.json();
+
+          // Mark that free analysis has been used (for anonymous users)
+          if (!session) {
+            localStorage.setItem("hasUsedFreeAnalysis", "true");
+          }
+
+          const assistantMessage: Message = {
+            id: Date.now().toString(),
+            role: "assistant",
+            content: result.analysis,
+            timestamp: new Date(),
+          };
+
+          setMessages((prev) => [...prev, assistantMessage]);
+
+          // Show map view with analysis data
+          if (result.data) {
+            setAnalysisData({
+              ...result.data,
+              sources: result.sources || [],
+              groundedLocationData: result.groundedLocationData,
+            });
+            setShowMapView(true);
+            setHasCompletedAnalysis(true);
+            setShowAnalysisForm(false);
+          }
         }
       } catch (error) {
         console.error("Error getting analysis:", error);
@@ -359,6 +468,9 @@ export default function ChatInterface() {
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, errorMessage]);
+        setStreamingText("");
+        setStreamingMessageId(null);
+        setProgressStep("geocoding");
       } finally {
         setIsLoading(false);
       }
@@ -384,8 +496,15 @@ export default function ChatInterface() {
 
   const handleNewAnalysis = () => {
     // Trigger feedback modal if eligible (before showing confirmation or navigating)
-    triggerFeedbackIfEligible();
+    const feedbackShown = triggerFeedbackIfEligible();
 
+    // If feedback modal will be shown, mark that we have a pending new analysis
+    if (feedbackShown) {
+      setPendingNewAnalysis(true);
+      return; // Wait for feedback to be submitted/dismissed
+    }
+
+    // If no feedback modal, proceed with new analysis
     if (hasCompletedAnalysis) {
       setShowConfirmDialog(true);
     } else {
@@ -418,9 +537,83 @@ export default function ChatInterface() {
         />
         <FeedbackModal
           isOpen={showFeedbackModal}
-          onClose={dismissFeedback}
-          onSubmit={submitFeedback}
+          onClose={() => {
+            dismissFeedback();
+            // If there was a pending new analysis, proceed with it
+            if (pendingNewAnalysis) {
+              setPendingNewAnalysis(false);
+              if (hasCompletedAnalysis) {
+                setShowConfirmDialog(true);
+              } else {
+                navigateHome();
+              }
+            }
+          }}
+          onSubmit={async (rating, comment, feedbackType) => {
+            try {
+              await submitFeedback(rating, comment, feedbackType);
+              // If there was a pending new analysis, proceed with it after successful submission
+              if (pendingNewAnalysis) {
+                setPendingNewAnalysis(false);
+                if (hasCompletedAnalysis) {
+                  setShowConfirmDialog(true);
+                } else {
+                  navigateHome();
+                }
+              }
+            } catch (error) {
+              // Error handling is done in submitFeedback
+              throw error;
+            }
+          }}
         />
+        {/* Confirmation Dialog for Mobile */}
+        {showConfirmDialog && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg
+                    className="w-6 h-6 text-yellow-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-white font-semibold text-lg mb-2">
+                    Zahájit novou analýzu?
+                  </h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Spuštění nové analýzy smaže aktuální výsledky a historii
+                    konverzace. Tato akce je nevratná.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowConfirmDialog(false)}
+                  className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-lg transition-all border border-slate-700"
+                >
+                  Zrušit
+                </button>
+                <button
+                  onClick={confirmNewAnalysis}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium rounded-lg transition-all shadow-lg"
+                >
+                  Pokračovat
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <Toast message={toastMessage} onDismiss={() => showToast("")} />
       </>
     );
@@ -670,24 +863,11 @@ export default function ChatInterface() {
                           className="w-32 h-32 animate-pulse"
                         />
                       </div>
-                      <div className="text-center space-y-4">
-                        <h3 className="text-2xl font-bold text-white">
-                          <SwitchingText
-                            words={[
-                              "Analyzuji lokalitu...",
-                              "Zjišťuji hustotu provozu...",
-                              "Mapuji konkurenci...",
-                              "Počítám potenciální tržby...",
-                              "Vyhodnocuji data...",
-                            ]}
-                            className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600"
-                            interval={3000}
-                          />
-                        </h3>
-                        <p className="text-slate-400 text-sm max-w-md">
-                          Náš AI agent zpracovává vaše data a připravuje
-                          komplexní analýzu lokality.
-                        </p>
+                      <div className="w-full max-w-md space-y-6">
+                        <AnalysisProgress
+                          currentStep={progressStep}
+                          streamingText={streamingText}
+                        />
                       </div>
                     </div>
                   ) : messages.length > 0 ? (
@@ -914,24 +1094,11 @@ export default function ChatInterface() {
                             className="w-36 h-36 animate-pulse"
                           />
                         </div>
-                        <div className="text-center space-y-4">
-                          <h3 className="text-3xl font-bold text-white">
-                            <SwitchingText
-                              words={[
-                                "Analyzuji lokalitu...",
-                                "Zjišťuji hustotu provozu...",
-                                "Mapuji konkurenci...",
-                                "Počítám potenciální tržby...",
-                                "Vyhodnocuji data...",
-                              ]}
-                              className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600"
-                              interval={3000}
-                            />
-                          </h3>
-                          <p className="text-slate-400 max-w-md">
-                            Náš AI agent zpracovává vaše data a připravuje
-                            komplexní analýzu lokality.
-                          </p>
+                        <div className="w-full max-w-md space-y-6">
+                          <AnalysisProgress
+                            currentStep={progressStep}
+                            streamingText={streamingText}
+                          />
                         </div>
                       </div>
                     ) : messages.length > 0 ? (
@@ -1115,8 +1282,35 @@ export default function ChatInterface() {
       {/* Feedback Modal */}
       <FeedbackModal
         isOpen={showFeedbackModal}
-        onClose={dismissFeedback}
-        onSubmit={submitFeedback}
+        onClose={() => {
+          dismissFeedback();
+          // If there was a pending new analysis, proceed with it
+          if (pendingNewAnalysis) {
+            setPendingNewAnalysis(false);
+            if (hasCompletedAnalysis) {
+              setShowConfirmDialog(true);
+            } else {
+              navigateHome();
+            }
+          }
+        }}
+        onSubmit={async (rating, comment, feedbackType) => {
+          try {
+            await submitFeedback(rating, comment, feedbackType);
+            // If there was a pending new analysis, proceed with it after successful submission
+            if (pendingNewAnalysis) {
+              setPendingNewAnalysis(false);
+              if (hasCompletedAnalysis) {
+                setShowConfirmDialog(true);
+              } else {
+                navigateHome();
+              }
+            }
+          } catch (error) {
+            // Error handling is done in submitFeedback
+            throw error;
+          }
+        }}
       />
 
       {/* Toast Notification */}
