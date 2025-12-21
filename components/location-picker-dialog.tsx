@@ -206,8 +206,8 @@ export default function LocationPickerDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
-      <div className="bg-slate-800 border-0 sm:border border-slate-700 rounded-none sm:rounded-xl shadow-2xl w-full max-w-3xl h-full sm:h-auto sm:max-h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-slate-800 border-0 sm:border border-slate-700 rounded-none sm:rounded-xl shadow-2xl w-full max-w-3xl h-full sm:h-full sm:max-h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
           <div>
