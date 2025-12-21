@@ -208,8 +208,8 @@ export default function AnalysisProgress({
         </div>
       </div>
 
-      {/* Small disclaimer below the progress bar for extra clarity */}
-      <div className="text-xs text-slate-400 mt-2">
+      {/* Small disclaimer below the progress bar for extra clarity (mobile only) */}
+      <div className="text-xs text-slate-400 mt-2 md:hidden">
         Výsledky jsou založeny na AI a slouží pouze pro informační účely —
         nemusí být přesné.
       </div>

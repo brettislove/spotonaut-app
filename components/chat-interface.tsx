@@ -658,10 +658,12 @@ export default function ChatInterface() {
       <div className="fixed bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
 
       {/* Persistent AI disclaimer (small and unobtrusive) */}
-      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 text-xs text-slate-300 px-3 py-1 z-50 max-w-[90%] text-center pointer-events-none">
-        Výsledky jsou založeny na AI a slouží pouze pro informační účely —
-        nemusí být přesné ani úplné.
-      </div>
+      {!isMobile && (
+        <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 text-xs text-slate-300 px-3 py-1 z-50 max-w-[90%] text-center pointer-events-none">
+          Výsledky jsou založeny na AI a slouží pouze pro informační účely —
+          nemusí být přesné ani úplné.
+        </div>
+      )}
 
       {showMapView ? (
         <div className="flex items-center justify-center h-[calc(100vh-4rem)] p-4 lg:p-8">
@@ -1108,12 +1110,6 @@ export default function ChatInterface() {
                         Výsledky během několika sekund
                       </p>
                     </div>
-                  </div>
-
-                  {/* Metrics disclaimer - shown at the bottom of the metrics tab */}
-                  <div className="mt-4 text-center text-xs text-slate-400">
-                    Výsledky jsou založeny na AI a slouží pouze pro informační
-                    účely — nemusí být přesné ani úplné.
                   </div>
                 </div>
 
