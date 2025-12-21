@@ -4,6 +4,9 @@ import {
   generateProChatWithGrounding,
   type GroundedLocationData,
 } from "@/lib/google-ai/location-analysis";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 // Character limit for messages (same as frontend)
 const MAX_MESSAGE_LENGTH = 2000;
@@ -44,6 +47,35 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    // Server-side guard: check chat usage quota for user (lifetime)
+    const userEmail = (session.user?.email || "").toLowerCase();
+    const adminEmailsEnv = process.env.ADMIN_EMAILS;
+    let isAdmin = false;
+    if (adminEmailsEnv) {
+      try {
+        const parsed = JSON.parse(adminEmailsEnv);
+        if (Array.isArray(parsed)) {
+          isAdmin = parsed
+            .map((e: string) => e.toLowerCase())
+            .includes(userEmail);
+        }
+      } catch (e) {
+        console.error("Failed to parse ADMIN_EMAILS", e);
+      }
+    }
+
+    if (!isAdmin) {
+      const usage = await prisma.chatUsage.findUnique({
+        where: { userId: session.user?.id as string },
+      });
+      if (usage && usage.promptCount >= usage.quota) {
+        return NextResponse.json(
+          { error: "Chat prompt limit exceeded", limitExceeded: true },
+          { status: 403 }
+        );
+      }
     }
 
     // Get the last user message

@@ -22,6 +22,7 @@ export default function AuthModal({
     boolean | null
   >(null); // new: null = untouched
   const [name, setName] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -44,6 +45,13 @@ export default function AuthModal({
     setIsLoading(true);
     setError("");
     setSuccess("");
+
+    // Require acceptance of terms before signup
+    if (!acceptTerms) {
+      setError("Musíte souhlasit s Podmínkami použití");
+      setIsLoading(false);
+      return;
+    }
 
     // Basic validation: minimal length and matching confirm password
     if (password.length < 6) {
@@ -85,6 +93,7 @@ export default function AuthModal({
         setPassword("");
         setConfirmPassword(""); // clear confirm after signup
         setConfirmPasswordValid(null);
+        setAcceptTerms(false);
       }
     } catch (error) {
       setError(
@@ -162,6 +171,7 @@ export default function AuthModal({
               setSuccess("");
               setConfirmPassword(""); // clear confirm when switching
               setConfirmPasswordValid(null);
+              setAcceptTerms(false);
             }}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
               activeTab === "login"
@@ -178,6 +188,7 @@ export default function AuthModal({
               setSuccess("");
               setConfirmPassword(""); // clear confirm when switching
               setConfirmPasswordValid(null);
+              setAcceptTerms(false);
             }}
             className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
               activeTab === "signup"
@@ -205,7 +216,7 @@ export default function AuthModal({
         <button
           onClick={handleGoogleSignIn}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+          className="w-full flex items-center justify-center cursor-pointer gap-3 bg-white text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -335,12 +346,34 @@ export default function AuthModal({
             </div>
           )}
 
+          {activeTab === "signup" && (
+            <div className="mb-4 flex items-start gap-3">
+              <input
+                id="acceptTerms"
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-slate-700 bg-slate-800 text-blue-500 focus:ring-blue-500"
+                disabled={isLoading}
+              />
+              <label htmlFor="acceptTerms" className="text-sm text-slate-300">
+                Souhlasím s{" "}
+                <a href="/terms" className="text-blue-400 hover:underline">
+                  Podmínkami použití
+                </a>{" "}
+                (povinné)
+              </label>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={
               isLoading ||
               (activeTab === "signup" &&
-                (password.length < 6 || confirmPasswordValid !== true))
+                (password.length < 6 ||
+                  confirmPasswordValid !== true ||
+                  !acceptTerms))
             }
             className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
