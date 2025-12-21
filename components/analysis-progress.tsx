@@ -207,6 +207,12 @@ export default function AnalysisProgress({
           />
         </div>
       </div>
+
+      {/* Small disclaimer below the progress bar for extra clarity */}
+      <div className="text-xs text-slate-400 mt-2">
+        Výsledky jsou založeny na AI a slouží pouze pro informační účely —
+        nemusí být přesné.
+      </div>
     </div>
   );
 }
