@@ -6,6 +6,7 @@ import AnalysisForm from "./analysis-form";
 import AuthModal from "./auth-modal";
 import FeedbackModal from "./feedback-modal";
 import Toast from "./toast";
+import RequestMorePromptsModal from "./request-more-prompts-modal";
 import AnalysisResultsMobile from "./analysis-results-mobile";
 import MapView from "./map-view";
 import RotatingText from "./ui/rotating-text";
@@ -79,6 +80,7 @@ export default function ChatInterface() {
   const [expandedSources, setExpandedSources] = useState<
     Record<string, boolean>
   >({});
+  const [showRequestModal, setShowRequestModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
 
@@ -231,6 +233,20 @@ export default function ChatInterface() {
     setIsLoading(true);
 
     try {
+      // Claim a prompt for this user (server-side lifetime quota)
+      const claimRes = await fetch("/api/chat/usage/claim", { method: "POST" });
+      const claimData = await claimRes.json().catch(() => ({}));
+      if (!claimRes.ok) {
+        // If over quota, open request modal
+        if (claimRes.status === 403 && claimData.limitExceeded) {
+          setShowRequestModal(true);
+          setIsLoading(false);
+          return;
+        }
+        // other errors — show generic message
+        throw new Error(claimData.error || "Failed to claim prompt");
+      }
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -249,6 +265,13 @@ export default function ChatInterface() {
       const data = await response.json();
 
       if (!response.ok) {
+        // If server enforces limit, open request modal
+        if (response.status === 403 && data.limitExceeded) {
+          setShowRequestModal(true);
+          setIsLoading(false);
+          return;
+        }
+
         throw new Error(data.error || data.details || "Failed to get response");
       }
 
@@ -538,6 +561,10 @@ export default function ChatInterface() {
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
           mode={authModalMode}
+        />
+        <RequestMorePromptsModal
+          isOpen={showRequestModal}
+          onClose={() => setShowRequestModal(false)}
         />
         <FeedbackModal
           isOpen={showFeedbackModal}
@@ -1200,6 +1227,11 @@ export default function ChatInterface() {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         mode={authModalMode}
+      />
+      {/* Request More Prompts Modal */}
+      <RequestMorePromptsModal
+        isOpen={showRequestModal}
+        onClose={() => setShowRequestModal(false)}
       />
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
