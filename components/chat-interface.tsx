@@ -9,7 +9,6 @@ import Toast from "./toast";
 import AnalysisResultsMobile from "./analysis-results-mobile";
 import MapView from "./map-view";
 import RotatingText from "./ui/rotating-text";
-import SwitchingText from "./ui/switching-text";
 import AnalysisProgress, { type ProgressStep } from "./analysis-progress";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import Image from "next/image";
@@ -30,6 +29,9 @@ interface AnalysisFormData {
   operatingHours: number;
   timeframe: "day" | "week" | "month" | "year";
 }
+
+// Rate limit for RPM (requests per minute) - 2.5-pro allows 150 RPM
+const MAX_REQUESTS_PER_MINUTE = 149;
 
 // Character limit for chat messages
 const MAX_MESSAGE_LENGTH = 2000;
@@ -74,6 +76,9 @@ export default function ChatInterface() {
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
     null
   );
+  const [expandedSources, setExpandedSources] = useState<
+    Record<string, boolean>
+  >({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
 
@@ -168,7 +173,7 @@ export default function ChatInterface() {
     );
 
     // Check if we've hit the limit
-    if (requestTimestamps.current.length >= 5) {
+    if (requestTimestamps.current.length >= MAX_REQUESTS_PER_MINUTE) {
       return false;
     }
 
@@ -207,8 +212,7 @@ export default function ChatInterface() {
       const rateLimitMessage: Message = {
         id: Date.now().toString(),
         role: "assistant",
-        content:
-          "Příliš mnoho požadavků. Prosím, zkuste to znovu za chvíli. Maximální počet dotazů je 5 za minutu.",
+        content: "Příliš mnoho požadavků. Prosím, zkuste to znovu za chvíli.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, rateLimitMessage]);
@@ -626,6 +630,12 @@ export default function ChatInterface() {
       <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
       <div className="fixed bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
 
+      {/* Persistent AI disclaimer (small and unobtrusive) */}
+      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 text-xs text-slate-300 px-3 py-1 z-50 max-w-[90%] text-center pointer-events-none">
+        Výsledky jsou založeny na AI a slouží pouze pro informační účely —
+        nemusí být přesné ani úplné.
+      </div>
+
       {showMapView ? (
         <div className="flex items-center justify-center h-[calc(100vh-4rem)] p-4 lg:p-8">
           <div className="w-full max-w-6xl h-full flex flex-col lg:flex-row gap-4 lg:gap-6">
@@ -718,45 +728,36 @@ export default function ChatInterface() {
                         {message.sources && message.sources.length > 0 && (
                           <div className="mt-2">
                             <button
-                              onClick={() => {
-                                const contentDiv = document.getElementById(
-                                  `sources-content-${message.id}`
-                                );
-                                if (contentDiv) {
-                                  contentDiv.classList.toggle("hidden");
-                                }
-                              }}
+                              onClick={() =>
+                                setExpandedSources((prev) => ({
+                                  ...prev,
+                                  [message.id]: !prev[message.id],
+                                }))
+                              }
                               aria-controls={`sources-content-${message.id}`}
-                              aria-expanded={false}
-                              className="inline-flex items-center cursor-pointer gap-2 text-sm px-2 py-1 bg-slate-800/30 border border-slate-700 rounded-md text-slate-200 hover:bg-slate-700 transition-colors"
+                              aria-expanded={!!expandedSources[message.id]}
+                              className="inline-flex items-center cursor-pointer gap-2 text-sm py-1 text-slate-400 hover:text-white transition-colors"
                             >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-4 h-4 text-slate-300"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                                aria-hidden
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                              <span>Zobrazit zdroje</span>
+                              <span>
+                                {expandedSources[message.id]
+                                  ? "Skrýt zdroje"
+                                  : "Zobrazit zdroje"}
+                              </span>
                             </button>
-                            <div
-                              id={`sources-content-${message.id}`}
-                              className="hidden mt-2 text-sm text-slate-400"
-                            >
-                              <div className="flex flex-wrap gap-2">
-                                {message.sources.map((source, index) => (
-                                  <div key={index}>
-                                    {renderSourceLink(source)}
-                                  </div>
-                                ))}
+                            {expandedSources[message.id] && (
+                              <div
+                                id={`sources-content-${message.id}`}
+                                className="mt-2 text-sm text-slate-400"
+                              >
+                                <div className="flex flex-wrap gap-2">
+                                  {message.sources.map((source, index) => (
+                                    <div key={index}>
+                                      {renderSourceLink(source)}
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -899,16 +900,14 @@ export default function ChatInterface() {
                             {message.sources && message.sources.length > 0 && (
                               <div className="mt-2">
                                 <button
-                                  onClick={() => {
-                                    const content = document.getElementById(
-                                      `sources-content-${message.id}`
-                                    );
-                                    if (content) {
-                                      content.classList.toggle("hidden");
-                                    }
-                                  }}
+                                  onClick={() =>
+                                    setExpandedSources((prev) => ({
+                                      ...prev,
+                                      [message.id]: !prev[message.id],
+                                    }))
+                                  }
                                   aria-controls={`sources-content-${message.id}`}
-                                  aria-expanded={false}
+                                  aria-expanded={!!expandedSources[message.id]}
                                   className="inline-flex items-center gap-2 text-sm px-2 py-1 bg-slate-800/30 border border-slate-700 rounded-md text-slate-200 hover:bg-slate-800/60 transition-colors"
                                 >
                                   <svg
@@ -924,20 +923,26 @@ export default function ChatInterface() {
                                       clipRule="evenodd"
                                     />
                                   </svg>
-                                  <span>Zobrazit zdroje</span>
+                                  <span>
+                                    {expandedSources[message.id]
+                                      ? "Skrýt zdroje"
+                                      : "Zobrazit zdroje"}
+                                  </span>
                                 </button>
-                                <div
-                                  id={`sources-content-${message.id}`}
-                                  className="hidden mt-2 pl-4 text-sm text-slate-400"
-                                >
-                                  <div className="flex flex-wrap gap-2">
-                                    {message.sources.map((source, index) => (
-                                      <div key={index}>
-                                        {renderSourceLink(source)}
-                                      </div>
-                                    ))}
+                                {expandedSources[message.id] && (
+                                  <div
+                                    id={`sources-content-${message.id}`}
+                                    className="mt-2 pl-4 text-sm text-slate-400"
+                                  >
+                                    <div className="flex flex-wrap gap-2">
+                                      {message.sources.map((source, index) => (
+                                        <div key={index}>
+                                          {renderSourceLink(source)}
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1077,6 +1082,12 @@ export default function ChatInterface() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Metrics disclaimer - shown at the bottom of the metrics tab */}
+                  <div className="mt-4 text-center text-xs text-slate-400">
+                    Výsledky jsou založeny na AI a slouží pouze pro informační
+                    účely — nemusí být přesné ani úplné.
+                  </div>
                 </div>
 
                 {/* Form - desktop only */}
@@ -1131,32 +1142,38 @@ export default function ChatInterface() {
                                 message.sources.length > 0 && (
                                   <div className="mt-2">
                                     <button
-                                      onClick={() => {
-                                        const content = document.getElementById(
-                                          `sources-content-${message.id}`
-                                        );
-                                        if (content) {
-                                          content.classList.toggle("hidden");
-                                        }
-                                      }}
+                                      onClick={() =>
+                                        setExpandedSources((prev) => ({
+                                          ...prev,
+                                          [message.id]: !prev[message.id],
+                                        }))
+                                      }
+                                      aria-controls={`sources-content-${message.id}`}
+                                      aria-expanded={
+                                        !!expandedSources[message.id]
+                                      }
                                       className="text-blue-500 underline text-sm"
                                     >
-                                      Zobrazit/Zavřít zdroje
+                                      {expandedSources[message.id]
+                                        ? "Skrýt zdroje"
+                                        : "Zobrazit zdroje"}
                                     </button>
-                                    <div
-                                      id={`sources-content-${message.id}`}
-                                      className="hidden mt-2 pl-4 text-sm text-slate-400"
-                                    >
-                                      <div className="flex flex-wrap gap-2">
-                                        {message.sources.map(
-                                          (source, index) => (
-                                            <div key={index}>
-                                              {renderSourceLink(source)}
-                                            </div>
-                                          )
-                                        )}
+                                    {expandedSources[message.id] && (
+                                      <div
+                                        id={`sources-content-${message.id}`}
+                                        className="mt-2 pl-4 text-sm text-slate-400"
+                                      >
+                                        <div className="flex flex-wrap gap-2">
+                                          {message.sources.map(
+                                            (source, index) => (
+                                              <div key={index}>
+                                                {renderSourceLink(source)}
+                                              </div>
+                                            )
+                                          )}
+                                        </div>
                                       </div>
-                                    </div>
+                                    )}
                                   </div>
                                 )}
                             </div>

@@ -64,26 +64,10 @@ export function GroundingSources({
       <div className="mb-4">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="inline-flex items-center cursor-pointer gap-2 text-sm px-2 py-1 bg-slate-800/30 border border-slate-700 rounded-md text-slate-200 hover:bg-slate-700 transition-colors"
+          aria-expanded={isExpanded}
+          className="inline-flex items-center cursor-pointer gap-2 text-sm px-2 py-1 underline underline-offset-2 text-slate-400 hover:text-white transition-colors"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-4 h-4 text-slate-300"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            aria-hidden
-          >
-            <path
-              fillRule="evenodd"
-              d={
-                isExpanded
-                  ? "M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                  : "M5.23 12.79a.75.75 0 011.06-.02L10 9.06l3.71 3.71a.75.75 0 011.06-1.06l-4.24-4.24a.75.75 0 01-1.06 0L5.21 11.71a.75.75 0 01.02 1.08z"
-              }
-              clipRule="evenodd"
-            />
-          </svg>
-          <span>Zobrazit zdroje</span>
+          <span>{isExpanded ? "Skrýt zdroje" : "Zdroje"}</span>
         </button>
       </div>
 
