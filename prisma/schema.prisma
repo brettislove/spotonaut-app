@@ -136,3 +136,16 @@ model Feedback {
   @@index([createdAt])
   @@map("feedback")
 }
+
+// Track lifetime chat prompt usage per registered user
+model ChatUsage {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  promptCount Int      @default(0)
+  quota       Int      @default(3)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@map("chat_usage")
+}

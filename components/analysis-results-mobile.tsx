@@ -381,7 +381,7 @@ function MetricsTab({
       )}
 
       {/* Additional Info */}
-      <div className="pt-2 pb-4">
+      {/* <div className="pt-2 pb-4">
         <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <svg
@@ -408,6 +408,11 @@ function MetricsTab({
             </div>
           </div>
         </div>
+      </div> */}
+      {/* Mobile-only AI disclaimer (non-interactive) */}
+      <div className=" bottom-20 transform text-xs text-slate-300 px-3 py-1 z-50 text-center pointer-events-none lg:hidden">
+        Výsledky jsou založeny na AI a slouží pouze pro informační účely —
+        nemusí být přesné ani úplné.
       </div>
     </div>
   );

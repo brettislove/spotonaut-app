@@ -63,6 +63,8 @@ export default function Header() {
   ];
 
   const handleSignOut = async () => {
+    // Clear analysis state before signing out
+    resetAnalysis();
     await signOut({ callbackUrl: "/" });
     setIsUserMenuOpen(false);
   };
@@ -86,6 +88,8 @@ export default function Header() {
     // If we're on homepage and have completed analysis, reset state
     if (pathname === "/" && hasCompletedAnalysis) {
       e.preventDefault();
+      // Set flag to skip restoration on reload
+      sessionStorage.setItem("skipAnalysisRestore", "true");
       resetAnalysis();
     }
     // Otherwise, let Next.js Link handle navigation normally

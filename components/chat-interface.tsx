@@ -6,10 +6,11 @@ import AnalysisForm from "./analysis-form";
 import AuthModal from "./auth-modal";
 import FeedbackModal from "./feedback-modal";
 import Toast from "./toast";
+import RequestMorePromptsModal from "./request-more-prompts-modal";
 import AnalysisResultsMobile from "./analysis-results-mobile";
 import MapView from "./map-view";
 import RotatingText from "./ui/rotating-text";
-import SwitchingText from "./ui/switching-text";
+import AnalysisProgress, { type ProgressStep } from "./analysis-progress";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import Image from "next/image";
 import type { BusinessType } from "@/lib/constants/business-types";
@@ -29,6 +30,9 @@ interface AnalysisFormData {
   operatingHours: number;
   timeframe: "day" | "week" | "month" | "year";
 }
+
+// Rate limit for RPM (requests per minute) - 2.5-pro allows 150 RPM
+const MAX_REQUESTS_PER_MINUTE = 149;
 
 // Character limit for chat messages
 const MAX_MESSAGE_LENGTH = 2000;
@@ -67,6 +71,16 @@ export default function ChatInterface() {
   const [pendingAnalysisData, setPendingAnalysisData] =
     useState<AnalysisFormData | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingNewAnalysis, setPendingNewAnalysis] = useState(false);
+  const [progressStep, setProgressStep] = useState<ProgressStep>("geocoding");
+  const [streamingText, setStreamingText] = useState("");
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
+    null
+  );
+  const [expandedSources, setExpandedSources] = useState<
+    Record<string, boolean>
+  >({});
+  const [showRequestModal, setShowRequestModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
 
@@ -161,7 +175,7 @@ export default function ChatInterface() {
     );
 
     // Check if we've hit the limit
-    if (requestTimestamps.current.length >= 5) {
+    if (requestTimestamps.current.length >= MAX_REQUESTS_PER_MINUTE) {
       return false;
     }
 
@@ -200,8 +214,7 @@ export default function ChatInterface() {
       const rateLimitMessage: Message = {
         id: Date.now().toString(),
         role: "assistant",
-        content:
-          "Příliš mnoho požadavků. Prosím, zkuste to znovu za chvíli. Maximální počet dotazů je 5 za minutu.",
+        content: "Příliš mnoho požadavků. Prosím, zkuste to znovu za chvíli.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, rateLimitMessage]);
@@ -220,6 +233,20 @@ export default function ChatInterface() {
     setIsLoading(true);
 
     try {
+      // Claim a prompt for this user (server-side lifetime quota)
+      const claimRes = await fetch("/api/chat/usage/claim", { method: "POST" });
+      const claimData = await claimRes.json().catch(() => ({}));
+      if (!claimRes.ok) {
+        // If over quota, open request modal
+        if (claimRes.status === 403 && claimData.limitExceeded) {
+          setShowRequestModal(true);
+          setIsLoading(false);
+          return;
+        }
+        // other errors — show generic message
+        throw new Error(claimData.error || "Failed to claim prompt");
+      }
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -238,6 +265,13 @@ export default function ChatInterface() {
       const data = await response.json();
 
       if (!response.ok) {
+        // If server enforces limit, open request modal
+        if (response.status === 403 && data.limitExceeded) {
+          setShowRequestModal(true);
+          setIsLoading(false);
+          return;
+        }
+
         throw new Error(data.error || data.details || "Failed to get response");
       }
 
@@ -295,6 +329,9 @@ export default function ChatInterface() {
       }
 
       setIsLoading(true);
+      setProgressStep("geocoding");
+      setStreamingText("");
+      setStreamingMessageId(null);
 
       try {
         const response = await fetch("/api/analysis", {
@@ -308,44 +345,143 @@ export default function ChatInterface() {
           }),
         });
 
-        const result = await response.json();
-
         if (!response.ok) {
-          // Check if it's a usage limit error
-          if (response.status === 403 && result.requiresAuth) {
+          const errorData = await response.json().catch(() => ({}));
+          if (response.status === 403 && errorData.requiresAuth) {
             setAuthModalMode("signup");
             setShowAuthModal(true);
             setShowAnalysisForm(true);
+            setIsLoading(false);
             return;
           }
-          throw new Error(result.error || "Failed to get analysis");
+          throw new Error(errorData.error || "Failed to get analysis");
         }
 
-        // Mark that free analysis has been used (for anonymous users)
-        if (!session) {
-          localStorage.setItem("hasUsedFreeAnalysis", "true");
-        }
+        // Check if response is streaming (text/event-stream)
+        const contentType = response.headers.get("content-type");
+        if (contentType?.includes("text/event-stream")) {
+          // Handle streaming response
+          const reader = response.body?.getReader();
+          const decoder = new TextDecoder();
 
-        const assistantMessage: Message = {
-          id: Date.now().toString(),
-          role: "assistant",
-          content: result.analysis,
-          timestamp: new Date(),
-        };
+          if (!reader) {
+            throw new Error("No response body");
+          }
 
-        setMessages((prev) => [...prev, assistantMessage]);
+          // Create streaming message
+          const messageId = Date.now().toString();
+          setStreamingMessageId(messageId);
+          const assistantMessage: Message = {
+            id: messageId,
+            role: "assistant",
+            content: "",
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, assistantMessage]);
 
-        // Show map view with analysis data
-        if (result.data) {
-          setAnalysisData({
-            ...result.data,
-            sources: result.sources || [],
-            groundedLocationData: result.groundedLocationData,
-          });
-          setShowMapView(true);
-          setHasCompletedAnalysis(true);
-          // Hide form only after successful analysis
-          setShowAnalysisForm(false);
+          let buffer = "";
+          let fullAnalysisText = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+
+                  if (data.type === "progress") {
+                    setProgressStep(data.step);
+                  } else if (data.type === "chunk") {
+                    fullAnalysisText += data.text;
+                    setStreamingText(fullAnalysisText);
+                    // Update message content
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === messageId
+                          ? { ...msg, content: fullAnalysisText }
+                          : msg
+                      )
+                    );
+                  } else if (data.type === "done") {
+                    // Mark that free analysis has been used (for anonymous users)
+                    if (!session) {
+                      localStorage.setItem("hasUsedFreeAnalysis", "true");
+                    }
+
+                    // Update final message
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === messageId
+                          ? {
+                              ...msg,
+                              content: data.analysis,
+                              sources: data.sources || [],
+                            }
+                          : msg
+                      )
+                    );
+
+                    // Show map view with analysis data
+                    if (data.data) {
+                      setAnalysisData({
+                        ...data.data,
+                        sources: data.sources || [],
+                        groundedLocationData: data.groundedLocationData,
+                      });
+                      setShowMapView(true);
+                      setHasCompletedAnalysis(true);
+                      setShowAnalysisForm(false);
+                    }
+
+                    setStreamingText("");
+                    setStreamingMessageId(null);
+                    setProgressStep("complete");
+                  } else if (data.type === "error") {
+                    throw new Error(
+                      data.error || data.details || "Analysis failed"
+                    );
+                  }
+                } catch (parseError) {
+                  console.error("Error parsing SSE data:", parseError);
+                }
+              }
+            }
+          }
+        } else {
+          // Fallback to non-streaming response (for backward compatibility)
+          const result = await response.json();
+
+          // Mark that free analysis has been used (for anonymous users)
+          if (!session) {
+            localStorage.setItem("hasUsedFreeAnalysis", "true");
+          }
+
+          const assistantMessage: Message = {
+            id: Date.now().toString(),
+            role: "assistant",
+            content: result.analysis,
+            timestamp: new Date(),
+          };
+
+          setMessages((prev) => [...prev, assistantMessage]);
+
+          // Show map view with analysis data
+          if (result.data) {
+            setAnalysisData({
+              ...result.data,
+              sources: result.sources || [],
+              groundedLocationData: result.groundedLocationData,
+            });
+            setShowMapView(true);
+            setHasCompletedAnalysis(true);
+            setShowAnalysisForm(false);
+          }
         }
       } catch (error) {
         console.error("Error getting analysis:", error);
@@ -359,6 +495,9 @@ export default function ChatInterface() {
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, errorMessage]);
+        setStreamingText("");
+        setStreamingMessageId(null);
+        setProgressStep("geocoding");
       } finally {
         setIsLoading(false);
       }
@@ -384,8 +523,15 @@ export default function ChatInterface() {
 
   const handleNewAnalysis = () => {
     // Trigger feedback modal if eligible (before showing confirmation or navigating)
-    triggerFeedbackIfEligible();
+    const feedbackShown = triggerFeedbackIfEligible();
 
+    // If feedback modal will be shown, mark that we have a pending new analysis
+    if (feedbackShown) {
+      setPendingNewAnalysis(true);
+      return; // Wait for feedback to be submitted/dismissed
+    }
+
+    // If no feedback modal, proceed with new analysis
     if (hasCompletedAnalysis) {
       setShowConfirmDialog(true);
     } else {
@@ -416,11 +562,89 @@ export default function ChatInterface() {
           onClose={() => setShowAuthModal(false)}
           mode={authModalMode}
         />
+        <RequestMorePromptsModal
+          isOpen={showRequestModal}
+          onClose={() => setShowRequestModal(false)}
+        />
         <FeedbackModal
           isOpen={showFeedbackModal}
-          onClose={dismissFeedback}
-          onSubmit={submitFeedback}
+          onClose={() => {
+            dismissFeedback();
+            // If there was a pending new analysis, proceed with it
+            if (pendingNewAnalysis) {
+              setPendingNewAnalysis(false);
+              if (hasCompletedAnalysis) {
+                setShowConfirmDialog(true);
+              } else {
+                navigateHome();
+              }
+            }
+          }}
+          onSubmit={async (rating, comment, feedbackType) => {
+            try {
+              await submitFeedback(rating, comment, feedbackType);
+              // If there was a pending new analysis, proceed with it after successful submission
+              if (pendingNewAnalysis) {
+                setPendingNewAnalysis(false);
+                if (hasCompletedAnalysis) {
+                  setShowConfirmDialog(true);
+                } else {
+                  navigateHome();
+                }
+              }
+            } catch (error) {
+              // Error handling is done in submitFeedback
+              throw error;
+            }
+          }}
         />
+        {/* Confirmation Dialog for Mobile */}
+        {showConfirmDialog && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg
+                    className="w-6 h-6 text-yellow-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-white font-semibold text-lg mb-2">
+                    Zahájit novou analýzu?
+                  </h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Spuštění nové analýzy smaže aktuální výsledky a historii
+                    konverzace. Tato akce je nevratná.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowConfirmDialog(false)}
+                  className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-lg transition-all border border-slate-700"
+                >
+                  Zrušit
+                </button>
+                <button
+                  onClick={confirmNewAnalysis}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium rounded-lg transition-all shadow-lg"
+                >
+                  Pokračovat
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <Toast message={toastMessage} onDismiss={() => showToast("")} />
       </>
     );
@@ -432,6 +656,12 @@ export default function ChatInterface() {
       {/* Ambient glow effects */}
       <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
       <div className="fixed bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Persistent AI disclaimer (small and unobtrusive) */}
+      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 text-xs text-slate-300 px-3 py-1 z-50 max-w-[90%] text-center pointer-events-none">
+        Výsledky jsou založeny na AI a slouží pouze pro informační účely —
+        nemusí být přesné ani úplné.
+      </div>
 
       {showMapView ? (
         <div className="flex items-center justify-center h-[calc(100vh-4rem)] p-4 lg:p-8">
@@ -525,45 +755,36 @@ export default function ChatInterface() {
                         {message.sources && message.sources.length > 0 && (
                           <div className="mt-2">
                             <button
-                              onClick={() => {
-                                const contentDiv = document.getElementById(
-                                  `sources-content-${message.id}`
-                                );
-                                if (contentDiv) {
-                                  contentDiv.classList.toggle("hidden");
-                                }
-                              }}
+                              onClick={() =>
+                                setExpandedSources((prev) => ({
+                                  ...prev,
+                                  [message.id]: !prev[message.id],
+                                }))
+                              }
                               aria-controls={`sources-content-${message.id}`}
-                              aria-expanded={false}
-                              className="inline-flex items-center cursor-pointer gap-2 text-sm px-2 py-1 bg-slate-800/30 border border-slate-700 rounded-md text-slate-200 hover:bg-slate-700 transition-colors"
+                              aria-expanded={!!expandedSources[message.id]}
+                              className="inline-flex items-center cursor-pointer gap-2 text-sm py-1 text-slate-400 hover:text-white transition-colors"
                             >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-4 h-4 text-slate-300"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                                aria-hidden
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                              <span>Zobrazit zdroje</span>
+                              <span>
+                                {expandedSources[message.id]
+                                  ? "Skrýt zdroje"
+                                  : "Zobrazit zdroje"}
+                              </span>
                             </button>
-                            <div
-                              id={`sources-content-${message.id}`}
-                              className="hidden mt-2 text-sm text-slate-400"
-                            >
-                              <div className="flex flex-wrap gap-2">
-                                {message.sources.map((source, index) => (
-                                  <div key={index}>
-                                    {renderSourceLink(source)}
-                                  </div>
-                                ))}
+                            {expandedSources[message.id] && (
+                              <div
+                                id={`sources-content-${message.id}`}
+                                className="mt-2 text-sm text-slate-400"
+                              >
+                                <div className="flex flex-wrap gap-2">
+                                  {message.sources.map((source, index) => (
+                                    <div key={index}>
+                                      {renderSourceLink(source)}
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -670,24 +891,11 @@ export default function ChatInterface() {
                           className="w-32 h-32 animate-pulse"
                         />
                       </div>
-                      <div className="text-center space-y-4">
-                        <h3 className="text-2xl font-bold text-white">
-                          <SwitchingText
-                            words={[
-                              "Analyzuji lokalitu...",
-                              "Zjišťuji hustotu provozu...",
-                              "Mapuji konkurenci...",
-                              "Počítám potenciální tržby...",
-                              "Vyhodnocuji data...",
-                            ]}
-                            className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600"
-                            interval={3000}
-                          />
-                        </h3>
-                        <p className="text-slate-400 text-sm max-w-md">
-                          Náš AI agent zpracovává vaše data a připravuje
-                          komplexní analýzu lokality.
-                        </p>
+                      <div className="w-full max-w-md space-y-6">
+                        <AnalysisProgress
+                          currentStep={progressStep}
+                          streamingText={streamingText}
+                        />
                       </div>
                     </div>
                   ) : messages.length > 0 ? (
@@ -719,16 +927,14 @@ export default function ChatInterface() {
                             {message.sources && message.sources.length > 0 && (
                               <div className="mt-2">
                                 <button
-                                  onClick={() => {
-                                    const content = document.getElementById(
-                                      `sources-content-${message.id}`
-                                    );
-                                    if (content) {
-                                      content.classList.toggle("hidden");
-                                    }
-                                  }}
+                                  onClick={() =>
+                                    setExpandedSources((prev) => ({
+                                      ...prev,
+                                      [message.id]: !prev[message.id],
+                                    }))
+                                  }
                                   aria-controls={`sources-content-${message.id}`}
-                                  aria-expanded={false}
+                                  aria-expanded={!!expandedSources[message.id]}
                                   className="inline-flex items-center gap-2 text-sm px-2 py-1 bg-slate-800/30 border border-slate-700 rounded-md text-slate-200 hover:bg-slate-800/60 transition-colors"
                                 >
                                   <svg
@@ -744,20 +950,26 @@ export default function ChatInterface() {
                                       clipRule="evenodd"
                                     />
                                   </svg>
-                                  <span>Zobrazit zdroje</span>
+                                  <span>
+                                    {expandedSources[message.id]
+                                      ? "Skrýt zdroje"
+                                      : "Zobrazit zdroje"}
+                                  </span>
                                 </button>
-                                <div
-                                  id={`sources-content-${message.id}`}
-                                  className="hidden mt-2 pl-4 text-sm text-slate-400"
-                                >
-                                  <div className="flex flex-wrap gap-2">
-                                    {message.sources.map((source, index) => (
-                                      <div key={index}>
-                                        {renderSourceLink(source)}
-                                      </div>
-                                    ))}
+                                {expandedSources[message.id] && (
+                                  <div
+                                    id={`sources-content-${message.id}`}
+                                    className="mt-2 pl-4 text-sm text-slate-400"
+                                  >
+                                    <div className="flex flex-wrap gap-2">
+                                      {message.sources.map((source, index) => (
+                                        <div key={index}>
+                                          {renderSourceLink(source)}
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -897,6 +1109,12 @@ export default function ChatInterface() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Metrics disclaimer - shown at the bottom of the metrics tab */}
+                  <div className="mt-4 text-center text-xs text-slate-400">
+                    Výsledky jsou založeny na AI a slouží pouze pro informační
+                    účely — nemusí být přesné ani úplné.
+                  </div>
                 </div>
 
                 {/* Form - desktop only */}
@@ -914,24 +1132,11 @@ export default function ChatInterface() {
                             className="w-36 h-36 animate-pulse"
                           />
                         </div>
-                        <div className="text-center space-y-4">
-                          <h3 className="text-3xl font-bold text-white">
-                            <SwitchingText
-                              words={[
-                                "Analyzuji lokalitu...",
-                                "Zjišťuji hustotu provozu...",
-                                "Mapuji konkurenci...",
-                                "Počítám potenciální tržby...",
-                                "Vyhodnocuji data...",
-                              ]}
-                              className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600"
-                              interval={3000}
-                            />
-                          </h3>
-                          <p className="text-slate-400 max-w-md">
-                            Náš AI agent zpracovává vaše data a připravuje
-                            komplexní analýzu lokality.
-                          </p>
+                        <div className="w-full max-w-md space-y-6">
+                          <AnalysisProgress
+                            currentStep={progressStep}
+                            streamingText={streamingText}
+                          />
                         </div>
                       </div>
                     ) : messages.length > 0 ? (
@@ -964,32 +1169,38 @@ export default function ChatInterface() {
                                 message.sources.length > 0 && (
                                   <div className="mt-2">
                                     <button
-                                      onClick={() => {
-                                        const content = document.getElementById(
-                                          `sources-content-${message.id}`
-                                        );
-                                        if (content) {
-                                          content.classList.toggle("hidden");
-                                        }
-                                      }}
+                                      onClick={() =>
+                                        setExpandedSources((prev) => ({
+                                          ...prev,
+                                          [message.id]: !prev[message.id],
+                                        }))
+                                      }
+                                      aria-controls={`sources-content-${message.id}`}
+                                      aria-expanded={
+                                        !!expandedSources[message.id]
+                                      }
                                       className="text-blue-500 underline text-sm"
                                     >
-                                      Zobrazit/Zavřít zdroje
+                                      {expandedSources[message.id]
+                                        ? "Skrýt zdroje"
+                                        : "Zobrazit zdroje"}
                                     </button>
-                                    <div
-                                      id={`sources-content-${message.id}`}
-                                      className="hidden mt-2 pl-4 text-sm text-slate-400"
-                                    >
-                                      <div className="flex flex-wrap gap-2">
-                                        {message.sources.map(
-                                          (source, index) => (
-                                            <div key={index}>
-                                              {renderSourceLink(source)}
-                                            </div>
-                                          )
-                                        )}
+                                    {expandedSources[message.id] && (
+                                      <div
+                                        id={`sources-content-${message.id}`}
+                                        className="mt-2 pl-4 text-sm text-slate-400"
+                                      >
+                                        <div className="flex flex-wrap gap-2">
+                                          {message.sources.map(
+                                            (source, index) => (
+                                              <div key={index}>
+                                                {renderSourceLink(source)}
+                                              </div>
+                                            )
+                                          )}
+                                        </div>
                                       </div>
-                                    </div>
+                                    )}
                                   </div>
                                 )}
                             </div>
@@ -1016,6 +1227,11 @@ export default function ChatInterface() {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         mode={authModalMode}
+      />
+      {/* Request More Prompts Modal */}
+      <RequestMorePromptsModal
+        isOpen={showRequestModal}
+        onClose={() => setShowRequestModal(false)}
       />
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
@@ -1115,8 +1331,35 @@ export default function ChatInterface() {
       {/* Feedback Modal */}
       <FeedbackModal
         isOpen={showFeedbackModal}
-        onClose={dismissFeedback}
-        onSubmit={submitFeedback}
+        onClose={() => {
+          dismissFeedback();
+          // If there was a pending new analysis, proceed with it
+          if (pendingNewAnalysis) {
+            setPendingNewAnalysis(false);
+            if (hasCompletedAnalysis) {
+              setShowConfirmDialog(true);
+            } else {
+              navigateHome();
+            }
+          }
+        }}
+        onSubmit={async (rating, comment, feedbackType) => {
+          try {
+            await submitFeedback(rating, comment, feedbackType);
+            // If there was a pending new analysis, proceed with it after successful submission
+            if (pendingNewAnalysis) {
+              setPendingNewAnalysis(false);
+              if (hasCompletedAnalysis) {
+                setShowConfirmDialog(true);
+              } else {
+                navigateHome();
+              }
+            }
+          } catch (error) {
+            // Error handling is done in submitFeedback
+            throw error;
+          }
+        }}
       />
 
       {/* Toast Notification */}

@@ -354,6 +354,85 @@ Formát JSON:
   return { text, metrics };
 }
 
+/**
+ * Generate Pro analysis with streaming support
+ * Returns an async generator that yields text chunks and final metrics
+ */
+export async function* generateProAnalysisWithGroundingStream(
+  params: ProAnalysisParams
+): AsyncGenerator<
+  | { type: "chunk"; text: string }
+  | { type: "done"; text: string; metrics: BusinessAnalysisMetrics },
+  void,
+  unknown
+> {
+  const {
+    location,
+    businessType,
+    operatingHours,
+    timeframe,
+    groundedLocation,
+  } = params;
+
+  const timeframeLabels = {
+    day: "den",
+    week: "týden",
+    month: "měsíc",
+    year: "rok",
+  } as const;
+
+  const structuredPrompt = `
+Proveď STRUČNOU analýzu obchodní lokality s následujícími daty:
+
+**VSTUPNÍ DATA:**
+- Lokalita (původní zadání): ${location}
+- Typ podnikání: ${businessType.type}
+- Kategorie: ${businessType.category}
+- Provozní hodiny za týden: ${operatingHours} hodin
+- Průměrná útrata zákazníka: ${businessType.avgSpend} Kč
+- Konverzní poměr: ${(businessType.conversionRate * 100).toFixed(1)}%
+- Časový rámec analýzy: ${timeframeLabels[timeframe]}
+
+**DODATEČNÁ STRUKTUROVANÁ DATA Z GOOGLE MAPS (locationData):**
+${JSON.stringify(groundedLocation, null, 2)}
+
+Tato data považuj za hlavní zdroj pravdy o konkrétní lokalitě.
+
+**POŽADOVANÁ ANALÝZA:**
+Napiš pouze 2-3 věty shrnující klíčové poznatky o této lokalitě - její typ,
+potenciál a hlavní doporučení. V analýze jasně rozlišuj:
+- co vyplývá přímo z locationData (fakta z Google Maps)
+- co je obecný předpoklad nebo odhad.
+
+📊 METRIKY (POVINNÉ - na samém konci odpovědi)
+Na konec své odpovědi přidej JSON objekt s přesnými metrikami.
+Formát JSON:
+- localityScore: číslo 1-100 (celkové hodnocení lokality)
+- footfallScore: číslo 1-100 (hodnocení návštěvnosti)
+- recommendedHours: string ve formátu "7-22" (doporučené provozní hodiny)
+`;
+
+  const stream = await genai.models.generateContentStream({
+    model: "gemini-2.5-pro",
+    contents: structuredPrompt,
+    config: {
+      systemInstruction: HYBRID_PRO_SYSTEM_PROMPT,
+    },
+  });
+
+  let fullText = "";
+  for await (const chunk of stream) {
+    const chunkText = chunk.text || "";
+    if (chunkText) {
+      fullText += chunkText;
+      yield { type: "chunk" as const, text: chunkText };
+    }
+  }
+
+  const metrics = extractMetricsFromText(fullText);
+  yield { type: "done" as const, text: fullText, metrics };
+}
+
 interface ProChatParams {
   messages: Array<{ role: "user" | "model"; content: string }>;
   groundedLocation: GroundedLocationData;
