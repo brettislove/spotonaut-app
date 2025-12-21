@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     if (!isAdmin) {
       const usage = await prisma.chatUsage.findUnique({
-        where: { userId: session.user.id as string },
+        where: { userId: session.user?.id as string },
       });
       if (usage && usage.promptCount >= usage.quota) {
         return NextResponse.json(
