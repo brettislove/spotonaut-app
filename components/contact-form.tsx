@@ -46,9 +46,13 @@ export default function ContactForm() {
       setName("");
       setEmail("");
       setMessage("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       setStatus("error");
-      setError(err?.message || "Neznámá chyba při odesílání");
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Neznámá chyba při odesílání");
+      }
     }
   };
 
