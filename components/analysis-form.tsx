@@ -377,7 +377,7 @@ export default function AnalysisForm({
                         <button
                           type="button"
                           onClick={() => handleSuggestionClick(suggestion)}
-                          className="flex flex-col items-start w-full px-4 py-2 text-left hover:bg-slate-700 transition-colors"
+                          className="flex flex-col items-start cursor-pointer w-full px-4 py-2 text-left hover:bg-slate-700 transition-colors"
                         >
                           <span className="text-sm font-medium text-white">
                             {getShortLocationName(suggestion)}
@@ -471,7 +471,7 @@ export default function AnalysisForm({
                     )
                   }
                   disabled={isLoading}
-                  className={`px-4 py-2 text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`cursor-pointer px-4 py-2 text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     option.position === "first"
                       ? "rounded-s-lg border-r-0"
                       : option.position === "last"
@@ -497,7 +497,7 @@ export default function AnalysisForm({
               type="button"
               onClick={onCancel}
               disabled={isLoading}
-              className="flex-1 px-5 py-2.5 text-sm font-medium text-white bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 focus:ring-2 focus:outline-none focus:ring-slate-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="cursor-pointer flex-1 px-5 py-2.5 text-sm font-medium text-white bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 focus:ring-2 focus:outline-none focus:ring-slate-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Zrušit
             </button>
@@ -505,7 +505,7 @@ export default function AnalysisForm({
           <button
             type="submit"
             disabled={isLoading}
-            className="flex-1 px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:outline-none focus:ring-blue-500 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="cursor-pointer flex-1 px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:outline-none focus:ring-blue-500 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? loadingTexts[loadingTextIndex] : "Analyzovat"}
           </button>
