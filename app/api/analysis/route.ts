@@ -137,7 +137,8 @@ export async function POST(request: NextRequest) {
                 },
               }
             ).then((res) => res.json()),
-            session ? checkGlobalMapsQuota(prisma) : Promise.resolve(null),
+            // Always check global maps quota regardless of authentication state
+            checkGlobalMapsQuota(prisma),
           ]);
 
           let coordinates = null;
@@ -173,9 +174,9 @@ export async function POST(request: NextRequest) {
           let usedMapsGrounding = false;
           let sources: GroundingSource[] = [];
 
-          // Use Maps grounding if: we have coordinates AND session AND quota allows it
-          // If quota check failed (null), we'll still try but log a warning
-          const canUseMaps = session && coordinates;
+          // Use Maps grounding if we have coordinates (allow for anonymous users too)
+          // Quota check still controls whether Maps grounding is allowed.
+          const canUseMaps = !!coordinates;
           const quotaExceeded = quotaStatus && quotaStatus.quotaExceeded;
           const useMapsGrounding = canUseMaps && !quotaExceeded;
 
