@@ -21,7 +21,8 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      // Avoid exposing raw English/technical messages to users
+      return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
     }
 
     const userId = session.user.id as string;
@@ -35,11 +36,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Use a raw SQL update to atomically increment when promptCount < quota
-    // This prevents race conditions across concurrent requests.
-    const tableName = "chat_usage";
-    const rawUpdate = `UPDATE ${tableName} SET promptCount = promptCount + 1, updatedAt = CURRENT_TIMESTAMP WHERE userId = ? AND promptCount < quota`;
-    const res = await prisma.$executeRawUnsafe(rawUpdate, userId);
+    // Atomically increment promptCount when promptCount < quota using
+    // a parameterized query so Postgres placeholders are handled correctly.
+    // Use the tagged `$executeRaw` so the `userId` parameter is bound safely.
+    const res = await prisma.$executeRaw`
+      UPDATE chat_usage
+      SET promptCount = promptCount + 1, updatedAt = CURRENT_TIMESTAMP
+      WHERE userId = ${userId} AND promptCount < quota
+    `;
 
     // $executeRawUnsafe returns number of affected rows for UPDATE
     if (res === 0) {
@@ -64,7 +68,11 @@ export async function POST(request: NextRequest) {
       }
 
       // If here, attempt update again (race retry)
-      const retry = await prisma.$executeRawUnsafe(rawUpdate, userId);
+      const retry = await prisma.$executeRaw`
+        UPDATE chat_usage
+        SET promptCount = promptCount + 1, updatedAt = CURRENT_TIMESTAMP
+        WHERE userId = ${userId} AND promptCount < quota
+      `;
       if (retry === 0) {
         return NextResponse.json(
           { allowed: false, limitExceeded: true },
@@ -92,7 +100,21 @@ export async function POST(request: NextRequest) {
       ),
     });
   } catch (err) {
-    console.error("Claim error", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    // Generate a short error id for correlation in logs (safe to show to users)
+    const errorId = `${Date.now().toString(36)}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+    console.error("Claim error", { errorId, err });
+
+    // Return a friendly, non-technical message. Include the errorId so
+    // support can correlate logs if the user reports the issue.
+    return NextResponse.json(
+      {
+        error:
+          "Nastal problém při zpracování požadavku. Zkuste to prosím později.",
+        errorId,
+      },
+      { status: 500 }
+    );
   }
 }
