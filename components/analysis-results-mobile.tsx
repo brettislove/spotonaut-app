@@ -323,7 +323,7 @@ function MetricsTab({
         <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="text-purple-300 text-sm font-medium">
-              Návštěvnost
+              Průchodnost
             </div>
             <div className="flex items-center gap-2">
               <div className="text-white font-bold text-3xl">
@@ -340,7 +340,7 @@ function MetricsTab({
             />
           </div>
           <p className="mt-2 text-purple-200/70 text-xs">
-            Odhad průměrné denní návštěvnosti v oblasti
+            Odhad průměrné denní průchodnosti v oblasti
           </p>
         </div>
 
