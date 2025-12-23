@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/api/auth/[...nextauth]/route";
 import { PrismaClient } from "@prisma/client";
+import { Resend } from "resend";
 
 const prisma = new PrismaClient();
 
-export async function POST(request: NextRequest) {
+function escapeHtml(unsafe: string) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+export async function POST(req: NextRequest) {
   try {
     const session = await auth();
     if (!session || !session.user) {
@@ -23,40 +33,11 @@ export async function POST(request: NextRequest) {
         where: { userId },
         data: { requestPending: true },
       });
-      return NextResponse.json({ ok: true });
-    }
-
-    // Create a record with requestPending true; keep default quota
-    await prisma.chatUsage.create({
-      data: { userId, promptCount: 0, quota: 3, requestPending: true },
-    });
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("Prompts request error", err);
-    return NextResponse.json(
-      { error: "Nastala chyba při odesílání požadavku" },
-      { status: 500 }
-    );
-  }
-}
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/app/api/auth/[...nextauth]/route";
-import { Resend } from "resend";
-
-function escapeHtml(unsafe: string) {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    } else {
+      // Create a record with requestPending true; keep default quota
+      await prisma.chatUsage.create({
+        data: { userId, promptCount: 0, quota: 3, requestPending: true },
+      });
     }
 
     const userEmail = session.user.email || "";
