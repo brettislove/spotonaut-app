@@ -135,7 +135,7 @@ export default function MapView({ data }: MapViewProps) {
             {/* Footfall Score - Purple */}
             <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 rounded-lg p-3 lg:p-4">
               <div className="text-purple-300 text-xs lg:text-sm mb-2 font-medium">
-                Návštěvnost
+                Průchodnost
               </div>
               <div className="flex items-end gap-2">
                 <div className="text-white font-bold text-2xl lg:text-3xl">

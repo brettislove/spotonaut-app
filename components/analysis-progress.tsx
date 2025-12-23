@@ -25,7 +25,7 @@ const stepLabels: Record<ProgressStep, string> = {
 
 const stepDescriptions: Record<ProgressStep, string> = {
   geocoding: "Hledání souřadnic lokality...",
-  maps_grounding: "Zjišťování konkurence a návštěvnosti...",
+  maps_grounding: "Zjišťování konkurence a průchodnosti...",
   pro_analysis: "Vyhodnocování dat a generování analýzy...",
   finalizing: "Příprava finálních výsledků...",
   complete: "Analýza dokončena",
