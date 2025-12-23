@@ -1034,7 +1034,7 @@ export default function ChatInterface() {
                   </div>
 
                   {/* Features Grid */}
-                  <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="grid sm:grid-cols-2 gap-3 lg:max-h-100 lg:overflow-y-auto lg:pr-4">
                     <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
                       <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center mb-3">
                         <svg
