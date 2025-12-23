@@ -1,5 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/api/auth/[...nextauth]/route";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
+    }
+
+    const userId = session.user.id as string;
+
+    // Upsert chatUsage record and set requestPending = true
+    const existing = await prisma.chatUsage.findUnique({ where: { userId } });
+    if (existing) {
+      if (existing.requestPending) {
+        return NextResponse.json({ ok: true, message: "already_pending" });
+      }
+      await prisma.chatUsage.update({
+        where: { userId },
+        data: { requestPending: true },
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    // Create a record with requestPending true; keep default quota
+    await prisma.chatUsage.create({
+      data: { userId, promptCount: 0, quota: 3, requestPending: true },
+    });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Prompts request error", err);
+    return NextResponse.json(
+      { error: "Nastala chyba při odesílání požadavku" },
+      { status: 500 }
+    );
+  }
+}
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/app/api/auth/[...nextauth]/route";
 import { Resend } from "resend";
 
 function escapeHtml(unsafe: string) {

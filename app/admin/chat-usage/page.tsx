@@ -2,6 +2,7 @@ import { auth } from "@/app/api/auth/[...nextauth]/route";
 import { PrismaClient } from "@prisma/client";
 import { redirect } from "next/navigation";
 import UpdateQuotaForm from "./update-quota-form";
+import UpdatePendingForm from "./update-pending-form";
 
 const prisma = new PrismaClient();
 
@@ -73,6 +74,7 @@ export default async function AdminChatUsagePage() {
                   const usage = usageMap.get(user.id);
                   const promptCount = usage?.promptCount ?? 0;
                   const quota = usage?.quota ?? 3;
+                  const pending = usage?.requestPending ?? false;
                   return (
                     <tr
                       key={user.id}
@@ -89,10 +91,16 @@ export default async function AdminChatUsagePage() {
                       </td>
                       <td className="p-4 text-white font-medium">{quota}</td>
                       <td className="p-4">
-                        <UpdateQuotaForm
-                          email={user.email!}
-                          currentQuota={quota}
-                        />
+                        <div className="flex gap-3 items-center">
+                          <UpdateQuotaForm
+                            email={user.email!}
+                            currentQuota={quota}
+                          />
+                          <UpdatePendingForm
+                            email={user.email!}
+                            currentPending={pending}
+                          />
+                        </div>
                       </td>
                     </tr>
                   );

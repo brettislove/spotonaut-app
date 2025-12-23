@@ -81,6 +81,7 @@ export default function ChatInterface() {
     Record<string, boolean>
   >({});
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestPending, setRequestPending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
 
@@ -188,6 +189,14 @@ export default function ChatInterface() {
     e.preventDefault();
     if (!input.trim() || isLoading || !hasCompletedAnalysis) return;
 
+    if (requestPending) {
+      // Inform the user their request for more prompts is pending
+      showToast(
+        "Žádost o další prompty je v procesu schválení. Prosím vyčkejte na potvrzení."
+      );
+      return;
+    }
+
     // Validate message length
     if (input.length > MAX_MESSAGE_LENGTH) {
       const errorMessage: Message = {
@@ -228,17 +237,23 @@ export default function ChatInterface() {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
     setIsLoading(true);
 
     try {
-      // Claim a prompt for this user (server-side lifetime quota)
+      // Claim a prompt for this user (server-side lifetime quota) BEFORE
+      // appending the user's message to avoid a 'ghost' message when claim fails.
       const claimRes = await fetch("/api/chat/usage/claim", { method: "POST" });
       const claimData = await claimRes.json().catch(() => ({}));
       if (!claimRes.ok) {
-        // If over quota, open request modal
+        // If over quota, open request modal or mark pending state
         if (claimRes.status === 403 && claimData.limitExceeded) {
+          if (claimData.requestPending) {
+            // User already requested more; set pending state and show a toast.
+            setRequestPending(true);
+            showToast("Žádost o další prompty je v procesu schválení.");
+            setIsLoading(false);
+            return;
+          }
           setShowRequestModal(true);
           setIsLoading(false);
           return;
@@ -246,6 +261,10 @@ export default function ChatInterface() {
         // other errors — show generic message
         throw new Error(claimData.error || "Failed to claim prompt");
       }
+
+      // Claim succeeded: append user's message and clear input
+      setMessages((prev) => [...prev, userMessage]);
+      setInput("");
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -820,13 +839,13 @@ export default function ChatInterface() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder="Napište svou zprávu..."
-                        disabled={isLoading}
+                        disabled={isLoading || requestPending}
                         maxLength={MAX_MESSAGE_LENGTH}
                         className="flex-1 bg-slate-800/50 border border-slate-600 text-white placeholder-slate-400 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
                       />
                       <button
                         type="submit"
-                        disabled={isLoading || !input.trim()}
+                        disabled={isLoading || requestPending || !input.trim()}
                         className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Odeslat

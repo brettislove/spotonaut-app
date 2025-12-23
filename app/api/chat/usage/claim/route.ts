@@ -60,6 +60,15 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // If the user has already requested more prompts and is waiting for approval,
+      // return a specific response so the client can show a pending state instead of reopening the modal.
+      if (existing.requestPending) {
+        return NextResponse.json(
+          { allowed: false, limitExceeded: true, requestPending: true },
+          { status: 403 }
+        );
+      }
+
       if (existing.promptCount >= existing.quota) {
         return NextResponse.json(
           { allowed: false, limitExceeded: true },
