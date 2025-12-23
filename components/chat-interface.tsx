@@ -892,8 +892,10 @@ export default function ChatInterface() {
                 </h1>
                 <p className="text-lg text-slate-400 leading-relaxed">
                   Spotonaut využívá pokročilou AI analýzu k vyhodnocení
-                  potenciálu vaší lokality. Získejte data o návštěvnosti,
-                  konkurenci a odhadovaných tržbách během několika sekund.
+                  potenciálu vaší lokality.{" "}
+                  <b className="text-white">Zaregistrujte se zdarma</b> a
+                  využijte tak možnost zhodnotit výsledná data s naším{" "}
+                  <b className="text-white">AI asistentem!</b>
                 </p>
               </div>
 
@@ -1024,11 +1026,14 @@ export default function ChatInterface() {
                     </h1>
                     <p className="text-lg text-slate-400 leading-relaxed">
                       Spotonaut využívá pokročilou AI analýzu k vyhodnocení
-                      potenciálu vaší lokality. Získejte data o návštěvnosti,
-                      konkurenci a odhadovaných tržbách během několika sekund.
+                      potenciálu vaší lokality.{" "}
+                      <b className="text-white">Zaregistrujte se zdarma</b> a
+                      využijte tak možnost zhodnotit výsledná data s naším{" "}
+                      <b className="text-white">AI asistentem!</b>
                     </p>
                   </div>
 
+                  {/* Features Grid */}
                   <div className="grid sm:grid-cols-2 gap-3">
                     <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
                       <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center mb-3">
@@ -1042,15 +1047,27 @@ export default function ChatInterface() {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                            d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 10h8"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 13h5"
                           />
                         </svg>
                       </div>
                       <h3 className="text-white font-semibold mb-1">
-                        AI Analýza
+                        AI Asistent
                       </h3>
                       <p className="text-slate-400 text-sm">
-                        Pokročilé algoritmy pro přesné výsledky
+                        Pokročilé zhodnocení výsledků pomocí chatbota.
                       </p>
                     </div>
 
@@ -1080,29 +1097,7 @@ export default function ChatInterface() {
                         Lokalita
                       </h3>
                       <p className="text-slate-400 text-sm">
-                        Hodnocení potenciálu vybrané oblasti
-                      </p>
-                    </div>
-
-                    <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
-                      <div className="w-10 h-10 bg-pink-500/10 rounded-lg flex items-center justify-center mb-3">
-                        <svg
-                          className="w-6 h-6 text-pink-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      </div>
-                      <h3 className="text-white font-semibold mb-1">Tržby</h3>
-                      <p className="text-slate-400 text-sm">
-                        Odhad potenciálních příjmů
+                        Integrace reálných mapových dat.
                       </p>
                     </div>
 
@@ -1126,7 +1121,108 @@ export default function ChatInterface() {
                         Rychlost
                       </h3>
                       <p className="text-slate-400 text-sm">
-                        Výsledky během několika sekund
+                        Výsledky do pár minut.
+                      </p>
+                    </div>
+
+                    {/* Planned / Coming soon features */}
+                    <div className="bg-slate-900/20 border border-dashed border-slate-700/30 rounded-lg p-4 text-left opacity-90">
+                      <div className="flex items-start justify-between">
+                        <div className="w-10 h-10 bg-gradient-to-br from-slate-700/10 to-slate-600/10 rounded-lg flex items-center justify-center mb-3">
+                          <svg
+                            className="w-6 h-6 text-slate-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 8v4l3 3"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 20a8 8 0 100-16 8 8 0 000 16z"
+                            />
+                          </svg>
+                        </div>
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-slate-700/40 to-slate-700/20 text-slate-200">
+                          Plánováno
+                        </span>
+                      </div>
+                      <h3 className="text-white font-semibold mb-1">
+                        Export reportů
+                      </h3>
+                      <p className="text-slate-400 text-sm">
+                        Export analýz do PDF/CSV pro sdílení a archivaci (brzy).
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-900/20 border border-dashed border-slate-700/30 rounded-lg p-4 text-left opacity-90">
+                      <div className="flex items-start justify-between">
+                        <div className="w-10 h-10 bg-gradient-to-br from-slate-700/10 to-slate-600/10 rounded-lg flex items-center justify-center mb-3">
+                          <svg
+                            className="w-6 h-6 text-slate-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M17 8l4 4m0 0l-4 4m4-4H3"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M7 16l-4-4m0 0l4-4M3 12h18"
+                            />
+                          </svg>
+                        </div>
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-slate-700/40 to-slate-700/20 text-slate-200">
+                          Plánováno
+                        </span>
+                      </div>
+                      <h3 className="text-white font-semibold mb-1">
+                        Porovnání lokací
+                      </h3>
+                      <p className="text-slate-400 text-sm">
+                        Analyzujte a porovnávejte více lokalit najednou (brzy).
+                      </p>
+                    </div>
+
+                    <div className="bg-slate-900/20 border border-dashed border-slate-700/30 rounded-lg p-4 text-left opacity-90">
+                      <div className="flex items-start justify-between">
+                        <div className="w-10 h-10 bg-gradient-to-br from-slate-700/10 to-slate-600/10 rounded-lg flex items-center justify-center mb-3">
+                          <svg
+                            className="w-6 h-6 text-slate-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                        </div>
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-slate-700/40 to-slate-700/20 text-slate-200">
+                          Plánováno
+                        </span>
+                      </div>
+                      <h3 className="text-white font-semibold mb-1">
+                        Odhad tržeb
+                      </h3>
+                      <p className="text-slate-400 text-sm">
+                        Získejte odhadované tržby pro vaši lokalitu na základě
+                        zvolených parametrů (brzy).
                       </p>
                     </div>
                   </div>
