@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     const res = await prisma.$executeRaw`
       UPDATE chat_usage
       SET promptCount = promptCount + 1, updatedAt = CURRENT_TIMESTAMP
-      WHERE userId = ${userId} AND promptCount < quota
+      WHERE "userId" = ${userId} AND promptCount < quota
     `;
 
     // $executeRawUnsafe returns number of affected rows for UPDATE
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       const retry = await prisma.$executeRaw`
         UPDATE chat_usage
         SET promptCount = promptCount + 1, updatedAt = CURRENT_TIMESTAMP
-        WHERE userId = ${userId} AND promptCount < quota
+        WHERE "userId" = ${userId} AND promptCount < quota
       `;
       if (retry === 0) {
         return NextResponse.json(
