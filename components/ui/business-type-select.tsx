@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useId } from "react";
 import {
   BUSINESS_TYPES_BY_CATEGORY,
   CATEGORIES,
   type BusinessType,
 } from "@/lib/constants/business-types";
+import FieldHelp from "./field-help";
 
 interface BusinessTypeSelectProps {
   value: BusinessType | null;
@@ -24,6 +25,10 @@ export default function BusinessTypeSelect({
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const popoverId = useId();
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+  const helpButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [showPopover, setShowPopover] = useState(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -40,6 +45,33 @@ export default function BusinessTypeSelect({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Close popover when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleOutside = (event: MouseEvent) => {
+      if (!showPopover) return;
+      const target = event.target as Node;
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(target) &&
+        helpButtonRef.current &&
+        !helpButtonRef.current.contains(target)
+      ) {
+        setShowPopover(false);
+      }
+    };
+
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowPopover(false);
+    };
+
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [showPopover]);
 
   // Focus search input when dropdown opens
   useEffect(() => {
@@ -74,6 +106,7 @@ export default function BusinessTypeSelect({
         className="block mb-2 text-sm font-medium text-white"
       >
         Typ podnikání
+        <FieldHelp description="Vyberte typ podnikání, který nejlépe vystihuje vaši provozovnu. Tento výběr pomůže přizpůsobit odhad návštěvnosti a doporučené provozní parametry (např. průměrná útrata, otevírací doba)." />
       </label>
 
       <button
