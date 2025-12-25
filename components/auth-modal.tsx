@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 
 interface AuthModalProps {
@@ -26,6 +26,17 @@ export default function AuthModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Sync internal active tab with incoming `mode` prop so parent can switch tabs
+  useEffect(() => {
+    setActiveTab(mode);
+    // clear transient state when mode changes
+    setError("");
+    setSuccess("");
+    setConfirmPassword("");
+    setConfirmPasswordValid(null);
+    setAcceptTerms(false);
+  }, [mode]);
 
   if (!isOpen) return null;
 
