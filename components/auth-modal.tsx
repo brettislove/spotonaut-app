@@ -213,7 +213,7 @@ export default function AuthModal({
         )}
 
         {/* Google OAuth Button */}
-        <button
+        {/* <button
           onClick={handleGoogleSignIn}
           disabled={isLoading}
           className="w-full flex items-center justify-center cursor-pointer gap-3 bg-white text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mb-4"
@@ -237,7 +237,7 @@ export default function AuthModal({
             />
           </svg>
           Pokračovat s Google
-        </button>
+        </button> */}
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
