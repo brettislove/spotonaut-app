@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import LocationPickerDialog from "./location-picker-dialog";
+import FieldHelp from "./ui/field-help";
 import BusinessTypeSelect from "./ui/business-type-select";
 import type { BusinessType } from "@/lib/constants/business-types";
 
@@ -312,6 +313,10 @@ export default function AnalysisForm({
             className="block mb-2 text-sm font-medium text-white"
           >
             Cílová lokalita
+            <FieldHelp
+              title="Cílová lokalita"
+              description="Zadejte přesnou adresu nebo název místa. Můžete použít vyhledávání nebo vybrat lokaci z mapy. Pro nejlepší výsledky zadejte město a ulici."
+            />
           </label>
           <div className="relative">
             <input
@@ -409,7 +414,11 @@ export default function AnalysisForm({
               htmlFor="operatingHours"
               className="block mb-2 text-sm font-medium text-white"
             >
-              Plánovaná otevírací doba (hodin/týden)
+              Plánovaná otevírací doba
+              <FieldHelp
+                title="Plánovaná otevírací doba"
+                description="Zvolte průměrný počet hodin, během kterých bude provozovna otevřená za týden. Přesnější údaje zlepší predikci tržeb a návštěvnosti."
+              />
             </label>
             <div className="space-y-3">
               <input
@@ -453,6 +462,10 @@ export default function AnalysisForm({
               className="block mb-2 text-sm font-medium text-white"
             >
               Období analýzy
+              <FieldHelp
+                title="Období analýzy"
+                description="Vyberte časový rozsah pro výpočty (den/týden/měsíc/rok). Analýza se přizpůsobí podle zvoleného období."
+              />
             </label>
             <div className="inline-flex rounded-lg shadow-sm" role="group">
               {[
