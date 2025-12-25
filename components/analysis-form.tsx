@@ -61,6 +61,16 @@ export default function AnalysisForm({
   const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
   const [loadingTextIndex, setLoadingTextIndex] = useState(0);
 
+  // Selected days state (multiple selection allowed)
+  const [selectedDays, setSelectedDays] = useState<Record<string, boolean>>({
+    mon: false,
+    tue: false,
+    wed: false,
+    thu: false,
+    fri: false,
+    sat: false,
+    sun: false,
+  });
   const loadingTexts = [
     "Analyzuji lokalitu...",
     "Zjišťuji hustotu provozu...",
@@ -82,6 +92,28 @@ export default function AnalysisForm({
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Initialize selectedDays from initial operatingHours (approx. days = hours / 24)
+  useEffect(() => {
+    const hours = formData.operatingHours || 0;
+    const daysCount = Math.min(7, Math.max(0, Math.round(hours / 24)));
+    if (daysCount > 0) {
+      const keys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+      const init: Record<string, boolean> = {
+        mon: false,
+        tue: false,
+        wed: false,
+        thu: false,
+        fri: false,
+        sat: false,
+        sun: false,
+      };
+      keys.forEach((k, i) => {
+        init[k] = i < daysCount;
+      });
+      setSelectedDays(init);
+    }
   }, []);
 
   // Cycle through loading texts
@@ -265,12 +297,9 @@ export default function AnalysisForm({
       newErrors.businessType = "Typ podnikání je povinný";
     }
 
-    if (
-      !formData.operatingHours ||
-      formData.operatingHours < 1 ||
-      formData.operatingHours > 168
-    ) {
-      newErrors.operatingHours = "Hodiny musí být mezi 1-168";
+    const selectedCount = Object.values(selectedDays).filter(Boolean).length;
+    if (selectedCount === 0) {
+      newErrors.operatingHours = "Vyberte alespoň jeden den";
     }
 
     setErrors(newErrors);
@@ -407,45 +436,65 @@ export default function AnalysisForm({
           error={errors.businessType}
         />
 
-        {/* Operating Hours and Timeframe - Side by Side */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Operating Days */}
+        <div className="grid grid-cols-1 gap-6">
           <div>
             <label
-              htmlFor="operatingHours"
+              htmlFor="operatingDays"
               className="block mb-2 text-sm font-medium text-white"
             >
-              Plánovaná otevírací doba
+              Plánované dny otevření
               <FieldHelp
-                title="Plánovaná otevírací doba"
-                description="Zvolte průměrný počet hodin, během kterých bude provozovna otevřená za týden. Přesnější údaje zlepší predikci tržeb a návštěvnosti."
+                title="Plánované dny otevření"
+                description="Vyberte dny, kdy bude provozovna otevřená. Můžete vybrat více dnů. Celkové hodiny za týden se vypočtou z vybraných dnů."
               />
             </label>
             <div className="space-y-3">
-              <input
-                id="operatingHours"
-                type="range"
-                min="1"
-                max="168"
-                value={formData.operatingHours}
-                onChange={(e) =>
-                  updateField("operatingHours", parseInt(e.target.value))
-                }
-                disabled={isLoading}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: `linear-gradient(to right, rgb(59 130 246) 0%, rgb(59 130 246) ${
-                    (((formData.operatingHours || 40) - 1) / 167) * 100
-                  }%, rgb(55 65 81) ${
-                    (((formData.operatingHours || 40) - 1) / 167) * 100
-                  }%, rgb(55 65 81) 100%)`,
-                }}
-              />
+              <div className="grid grid-cols-7 gap-2">
+                {[
+                  { key: "mon", label: "Po" },
+                  { key: "tue", label: "Út" },
+                  { key: "wed", label: "St" },
+                  { key: "thu", label: "Čt" },
+                  { key: "fri", label: "Pá" },
+                  { key: "sat", label: "So" },
+                  { key: "sun", label: "Ne" },
+                ].map((d) => {
+                  const active = !!selectedDays[d.key];
+                  return (
+                    <button
+                      key={d.key}
+                      type="button"
+                      onClick={() => {
+                        const next = { ...selectedDays, [d.key]: !active };
+                        setSelectedDays(next);
+                        // compute operating hours as selectedDaysCount * 24
+                        const count =
+                          Object.values(next).filter(Boolean).length;
+                        updateField("operatingHours", (count * 24) as number);
+                      }}
+                      disabled={isLoading}
+                      className={`cursor-pointer px-2 py-2 text-xs font-medium rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        active
+                          ? "bg-purple-600 text-white border-purple-600"
+                          : "bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700 hover:text-white"
+                      }`}
+                      aria-pressed={active}
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
+
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500">1h</span>
-                <span className="px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 border border-blue-500 rounded-lg">
-                  {formData.operatingHours || 40}h
+                <span className="text-sm text-slate-400">
+                  Vybráno: {Object.values(selectedDays).filter(Boolean).length}{" "}
+                  dní
                 </span>
-                <span className="text-sm text-slate-500">168h</span>
+                <span className="px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 border border-blue-500 rounded-lg">
+                  {formData.operatingHours || 0}h/týdně
+                </span>
               </div>
             </div>
             {errors.operatingHours && (
@@ -455,52 +504,7 @@ export default function AnalysisForm({
             )}
           </div>
 
-          {/* Timeframe */}
-          <div>
-            <label
-              htmlFor="timeframe"
-              className="block mb-2 text-sm font-medium text-white"
-            >
-              Období analýzy
-              <FieldHelp
-                title="Období analýzy"
-                description="Vyberte časový rozsah pro výpočty (den/týden/měsíc/rok). Analýza se přizpůsobí podle zvoleného období."
-              />
-            </label>
-            <div className="inline-flex rounded-lg shadow-sm" role="group">
-              {[
-                { value: "day", label: "Den", position: "first" },
-                { value: "week", label: "Týden", position: "middle" },
-                { value: "month", label: "Měsíc", position: "middle" },
-                { value: "year", label: "Rok", position: "last" },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() =>
-                    updateField(
-                      "timeframe",
-                      option.value as AnalysisFormData["timeframe"]
-                    )
-                  }
-                  disabled={isLoading}
-                  className={`cursor-pointer px-4 py-2 text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                    option.position === "first"
-                      ? "rounded-s-lg border-r-0"
-                      : option.position === "last"
-                      ? "rounded-e-lg"
-                      : "border-r-0"
-                  } ${
-                    formData.timeframe === option.value
-                      ? "bg-purple-600 text-white border-purple-600 hover:bg-purple-700 shadow-lg"
-                      : "bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700 hover:text-white"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Timeframe removed per request */}
         </div>
 
         {/* Actions */}
