@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import LocationPickerDialog from "./location-picker-dialog";
 import FieldHelp from "./ui/field-help";
 import BusinessTypeSelect from "./ui/business-type-select";
+import OperatingDays from "./operating-days";
 import type { BusinessType } from "@/lib/constants/business-types";
 
 interface AnalysisFormData {
@@ -61,16 +62,10 @@ export default function AnalysisForm({
   const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
   const [loadingTextIndex, setLoadingTextIndex] = useState(0);
 
-  // Selected days state (multiple selection allowed)
-  const [selectedDays, setSelectedDays] = useState<Record<string, boolean>>({
-    mon: false,
-    tue: false,
-    wed: false,
-    thu: false,
-    fri: false,
-    sat: false,
-    sun: false,
-  });
+  // Daily hours map (managed by OperatingDays component)
+  const [dailyHours, setDailyHours] = useState<Record<string, number> | null>(
+    null
+  );
   const loadingTexts = [
     "Analyzuji lokalitu...",
     "Zjišťuji hustotu provozu...",
@@ -94,27 +89,7 @@ export default function AnalysisForm({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Initialize selectedDays from initial operatingHours (approx. days = hours / 24)
-  useEffect(() => {
-    const hours = formData.operatingHours || 0;
-    const daysCount = Math.min(7, Math.max(0, Math.round(hours / 24)));
-    if (daysCount > 0) {
-      const keys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
-      const init: Record<string, boolean> = {
-        mon: false,
-        tue: false,
-        wed: false,
-        thu: false,
-        fri: false,
-        sat: false,
-        sun: false,
-      };
-      keys.forEach((k, i) => {
-        init[k] = i < daysCount;
-      });
-      setSelectedDays(init);
-    }
-  }, []);
+  // dailyHours will be initialized by OperatingDays and reported via onChange
 
   // Cycle through loading texts
   useEffect(() => {
@@ -297,7 +272,9 @@ export default function AnalysisForm({
       newErrors.businessType = "Typ podnikání je povinný";
     }
 
-    const selectedCount = Object.values(selectedDays).filter(Boolean).length;
+    const selectedCount = dailyHours
+      ? Object.values(dailyHours).filter((h) => h > 0).length
+      : Math.max(0, Math.round((formData.operatingHours || 0) / 24));
     if (selectedCount === 0) {
       newErrors.operatingHours = "Vyberte alespoň jeden den";
     }
@@ -324,6 +301,17 @@ export default function AnalysisForm({
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
+
+  // Stable handler for OperatingDays to avoid changing reference each render
+  const handleOperatingDaysChange = useCallback(
+    (total: number, days: Record<string, number>) => {
+      setFormData((prev) => ({ ...prev, operatingHours: total }));
+      setDailyHours(days as Record<string, number>);
+      // clear operatingHours validation if present
+      setErrors((prev) => ({ ...prev, operatingHours: undefined }));
+    },
+    []
+  );
 
   return (
     <div className="w-full max-w-2xl mx-auto p-6 bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl">
@@ -446,56 +434,15 @@ export default function AnalysisForm({
               Plánované dny otevření
               <FieldHelp
                 title="Plánované dny otevření"
-                description="Vyberte dny, kdy bude provozovna otevřená. Můžete vybrat více dnů. Celkové hodiny za týden se vypočtou z vybraných dnů."
+                description="Vyberte dny, kdy bude provozovna otevřená a nastavte počet hodin pro každý den. Celkové hodiny za týden se vypočtou z vybraných dnů."
               />
             </label>
             <div className="space-y-3">
-              <div className="grid grid-cols-7 gap-2">
-                {[
-                  { key: "mon", label: "Po" },
-                  { key: "tue", label: "Út" },
-                  { key: "wed", label: "St" },
-                  { key: "thu", label: "Čt" },
-                  { key: "fri", label: "Pá" },
-                  { key: "sat", label: "So" },
-                  { key: "sun", label: "Ne" },
-                ].map((d) => {
-                  const active = !!selectedDays[d.key];
-                  return (
-                    <button
-                      key={d.key}
-                      type="button"
-                      onClick={() => {
-                        const next = { ...selectedDays, [d.key]: !active };
-                        setSelectedDays(next);
-                        // compute operating hours as selectedDaysCount * 24
-                        const count =
-                          Object.values(next).filter(Boolean).length;
-                        updateField("operatingHours", (count * 24) as number);
-                      }}
-                      disabled={isLoading}
-                      className={`cursor-pointer px-2 py-2 text-xs font-medium rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                        active
-                          ? "bg-purple-600 text-white border-purple-600"
-                          : "bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700 hover:text-white"
-                      }`}
-                      aria-pressed={active}
-                    >
-                      {d.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-400">
-                  Vybráno: {Object.values(selectedDays).filter(Boolean).length}{" "}
-                  dní
-                </span>
-                <span className="px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 border border-blue-500 rounded-lg">
-                  {formData.operatingHours || 0}h/týdně
-                </span>
-              </div>
+              <OperatingDays
+                disabled={isLoading}
+                onChange={handleOperatingDaysChange}
+                error={errors.operatingHours}
+              />
             </div>
             {errors.operatingHours && (
               <p className="mt-2 text-sm text-red-500">
@@ -503,8 +450,6 @@ export default function AnalysisForm({
               </p>
             )}
           </div>
-
-          {/* Timeframe removed per request */}
         </div>
 
         {/* Actions */}
