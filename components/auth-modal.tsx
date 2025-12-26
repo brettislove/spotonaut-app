@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAnalysis } from "@/lib/contexts/analysis-context";
 import { signIn } from "next-auth/react";
 
 interface AuthModalProps {
@@ -37,6 +38,8 @@ export default function AuthModal({
     setConfirmPasswordValid(null);
     setAcceptTerms(false);
   }, [mode]);
+
+  const { showToast } = useAnalysis();
 
   if (!isOpen) return null;
 
@@ -105,6 +108,14 @@ export default function AuthModal({
         setConfirmPassword(""); // clear confirm after signup
         setConfirmPasswordValid(null);
         setAcceptTerms(false);
+        // Notify user with toast that account was created and email was sent
+        try {
+          showToast(
+            "Registrace úspěšná — zkontrolujte svůj e-mail pro potvrzení."
+          );
+        } catch (e) {
+          // ignore if toast can't be shown
+        }
       }
     } catch (error) {
       setError(
@@ -144,7 +155,8 @@ export default function AuthModal({
   };
 
   // Inline validation flags
-  const passwordTooShort = activeTab === "signup" && password.length > 0 && password.length < 6;
+  const passwordTooShort =
+    activeTab === "signup" && password.length > 0 && password.length < 6;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -328,7 +340,9 @@ export default function AuthModal({
             />
 
             {passwordTooShort && (
-              <p className="mt-2 text-sm text-red-400">Heslo musí mít alespoň 6 znaků</p>
+              <p className="mt-2 text-sm text-red-400">
+                Heslo musí mít alespoň 6 znaků
+              </p>
             )}
           </div>
 
