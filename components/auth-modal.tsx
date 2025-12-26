@@ -98,10 +98,10 @@ export default function AuthModal({
         password,
         redirect: false,
       });
-
       if (loginResult?.ok) {
         window.location.reload();
       } else {
+        // If auto-login didn't happen, show friendly success message and switch to login
         setSuccess("Účet byl vytvořen! Nyní se můžete přihlásit.");
         setActiveTab("login");
         setPassword("");
@@ -138,11 +138,25 @@ export default function AuthModal({
         redirect: false,
       });
 
-      if (result?.error) {
-        throw new Error(result.error);
-      }
+      // Map known next-auth/client error codes to user-friendly messages
+      const mapNextAuthError = (err?: string | null) => {
+        if (!err) return "Přihlášení se nezdařilo";
+        const e = err.toString();
+        if (
+          e.toLowerCase().includes("credentials") ||
+          e.toLowerCase().includes("invalid") ||
+          e.toLowerCase().includes("neplatn") ||
+          e.toLowerCase().includes("configuration")
+        )
+          return "Neplatné přihlašovací údaje";
+        // fallback to the original error message
+        return e;
+      };
 
-      if (result?.ok) {
+      if (result?.error) {
+        // show friendly mapped message instead of raw token like 'Configuration'
+        setError(mapNextAuthError(result.error));
+      } else if (result?.ok) {
         window.location.reload();
       }
     } catch (error) {
