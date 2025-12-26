@@ -143,6 +143,9 @@ export default function AuthModal({
     }
   };
 
+  // Inline validation flags
+  const passwordTooShort = activeTab === "signup" && password.length > 0 && password.length < 6;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 relative">
@@ -314,12 +317,19 @@ export default function AuthModal({
                 }
               }}
               required
-              className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
+              aria-invalid={passwordTooShort}
+              className={`w-full bg-slate-800 border text-white rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all ${
+                passwordTooShort ? "border-red-500" : "border-slate-700"
+              }`}
               placeholder={
                 activeTab === "signup" ? "Alespoň 6 znaků" : "Vaše heslo"
               }
               disabled={isLoading}
             />
+
+            {passwordTooShort && (
+              <p className="mt-2 text-sm text-red-400">Heslo musí mít alespoň 6 znaků</p>
+            )}
           </div>
 
           {activeTab === "signup" && (
