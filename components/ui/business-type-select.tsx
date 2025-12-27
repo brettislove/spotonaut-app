@@ -80,14 +80,21 @@ export default function BusinessTypeSelect({
     }
   }, [isOpen]);
 
-  // Filter business types based on search query
+  // Normalize string for diacritics-insensitive comparison
+  const normalize = (s: string) =>
+    s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+
+  // Filter business types based on search query (diacritics-insensitive)
   const filteredCategories = searchQuery
-    ? CATEGORIES.map((category) => ({
-        category,
-        types: BUSINESS_TYPES_BY_CATEGORY[category].filter((business) =>
-          business.type.toLowerCase().includes(searchQuery.toLowerCase())
-        ),
-      })).filter((cat) => cat.types.length > 0)
+    ? (() => {
+        const normalizedQuery = normalize(searchQuery);
+        return CATEGORIES.map((category) => ({
+          category,
+          types: BUSINESS_TYPES_BY_CATEGORY[category].filter((business) =>
+            normalize(business.type).includes(normalizedQuery)
+          ),
+        })).filter((cat) => cat.types.length > 0);
+      })()
     : CATEGORIES.map((category) => ({
         category,
         types: BUSINESS_TYPES_BY_CATEGORY[category],
