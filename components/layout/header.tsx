@@ -449,7 +449,7 @@ export default function Header() {
               <div className="space-y-2">
                 {/* User info */}
                 <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800/30">
-                  <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                  <div className="w-9 h-9 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
                     {getInitials(session.user?.name)}
                   </div>
                   <div className="flex-1 min-w-0">
