@@ -19,7 +19,7 @@ export default function LocationPickerDialog({
   isOpen,
   onClose,
   onLocationSelect,
-  initialCenter = [50.0755, 14.4378], // Prague default
+  initialCenter = [49.1951, 16.6068], // Brno default
 }: LocationPickerDialogProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -41,7 +41,7 @@ export default function LocationPickerDialog({
       if (!mapRef.current && mapContainerRef.current) {
         const map = L.map(mapContainerRef.current, {
           center: currentCenter,
-          zoom: 15,
+          zoom: 13,
           zoomControl: true,
           scrollWheelZoom: true,
           dragging: true,
