@@ -157,7 +157,7 @@ export default function Header() {
                     }}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800/50 transition-colors"
                   >
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                    <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
                       {getInitials(session.user?.name)}
                     </div>
                     <span className="text-sm text-white max-w-[120px] truncate">
