@@ -55,7 +55,7 @@ export default function MapView({ data }: MapViewProps) {
   const position: LatLngExpression = useMemo(() => {
     return data.coordinates
       ? [data.coordinates.lat, data.coordinates.lng]
-      : [50.0755, 14.4378];
+      : [49.1951, 16.6068];
   }, [data.coordinates]);
 
   if (!isMounted) {
