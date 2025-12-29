@@ -73,11 +73,11 @@ export default function FieldHelp({ title, description }: FieldHelpProps) {
         ref={popoverRef}
         role="tooltip"
         aria-hidden={!open}
-        className={`absolute z-50 mt-2 p-3 inline-block text-sm transition-opacity duration-150 rounded-lg shadow-2xl w-72 border border-slate-700 bg-slate-900/95 text-slate-100 ${
+        className={`absolute z-50 mt-2 p-3 inline-block text-sm transition-opacity duration-150 rounded-lg shadow-2xl border border-slate-700 bg-slate-900/95 text-slate-100 ${
           open
             ? "visible opacity-100"
             : "invisible opacity-0 pointer-events-none"
-        }`}
+        } left-1/2 -translate-x-1/2 transform max-w-[calc(100vw-1.5rem)] w-full sm:w-72 sm:left-auto sm:translate-x-0`}
       >
         <div>
           {title && (
