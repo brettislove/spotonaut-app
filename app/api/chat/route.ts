@@ -70,7 +70,8 @@ export async function POST(request: NextRequest) {
       const usage = await prisma.chatUsage.findUnique({
         where: { userId: session.user?.id as string },
       });
-      if (usage && usage.promptCount >= usage.quota) {
+      // If usage.quota is NULL treat as unlimited
+      if (usage && usage.quota !== null && usage.promptCount >= usage.quota) {
         return NextResponse.json(
           { error: "Chat prompt limit exceeded", limitExceeded: true },
           { status: 403 }
