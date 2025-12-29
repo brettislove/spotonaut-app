@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@/app/api/auth/[...nextauth]/route";
 import { PrismaClient } from "@prisma/client";
 
@@ -17,7 +17,7 @@ function parseAdminEmails(): string[] {
   return [];
 }
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const session = await auth();
     if (!session || !session.user) {
@@ -39,10 +39,11 @@ export async function POST(request: NextRequest) {
     // Atomically increment promptCount when promptCount < quota using
     // a parameterized query so Postgres placeholders are handled correctly.
     // Use the tagged `$executeRaw` so the `userId` parameter is bound safely.
+    // Allow unlimited users by treating NULL quota as unlimited
     const res = await prisma.$executeRaw`
       UPDATE chat_usage
       SET "promptCount" = "promptCount" + 1, "updatedAt" = CURRENT_TIMESTAMP
-      WHERE "userId" = ${userId} AND "promptCount" < "quota"
+      WHERE "userId" = ${userId} AND ("quota" IS NULL OR "promptCount" < "quota")
     `;
 
     // $executeRawUnsafe returns number of affected rows for UPDATE
@@ -56,7 +57,10 @@ export async function POST(request: NextRequest) {
         });
         return NextResponse.json({
           allowed: true,
-          remaining: Math.max(0, created.quota - created.promptCount),
+          remaining:
+            created.quota === null
+              ? Number.POSITIVE_INFINITY
+              : Math.max(0, created.quota - created.promptCount),
         });
       }
 
@@ -69,7 +73,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (existing.promptCount >= existing.quota) {
+      // If quota is null, treat as unlimited
+      if (existing.quota !== null && existing.promptCount >= existing.quota) {
         return NextResponse.json(
           { allowed: false, limitExceeded: true },
           { status: 403 }
@@ -80,7 +85,7 @@ export async function POST(request: NextRequest) {
       const retry = await prisma.$executeRaw`
         UPDATE chat_usage
         SET "promptCount" = "promptCount" + 1, "updatedAt" = CURRENT_TIMESTAMP
-        WHERE "userId" = ${userId} AND "promptCount" < "quota"
+        WHERE "userId" = ${userId} AND ("quota" IS NULL OR "promptCount" < "quota")
       `;
       if (retry === 0) {
         return NextResponse.json(
@@ -92,10 +97,10 @@ export async function POST(request: NextRequest) {
       const updated = await prisma.chatUsage.findUnique({ where: { userId } });
       return NextResponse.json({
         allowed: true,
-        remaining: Math.max(
-          0,
-          (updated?.quota || 3) - (updated?.promptCount || 0)
-        ),
+        remaining:
+          updated?.quota === null
+            ? Number.POSITIVE_INFINITY
+            : Math.max(0, (updated?.quota || 3) - (updated?.promptCount || 0)),
       });
     }
 
@@ -103,10 +108,10 @@ export async function POST(request: NextRequest) {
     const usage = await prisma.chatUsage.findUnique({ where: { userId } });
     return NextResponse.json({
       allowed: true,
-      remaining: Math.max(
-        0,
-        usage?.quota ? usage.quota - usage.promptCount : 0
-      ),
+      remaining:
+        usage?.quota === null
+          ? Number.POSITIVE_INFINITY
+          : Math.max(0, (usage?.quota || 0) - (usage?.promptCount || 0)),
     });
   } catch (err) {
     // Generate a short error id for correlation in logs (safe to show to users)
