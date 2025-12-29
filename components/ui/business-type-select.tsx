@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useId } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   BUSINESS_TYPES_BY_CATEGORY,
   CATEGORIES,
@@ -25,7 +25,6 @@ export default function BusinessTypeSelect({
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const popoverId = useId();
   const popoverRef = useRef<HTMLDivElement | null>(null);
   const helpButtonRef = useRef<HTMLButtonElement | null>(null);
   const [showPopover, setShowPopover] = useState(false);
@@ -186,11 +185,12 @@ export default function BusinessTypeSelect({
                           }`}
                         >
                           <span className="text-sm">{business.type}</span>
-                          {business.avgSpend > 0 && (
+                          {/* To be implemented in the future */}
+                          {/* {business.avgSpend > 0 && (
                             <span className="text-xs text-slate-400">
                               ~{business.avgSpend} Kč/zákazník
                             </span>
-                          )}
+                          )} */}
                         </button>
                       </li>
                     ))}
