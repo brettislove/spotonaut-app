@@ -57,7 +57,10 @@ export async function POST() {
         });
         return NextResponse.json({
           allowed: true,
-          remaining: Math.max(0, created.quota - created.promptCount),
+          remaining:
+            created.quota === null
+              ? Number.POSITIVE_INFINITY
+              : Math.max(0, created.quota - created.promptCount),
         });
       }
 
