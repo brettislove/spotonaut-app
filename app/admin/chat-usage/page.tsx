@@ -73,7 +73,11 @@ export default async function AdminChatUsagePage() {
                 {users.map((user) => {
                   const usage = usageMap.get(user.id);
                   const promptCount = usage?.promptCount ?? 0;
-                  const quota = usage?.quota ?? 3;
+                  // Keep a numeric value for the update form, but display
+                  // a friendly '∞' when quota is NULL (unlimited).
+                  const currentQuota = usage?.quota ?? 3;
+                  const displayQuota =
+                    usage?.quota === null ? "∞" : currentQuota;
                   const pending = usage?.requestPending ?? false;
                   return (
                     <tr
@@ -89,12 +93,14 @@ export default async function AdminChatUsagePage() {
                       <td className="p-4 text-white font-medium">
                         {promptCount}
                       </td>
-                      <td className="p-4 text-white font-medium">{quota}</td>
+                      <td className="p-4 text-white font-medium">
+                        {displayQuota}
+                      </td>
                       <td className="p-4">
                         <div className="flex gap-3 items-center">
                           <UpdateQuotaForm
                             email={user.email!}
-                            currentQuota={quota}
+                            currentQuota={currentQuota}
                           />
                           <UpdatePendingForm
                             email={user.email!}
