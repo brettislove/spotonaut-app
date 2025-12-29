@@ -316,8 +316,10 @@ export default function AnalysisForm({
   return (
     <div className="w-full max-w-2xl mx-auto p-6 bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl">
       <div className="mb-6">
-        <h3 className="text-xl font-semibold text-white">Analýza lokality</h3>
-        <p className="mt-1 text-sm text-slate-400">
+        <h3 className="text-xl font-semibold text-blue-100">
+          Analýza lokality
+        </h3>
+        <p className="mt-1 text-sm text-blue-200">
           Vyplňte základní informace o vašem podnikání potřebné pro analýzu
         </p>
       </div>
@@ -389,7 +391,7 @@ export default function AnalysisForm({
             (suggestions.length > 0 || isLoadingSuggestions) && (
               <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                 {isLoadingSuggestions ? (
-                  <div className="px-4 py-3 text-sm text-slate-400">
+                  <div className="px-4 py-3 text-sm text-blue-200">
                     Načítání...
                   </div>
                 ) : (
@@ -399,12 +401,12 @@ export default function AnalysisForm({
                         <button
                           type="button"
                           onClick={() => handleSuggestionClick(suggestion)}
-                          className="flex flex-col items-start cursor-pointer w-full px-4 py-2 text-left hover:bg-slate-700 transition-colors"
+                          className="flex flex-col items-start cursor-pointer w-full px-4 py-2 text-left hover:bg-blue-700/40 transition-colors"
                         >
-                          <span className="text-sm font-medium text-white">
+                          <span className="text-sm font-medium text-blue-100">
                             {getShortLocationName(suggestion)}
                           </span>
-                          <span className="text-xs text-gray-400 mt-0.5 truncate w-full">
+                          <span className="text-xs text-blue-200 mt-0.5 truncate w-full">
                             {suggestion.display_name}
                           </span>
                         </button>
@@ -436,10 +438,10 @@ export default function AnalysisForm({
                 title="Plánované dny otevření"
                 description="Vyberte dny, kdy bude provozovna otevřená a nastavte počet hodin pro každý den. Celkové hodiny za týden se vypočtou z vybraných dnů."
               />
-              <span className="ml-3 inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-slate-700/40 to-slate-700/20 text-slate-200 border border-slate-700/30">
+              <span className="ml-3 inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-blue-700/40 to-blue-700/20 text-blue-100 border border-blue-700/30">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="w-3 h-3 text-slate-200"
+                  className="w-3 h-3 text-blue-100"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -489,7 +491,7 @@ export default function AnalysisForm({
               type="button"
               onClick={onCancel}
               disabled={isLoading}
-              className="cursor-pointer flex-1 px-5 py-2.5 text-sm font-medium text-white bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 focus:ring-2 focus:outline-none focus:ring-slate-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="cursor-pointer flex-1 px-5 py-2.5 text-sm font-medium text-white bg-slate-800 border border-blue-600/20 rounded-lg hover:bg-blue-800/10 focus:ring-2 focus:outline-none focus:ring-blue-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Zrušit
             </button>
@@ -497,9 +499,12 @@ export default function AnalysisForm({
           <button
             type="submit"
             disabled={isLoading}
-            className="cursor-pointer flex-1 px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:outline-none focus:ring-blue-500 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group relative cursor-pointer flex-1 px-5 py-2.5 text-sm font-medium text-white rounded-full overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 border border-blue-600/20 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? loadingTexts[loadingTextIndex] : "Analyzovat"}
+            <span className="relative z-10">
+              {isLoading ? loadingTexts[loadingTextIndex] : "Analyzovat"}
+            </span>
+            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-600 bg-gradient-to-r from-transparent via-blue-400/30 to-transparent opacity-40" />
           </button>
         </div>
       </form>
