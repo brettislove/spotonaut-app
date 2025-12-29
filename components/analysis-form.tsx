@@ -436,19 +436,49 @@ export default function AnalysisForm({
                 title="Plánované dny otevření"
                 description="Vyberte dny, kdy bude provozovna otevřená a nastavte počet hodin pro každý den. Celkové hodiny za týden se vypočtou z vybraných dnů."
               />
+              <span className="ml-3 inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-slate-700/40 to-slate-700/20 text-slate-200 border border-slate-700/30">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-3 h-3 text-slate-200"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 8v4l3 3"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 20a8 8 0 100-16 8 8 0 000 16z"
+                  />
+                </svg>
+                <span>Plánováno</span>
+              </span>
             </label>
-            <div className="space-y-3">
-              <OperatingDays
-                disabled={isLoading}
-                onChange={handleOperatingDaysChange}
-                error={errors.operatingHours}
-              />
+            <div className="space-y-3 relative">
+              {/* Keep component in DOM but visually disabled (planned feature) */}
+              <div className="pointer-events-none opacity-60">
+                <OperatingDays
+                  disabled={true}
+                  onChange={handleOperatingDaysChange}
+                  error={errors.operatingHours}
+                />
+              </div>
+
+              {/* Badge moved next to the label; kept OperatingDays in DOM but non-interactive */}
+
+              {/* Keep validation text hidden while the section is planned */}
+              {/* If you want to show validation in future, remove the comment tags below */}
+              {/* {errors.operatingHours && (
+                <p className="mt-2 text-sm text-red-500">
+                  {errors.operatingHours}
+                </p>
+              )} */}
             </div>
-            {errors.operatingHours && (
-              <p className="mt-2 text-sm text-red-500">
-                {errors.operatingHours}
-              </p>
-            )}
           </div>
         </div>
 

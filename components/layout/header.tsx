@@ -251,7 +251,7 @@ export default function Header() {
                   </button>
                   <button
                     onClick={() => handleAuthClick("signup")}
-                    className="group relative px-4 py-2 hover:cursor-pointer text-sm font-semibold bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg overflow-hidden"
+                    className="group relative px-4 py-2 hover:cursor-pointer text-sm font-semibold bg-purple-600 text-white rounded-lg overflow-hidden"
                   >
                     <span className="relative z-10">Registrovat se</span>
                     <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 bg-gradient-to-r from-transparent via-white/25 to-transparent" />
@@ -527,7 +527,7 @@ export default function Header() {
                     handleAuthClick("signup");
                     setIsMobileMenuOpen(false);
                   }}
-                  className="group relative w-full px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg overflow-hidden"
+                  className="group relative w-full px-4 py-2.5 text-sm font-semibold bg-purple-600 text-white rounded-lg overflow-hidden"
                 >
                   <span className="relative z-10">Registrovat se</span>
                   <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 bg-gradient-to-r from-transparent via-white/25 to-transparent" />

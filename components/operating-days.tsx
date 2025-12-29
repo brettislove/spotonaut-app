@@ -110,14 +110,14 @@ export default function OperatingDays({
         })}
       </div>
 
-      <div className="flex items-center justify-between mt-3">
+      {/* <div className="flex items-center justify-between mt-3">
         <span className="text-sm text-slate-400">
           Vybráno: {Object.values(hours).filter((h) => h > 0).length} dní
         </span>
         <span className="px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 border border-blue-500 rounded-lg">
           {Object.values(hours).reduce((s, h) => s + (h || 0), 0)}h/týdně
         </span>
-      </div>
+      </div> */}
 
       {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
     </div>
