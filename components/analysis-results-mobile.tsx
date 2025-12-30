@@ -234,9 +234,7 @@ export default function AnalysisResultsMobile({
                 <div
                   aria-hidden
                   className={`absolute inset-y-1 left-1 w-[calc(50%_-_0.25rem)] rounded-full bg-gradient-to-br from-blue-500 to-blue-400 shadow-lg transform transition-transform duration-300 pointer-events-none ${
-                    activeTab === "chat"
-                      ? "translate-x-[calc(100%_-_0.25rem)]"
-                      : "translate-x-0"
+                    activeTab === "chat" ? "translate-x-full" : "translate-x-0"
                   }`}
                 />
               </div>
