@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import MapView from "./map-view";
 import { GroundingSources } from "./grounding-sources";
+import { FiThumbsUp, FiThumbsDown } from "react-icons/fi";
 
 interface Message {
   id: string;
@@ -423,6 +424,17 @@ function ChatTab({
   formatMessage: (content: string) => string;
   onInputFocus?: () => void;
 }) {
+  const [feedbackMap, setFeedbackMap] = useState<Record<string, "up" | "down">>(
+    {}
+  );
+
+  const handleFeedback = (id: string, type: "up" | "down") => {
+    // optimistic UI update
+    setFeedbackMap((prev) => ({ ...prev, [id]: type }));
+    // placeholder side-effect: replace with API call or parent callback
+    console.log("feedback", { id, feedback: type });
+  };
+
   return (
     <div className="flex flex-col min-h-0 bg-slate-900">
       {/* Messages Area */}
@@ -475,16 +487,57 @@ function ChatTab({
                   <div className="mx-3 text-slate-200 text-sm leading-relaxed prose-invert">
                     <b>Asistent:</b>
                     <div
+                      className="mt-2"
                       dangerouslySetInnerHTML={{
                         __html: formatMessage(message.content),
                       }}
                     />
-                    {/* <div className="text-xs mt-2 text-slate-500">
-                      {message.timestamp.toLocaleTimeString("cs-CZ", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div> */}
+
+                    {/* Divider */}
+                    <div className="mt-4 border-t border-slate-700/50" />
+
+                    {/* Grounding sources for this assistant message (if provided) */}
+                    {message.sources && message.sources.length > 0 && (
+                      <div className="mt-3">
+                        <GroundingSources sources={message.sources} />
+                      </div>
+                    )}
+
+                    {/* Feedback (thumbs up / thumbs down) */}
+                    <div className="mt-3 flex items-center gap-3">
+                      <span className="text-slate-400 text-xs">
+                        Jak hodnotíte tuto odpověď?
+                      </span>
+                      <button
+                        aria-label={`upvote-${message.id}`}
+                        onClick={() => handleFeedback(message.id, "up")}
+                        disabled={!!feedbackMap[message.id]}
+                        className={`p-2 rounded-md flex items-center justify-center transition-colors ${
+                          feedbackMap[message.id] === "up"
+                            ? "bg-blue-600 text-white"
+                            : "text-slate-200"
+                        }`}
+                      >
+                        <FiThumbsUp className="w-5 h-5" />
+                      </button>
+                      <button
+                        aria-label={`downvote-${message.id}`}
+                        onClick={() => handleFeedback(message.id, "down")}
+                        disabled={!!feedbackMap[message.id]}
+                        className={`p-2 rounded-md flex items-center justify-center transition-colors ${
+                          feedbackMap[message.id] === "down"
+                            ? "bg-rose-600 text-white"
+                            : "text-slate-200"
+                        }`}
+                      >
+                        <FiThumbsDown className="w-5 h-5" />
+                      </button>
+                      {feedbackMap[message.id] && (
+                        <span className="text-xs ml-2 text-green-400">
+                          Děkujeme!
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
