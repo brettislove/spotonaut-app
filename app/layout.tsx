@@ -52,6 +52,10 @@ export const metadata: Metadata = {
       "Váš parťák pro objevování ziskových lokalit. Data místo dojmů.",
     images: ["https://www.spotonaut.com/spotonaut_logo.png"],
   },
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#A43BFE" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+  ],
 };
 
 export const viewport: Viewport = {
@@ -120,7 +124,34 @@ export default function RootLayout({
           name="msapplication-TileImage"
           content="/spotonaut_logo-192.png"
         />
+        {/* Basic theme color (Chrome/Android) */}
         <meta name="theme-color" content="#A43BFE" />
+
+        {/* Optional: different colors for light/dark */}
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: light)"
+          content="#A43BFE"
+        />
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: dark)"
+          content="#0f172a"
+        />
+
+        {/* iOS / PWA */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+
+        {/* Link manifest */}
+        <link rel="manifest" href="/site.webmanifest" />
+
+        {/* Pinned tab for macOS Safari (monochrome mask SVG required) */}
+        <link rel="mask-icon" href="/spotonaut_mask.svg" color="#A43BFE" />
+        <meta name="msapplication-TileColor" content="#A43BFE" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

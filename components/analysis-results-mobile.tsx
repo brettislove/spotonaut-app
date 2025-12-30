@@ -54,6 +54,8 @@ export default function AnalysisResultsMobile({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const handleInputFocus = () => setIsExpanded(true);
+
   // Handle tab change and expand for chat
   const handleTabChange = (tab: "metrics" | "chat") => {
     setActiveTab(tab);
@@ -143,73 +145,8 @@ export default function AnalysisResultsMobile({
           <div className="w-12 h-1.5 bg-slate-600/50 rounded-full"></div>
         </button>
 
-        {/* Tab Bar */}
-        <div className="flex items-center border-b border-slate-700/50 px-4 flex-shrink-0">
-          <button
-            onClick={() => handleTabChange("metrics")}
-            className={`flex-1 py-3 text-sm font-medium transition-all relative ${
-              activeTab === "metrics"
-                ? "text-white"
-                : "text-slate-400 hover:text-slate-300"
-            }`}
-          >
-            <span className="flex items-center justify-center gap-2">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-              Metriky
-            </span>
-            {activeTab === "metrics" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-            )}
-          </button>
-          <button
-            onClick={() => handleTabChange("chat")}
-            className={`flex-1 py-3 text-sm font-medium transition-all relative ${
-              activeTab === "chat"
-                ? "text-white"
-                : "text-slate-400 hover:text-slate-300"
-            }`}
-          >
-            <span className="flex items-center justify-center gap-2">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-              Chat
-              {messages.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-500 text-white rounded-full">
-                  {messages.length}
-                </span>
-              )}
-            </span>
-            {activeTab === "chat" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-            )}
-          </button>
-        </div>
-
         {/* Tab Content - Single Scrollable Region */}
-        <div className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="flex-1 overflow-y-auto overscroll-contain pb-28 lg:pb-0">
           {activeTab === "metrics" ? (
             <MetricsTab data={analysisData} onNewAnalysis={onNewAnalysis} />
           ) : (
@@ -224,6 +161,87 @@ export default function AnalysisResultsMobile({
               onInputFocus={() => setIsExpanded(true)}
             />
           )}
+        </div>
+
+        {/* Mobile fixed bottom bar with centered toggle (visible on small screens) */}
+        <div className="fixed left-0 right-0 bottom-0 lg:hidden z-50">
+          <div className="bg-slate-900/95 border-t border-slate-700/50 backdrop-blur-sm px-4 py-3">
+            <div className="flex flex-col items-center gap-2">
+              {/* Chat input shown here on mobile when Chat tab is active */}
+              {activeTab === "chat" && (
+                <form
+                  onSubmit={onSendMessage}
+                  className="w-full max-w-xl flex items-center gap-2 px-1"
+                >
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => onInputChange(e.target.value)}
+                    onFocus={handleInputFocus}
+                    placeholder="Napište zprávu..."
+                    disabled={isLoading}
+                    className="flex-1 bg-slate-800 border border-slate-600 text-white placeholder-slate-400 rounded-xl px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isLoading || !input.trim()}
+                    className="px-3 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[44px]"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                      />
+                    </svg>
+                  </button>
+                </form>
+              )}
+
+              <div
+                role="tablist"
+                aria-label="Přepnout mezi metrikami a chatem"
+                className="relative w-44 h-11 bg-slate-800/80 border border-slate-700 rounded-full p-1 flex items-center"
+              >
+                <button
+                  type="button"
+                  onClick={() => handleTabChange("metrics")}
+                  aria-pressed={activeTab === "metrics"}
+                  className={`z-20 flex-1 text-sm font-medium text-center transition-colors ${
+                    activeTab === "metrics" ? "text-white" : "text-slate-300"
+                  }`}
+                >
+                  Metriky
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange("chat")}
+                  aria-pressed={activeTab === "chat"}
+                  className={`z-20 flex-1 text-sm font-medium text-center transition-colors ${
+                    activeTab === "chat" ? "text-white" : "text-slate-300"
+                  }`}
+                >
+                  Chat
+                </button>
+
+                {/* Sliding knob (half width) */}
+                <div
+                  aria-hidden
+                  className={`absolute inset-y-1 left-1 w-[calc(50%_-_0.25rem)] rounded-full bg-gradient-to-br from-blue-500 to-blue-400 shadow-lg transform transition-transform duration-300 pointer-events-none ${
+                    activeTab === "chat"
+                      ? "translate-x-[calc(100%_-_0.25rem)]"
+                      : "translate-x-0"
+                  }`}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -525,8 +543,8 @@ function ChatTab({
         )}
       </div>
 
-      {/* Chat Input - Fixed at bottom */}
-      <div className="flex-shrink-0 border-t border-slate-700/50 p-3 bg-slate-900">
+      {/* Chat Input - Fixed at bottom (desktop only). Hidden on mobile because mobile input is rendered inside the fixed bottom bar */}
+      <div className="hidden lg:flex-shrink-0 lg:flex lg:border-t lg:border-slate-700/50 lg:p-3 lg:bg-slate-900">
         <form onSubmit={onSendMessage} className="flex gap-2">
           <input
             type="text"
