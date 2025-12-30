@@ -60,14 +60,14 @@ export default function MapView({ data }: MapViewProps) {
 
   if (!isMounted) {
     return (
-      <div className="h-full w-full bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl flex items-center justify-center">
+      <div className="h-full w-full bg-slate-900/50 backdrop-blur-sm border border-slate-800 flex items-center justify-center">
         <div className="text-slate-400">Načítání mapy...</div>
       </div>
     );
   }
 
   return (
-    <div className="h-full w-full bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl overflow-hidden flex flex-col">
+    <div className="h-full w-full bg-slate-900/50 backdrop-blur-sm border border-slate-800 overflow-hidden flex flex-col">
       {/* Map */}
       <div className="flex-1 relative">
         <MapContent

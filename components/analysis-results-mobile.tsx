@@ -59,8 +59,9 @@ export default function AnalysisResultsMobile({
   // Handle tab change and expand for chat
   const handleTabChange = (tab: "metrics" | "chat") => {
     setActiveTab(tab);
+    // When switching to chat, collapse the map and hide it
     if (tab === "chat") {
-      setIsExpanded(true);
+      setIsExpanded(false);
     }
   };
 
@@ -78,77 +79,21 @@ export default function AnalysisResultsMobile({
     return formatted;
   };
 
-  // Calculate heights based on expanded state
-  const mapHeight = isExpanded ? "25vh" : "35vh";
-  const contentHeight = isExpanded ? "calc(75vh - 4rem)" : "calc(65vh - 4rem)";
-
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col bg-slate-950 overflow-hidden">
-      {/* Fixed Map Area */}
-      <div
-        className="transition-all duration-300 ease-out relative flex-shrink-0"
-        style={{ height: mapHeight }}
-      >
-        <div className="absolute inset-0">
+    <div className="fixed inset-0 top-16 flex flex-col bg-slate-950 overflow-hidden">
+      {/* Fixed Map Area - only render for Metrics tab */}
+      {activeTab === "metrics" && (
+        <div className="absolute inset-0 h-[35vh] transition-all duration-300 ease-out relative flex-shrink-0">
           <MapView data={analysisData} />
         </div>
-
-        {/* Compact Metrics Badge - Shows when expanded */}
-        {isExpanded && analysisData.metrics && (
-          <div className="absolute bottom-2 left-2 right-2 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-lg px-3 py-2">
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                <span className="text-white font-semibold">
-                  {analysisData.metrics.localityScore}/100
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-purple-400"></div>
-                <span className="text-white font-semibold">
-                  {analysisData.metrics.footfallScore}/100
-                </span>
-              </div>
-              <button
-                onClick={() => setIsExpanded(false)}
-                className="text-slate-400 hover:text-white transition-colors"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Bottom Panel - No Vaul, just a simple fixed panel */}
-      <div
-        className="flex-1 flex flex-col bg-slate-900 border-t border-slate-700 rounded-t-2xl overflow-hidden"
-        style={{ height: contentHeight }}
-      >
-        {/* Drag Handle / Expand Toggle */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex justify-center py-2 w-full hover:bg-slate-800/50 transition-colors"
-        >
-          <div className="w-12 h-1.5 bg-slate-600/50 rounded-full"></div>
-        </button>
-
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Tab Content - Single Scrollable Region */}
-        <div className="flex-1 overflow-y-auto overscroll-contain pb-28 lg:pb-0">
+        <div className="relative flex-1 overflow-y-auto overscroll-contain pb-28 lg:pb-0">
           {activeTab === "metrics" ? (
-            <MetricsTab data={analysisData} onNewAnalysis={onNewAnalysis} />
+            <MetricsTab data={analysisData} />
           ) : (
             <ChatTab
               messages={messages}
@@ -161,12 +106,17 @@ export default function AnalysisResultsMobile({
               onInputFocus={() => setIsExpanded(true)}
             />
           )}
+
+          {/* Gradient overlay so messages fade behind the mobile bottom bar */}
+          {activeTab === "chat" && (
+            <div className="fixed pointer-events-none absolute left-0 right-0 bottom-20 h-18 z-40 lg:hidden bg-gradient-to-t from-slate-900 to-transparent" />
+          )}
         </div>
 
         {/* Mobile fixed bottom bar with centered toggle (visible on small screens) */}
         <div className="fixed left-0 right-0 bottom-0 lg:hidden z-50">
-          <div className="bg-slate-900/95 border-t border-slate-700/50 backdrop-blur-sm px-4 py-3">
-            <div className="flex flex-col items-center gap-2">
+          <div className="bg-slate-900/95 backdrop-blur-sm px-4 py-3">
+            <div className="flex flex-col items-center gap-3 w-full">
               {/* Chat input shown here on mobile when Chat tab is active */}
               {activeTab === "chat" && (
                 <form
@@ -185,7 +135,7 @@ export default function AnalysisResultsMobile({
                   <button
                     type="submit"
                     disabled={isLoading || !input.trim()}
-                    className="px-3 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[44px]"
+                    className="px-3 py-2.5 bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 text-white font-medium rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[44px]"
                   >
                     <svg
                       className="w-5 h-5"
@@ -204,39 +154,64 @@ export default function AnalysisResultsMobile({
                 </form>
               )}
 
-              <div
-                role="tablist"
-                aria-label="Přepnout mezi metrikami a chatem"
-                className="relative w-44 h-11 bg-slate-800/80 border border-slate-700 rounded-full p-1 flex items-center"
-              >
-                <button
-                  type="button"
-                  onClick={() => handleTabChange("metrics")}
-                  aria-pressed={activeTab === "metrics"}
-                  className={`z-20 flex-1 text-sm font-medium text-center transition-colors ${
-                    activeTab === "metrics" ? "text-white" : "text-slate-300"
-                  }`}
-                >
-                  Metriky
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleTabChange("chat")}
-                  aria-pressed={activeTab === "chat"}
-                  className={`z-20 flex-1 text-sm font-medium text-center transition-colors ${
-                    activeTab === "chat" ? "text-white" : "text-slate-300"
-                  }`}
-                >
-                  Chat
-                </button>
+              <div>
+                {onNewAnalysis && (
+                  <button
+                    onClick={onNewAnalysis}
+                    className="absolute left-1/12 translate-y-1/6 px-3 py-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 hover:border-blue-500/50 rounded-lg transition-all flex items-center gap-1.5"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="white"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                  </button>
+                )}
 
-                {/* Sliding knob (half width) */}
                 <div
-                  aria-hidden
-                  className={`absolute inset-y-1 left-1 w-[calc(50%_-_0.25rem)] rounded-full bg-gradient-to-br from-blue-500 to-blue-400 shadow-lg transform transition-transform duration-300 pointer-events-none ${
-                    activeTab === "chat" ? "translate-x-full" : "translate-x-0"
-                  }`}
-                />
+                  role="tablist"
+                  aria-label="Přepnout mezi metrikami a chatem"
+                  className="relative w-44 h-11 bg-slate-800/80 border border-slate-700 rounded-full p-1 flex items-center"
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("metrics")}
+                    aria-pressed={activeTab === "metrics"}
+                    className={`z-20 flex-1 text-sm font-medium text-center transition-colors ${
+                      activeTab === "metrics" ? "text-white" : "text-slate-300"
+                    }`}
+                  >
+                    Metriky
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("chat")}
+                    aria-pressed={activeTab === "chat"}
+                    className={`z-20 flex-1 text-sm font-medium text-center transition-colors ${
+                      activeTab === "chat" ? "text-white" : "text-slate-300"
+                    }`}
+                  >
+                    Chat
+                  </button>
+
+                  {/* Sliding knob (half width) */}
+                  <div
+                    aria-hidden
+                    className={`absolute inset-y-1 left-1 w-[calc(50%_-_0.25rem)] rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 opacity-80 shadow-lg transform transition-transform duration-300 pointer-events-none ${
+                      activeTab === "chat"
+                        ? "translate-x-full"
+                        : "translate-x-0"
+                    }`}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -247,13 +222,7 @@ export default function AnalysisResultsMobile({
 }
 
 // Metrics Tab Component
-function MetricsTab({
-  data,
-  onNewAnalysis,
-}: {
-  data: AnalysisData;
-  onNewAnalysis?: () => void;
-}) {
+function MetricsTab({ data }: { data: AnalysisData }) {
   if (!data.metrics) return null;
 
   return (
@@ -283,9 +252,9 @@ function MetricsTab({
             </svg>
             {data.locationName || data.location}
           </h2>
-          <p className="text-slate-400 text-sm">Analýza lokality</p>
+          {/* <p className="text-slate-400 text-sm">Analýza lokality</p> */}
         </div>
-        {onNewAnalysis && (
+        {/* {onNewAnalysis && (
           <button
             onClick={onNewAnalysis}
             className="px-3 py-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-500/50 rounded-lg transition-all flex items-center gap-1.5"
@@ -305,7 +274,7 @@ function MetricsTab({
             </svg>
             Nová
           </button>
-        )}
+        )} */}
       </div>
 
       {/* Metrics Cards */}
@@ -455,7 +424,7 @@ function ChatTab({
   onInputFocus?: () => void;
 }) {
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col min-h-0 bg-slate-900">
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0">
         {messages.length === 0 ? (
@@ -492,34 +461,32 @@ function ChatTab({
                   message.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                    message.role === "user"
-                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
-                      : "bg-slate-800 text-slate-100 border border-slate-700"
-                  }`}
-                >
-                  <div
-                    className={`text-sm leading-relaxed ${
-                      message.role === "assistant" ? "prose-invert" : ""
-                    }`}
-                    dangerouslySetInnerHTML={{
-                      __html: formatMessage(message.content),
-                    }}
-                  />
-                  <div
-                    className={`text-xs mt-2 ${
-                      message.role === "user"
-                        ? "text-blue-100/70"
-                        : "text-slate-500"
-                    }`}
-                  >
-                    {message.timestamp.toLocaleTimeString("cs-CZ", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                {message.role === "user" ? (
+                  <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-gradient-to-b from-purple-500 via-purple-600 to-purple-700 text-white">
+                    <div
+                      className="text-sm leading-relaxed"
+                      dangerouslySetInnerHTML={{
+                        __html: formatMessage(message.content),
+                      }}
+                    />
                   </div>
-                </div>
+                ) : (
+                  // Assistant messages: render as plain text on the app background (no bubble)
+                  <div className="mx-3 text-slate-200 text-sm leading-relaxed prose-invert">
+                    <b>Asistent:</b>
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: formatMessage(message.content),
+                      }}
+                    />
+                    {/* <div className="text-xs mt-2 text-slate-500">
+                      {message.timestamp.toLocaleTimeString("cs-CZ", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div> */}
+                  </div>
+                )}
               </div>
             ))}
             {isLoading && (
