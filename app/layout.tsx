@@ -52,10 +52,6 @@ export const metadata: Metadata = {
       "Váš parťák pro objevování ziskových lokalit. Data místo dojmů.",
     images: ["https://www.spotonaut.com/spotonaut_logo.png"],
   },
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#A43BFE" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
-  ],
 };
 
 export const viewport: Viewport = {
