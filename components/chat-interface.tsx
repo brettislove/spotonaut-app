@@ -185,6 +185,11 @@ export default function ChatInterface() {
     return true;
   }, []);
 
+  const showAuthModalAction = () => {
+    setAuthModalMode("login");
+    setShowAuthModal(true);
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !hasCompletedAnalysis) return;
@@ -213,8 +218,7 @@ export default function ChatInterface() {
     if (!session) {
       // Store the message before showing auth modal
       localStorage.setItem("pendingChatMessage", input);
-      setAuthModalMode("login");
-      setShowAuthModal(true);
+      showAuthModalAction();
       return;
     }
 
@@ -568,10 +572,12 @@ export default function ChatInterface() {
     return (
       <>
         <AnalysisResultsMobile
+          session={session}
           analysisData={analysisData}
           messages={messages}
           input={input}
           isLoading={isLoading}
+          onStartChat={showAuthModalAction}
           onInputChange={setInput}
           onSendMessage={sendMessage}
           onNewAnalysis={handleNewAnalysis}
