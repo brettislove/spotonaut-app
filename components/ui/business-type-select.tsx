@@ -99,6 +99,15 @@ export default function BusinessTypeSelect({
         types: BUSINESS_TYPES_BY_CATEGORY[category],
       }));
 
+  // Track which categories are expanded. Initially all collapsed.
+  const [expandedCategories, setExpandedCategories] = useState<
+    Record<string, boolean>
+  >(() => Object.fromEntries(CATEGORIES.map((c) => [c, false])));
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories((prev) => ({ ...prev, [category]: !prev[category] }));
+  };
+
   const handleSelect = (businessType: BusinessType) => {
     onChange(businessType);
     setIsOpen(false);
@@ -119,7 +128,7 @@ export default function BusinessTypeSelect({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`inline-flex items-center justify-between w-full p-2.5 text-sm font-medium text-white bg-slate-800 border rounded-lg hover:bg-slate-700 focus:ring-2 focus:outline-none focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
+        className={`inline-flex items-center justify-between w-full p-2.5 text-sm font-medium text-white bg-slate-800 border rounded-2xl hover:bg-slate-700 focus:ring-2 focus:outline-none focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
           error ? "border-red-500" : "border-slate-600"
         }`}
       >
@@ -168,33 +177,58 @@ export default function BusinessTypeSelect({
               filteredCategories.map(({ category, types }) => (
                 <div key={category}>
                   <div className="px-4 py-2 bg-slate-900/50 border-b border-slate-700">
-                    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                      {category}
-                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => toggleCategory(category)}
+                      aria-expanded={
+                        !!(searchQuery ? true : expandedCategories[category])
+                      }
+                      className="w-full flex items-center justify-between text-left"
+                    >
+                      <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                        {category}
+                      </h4>
+                      <svg
+                        className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
+                          (searchQuery ? true : expandedCategories[category])
+                            ? "rotate-180"
+                            : ""
+                        }`}
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 10 6"
+                      >
+                        <path
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="m1 1 4 4 4-4"
+                        />
+                      </svg>
+                    </button>
                   </div>
-                  <ul className="py-1">
-                    {types.map((business) => (
-                      <li key={business.type}>
-                        <button
-                          type="button"
-                          onClick={() => handleSelect(business)}
-                          className={`flex items-center justify-between w-full px-4 py-2.5 text-left hover:bg-slate-700 transition-colors ${
-                            value?.type === business.type
-                              ? "bg-slate-700 text-white"
-                              : "text-slate-200"
-                          }`}
-                        >
-                          <span className="text-sm">{business.type}</span>
-                          {/* To be implemented in the future */}
-                          {/* {business.avgSpend > 0 && (
-                            <span className="text-xs text-slate-400">
-                              ~{business.avgSpend} Kč/zákazník
-                            </span>
-                          )} */}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+
+                  {/* Show types when category is expanded OR when searching (so results are visible) */}
+                  {(searchQuery ? true : expandedCategories[category]) && (
+                    <ul className="py-1">
+                      {types.map((business) => (
+                        <li key={business.type}>
+                          <button
+                            type="button"
+                            onClick={() => handleSelect(business)}
+                            className={`flex items-center justify-between w-full px-4 py-2.5 text-left hover:bg-slate-700 transition-colors ${
+                              value?.type === business.type
+                                ? "bg-slate-700 text-white"
+                                : "text-slate-200"
+                            }`}
+                          >
+                            <span className="text-sm">{business.type}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               ))
             ) : (
