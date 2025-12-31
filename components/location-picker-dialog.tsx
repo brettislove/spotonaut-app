@@ -328,7 +328,7 @@ export default function LocationPickerDialog({
           <button
             onClick={handleConfirmLocation}
             disabled={isLoadingAddress}
-            className="flex-1 bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 text-white font-semibold text-sm px-4 py-2.5 rounded-full hover:from-blue-600 hover:to-purple-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+            className="flex-1 bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 text-white font-semibold text-sm px-4 py-2.5 rounded-full hover:from-blue-400 hover:to-blue-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
           >
             {isLoadingAddress ? "Načítání..." : "Potvrdit lokalitu"}
           </button>
