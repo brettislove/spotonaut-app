@@ -50,6 +50,7 @@ export default function AnalysisResultsMobile({
   const [activeTab, setActiveTab] = useState<"metrics" | "chat">("metrics");
   const [isExpanded, setIsExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -70,6 +71,16 @@ export default function AnalysisResultsMobile({
   useEffect(() => {
     if (activeTab === "chat" && messages.length > 0) {
       scrollToBottom();
+    }
+
+    // When switching to metrics, ensure the scroll container is at the top
+    if (activeTab === "metrics") {
+      // Use scrollTo if available for a smooth experience
+      if (scrollContainerRef.current?.scrollTo) {
+        scrollContainerRef.current.scrollTo({ top: 0 });
+      } else if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
     }
   }, [messages, activeTab]);
 
@@ -92,7 +103,10 @@ export default function AnalysisResultsMobile({
       {/* Bottom Panel - No Vaul, just a simple fixed panel */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Tab Content - Single Scrollable Region */}
-        <div className="relative flex-1 overflow-y-auto overscroll-contain pb-28 lg:pb-0">
+        <div
+          ref={scrollContainerRef}
+          className="relative flex-1 overflow-y-auto overscroll-contain pb-28 lg:pb-0"
+        >
           {activeTab === "metrics" ? (
             <MetricsTab data={analysisData} />
           ) : (
