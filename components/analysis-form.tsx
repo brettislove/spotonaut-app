@@ -314,7 +314,7 @@ export default function AnalysisForm({
   );
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-6 bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl">
+    <div className="w-full max-w-2xl mx-auto p-6 bg-slate-950 border border-slate-700/60 rounded-xl shadow-2xl">
       <div className="mb-6">
         <h3 className="text-xl font-semibold text-blue-100">
           Analýza lokality
@@ -346,7 +346,7 @@ export default function AnalysisForm({
               placeholder="např. Václavské náměstí, Praha"
               disabled={isLoading}
               autoComplete="off"
-              className={`block w-full p-2.5 pr-32 text-sm rounded-lg border bg-slate-800 border-slate-600 placeholder-slate-500 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
+              className={`block w-full p-2.5 pr-32 text-sm rounded-2xl border bg-slate-800 border-slate-600 placeholder-slate-500 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
                 errors.location
                   ? "border-red-500 focus:ring-red-500 focus:border-red-500"
                   : ""
@@ -499,7 +499,7 @@ export default function AnalysisForm({
           <button
             type="submit"
             disabled={isLoading}
-            className="group relative cursor-pointer flex-1 px-5 py-2.5 text-sm font-medium text-white rounded-full overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 border border-blue-600/20 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group relative cursor-pointer flex-1 px-5 py-2.5 text-sm font-medium text-white rounded-full overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 border border-blue-600/20 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="relative z-10">
               {isLoading ? loadingTexts[loadingTextIndex] : "Analyzovat"}
