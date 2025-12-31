@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import MapView from "./map-view";
 import { GroundingSources } from "./grounding-sources";
 import { FiThumbsUp, FiThumbsDown } from "react-icons/fi";
+import { Session } from "next-auth";
 
 interface Message {
   id: string;
@@ -29,20 +30,24 @@ interface AnalysisData {
 }
 
 interface AnalysisResultsMobileProps {
+  session: Session | null;
   analysisData: AnalysisData;
   messages: Message[];
   input: string;
   isLoading: boolean;
+  onStartChat: () => void;
   onInputChange: (value: string) => void;
   onSendMessage: (e: React.FormEvent) => void;
   onNewAnalysis?: () => void;
 }
 
 export default function AnalysisResultsMobile({
+  session,
   analysisData,
   messages,
   input,
   isLoading,
+  onStartChat,
   onInputChange,
   onSendMessage,
   onNewAnalysis,
@@ -111,9 +116,11 @@ export default function AnalysisResultsMobile({
             <MetricsTab data={analysisData} />
           ) : (
             <ChatTab
+              session={session}
               messages={messages}
               input={input}
               isLoading={isLoading}
+              onStartChat={onStartChat}
               onInputChange={onInputChange}
               onSendMessage={onSendMessage}
               messagesEndRef={messagesEndRef}
@@ -144,7 +151,7 @@ export default function AnalysisResultsMobile({
                     onChange={(e) => onInputChange(e.target.value)}
                     onFocus={handleInputFocus}
                     placeholder="Napište zprávu..."
-                    disabled={isLoading}
+                    disabled={isLoading || !session}
                     className="flex-1 bg-slate-800 border border-slate-600 text-white placeholder-slate-400 rounded-xl px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
                   />
                   <button
@@ -420,18 +427,22 @@ function MetricsTab({ data }: { data: AnalysisData }) {
 
 // Chat Tab Component
 function ChatTab({
+  session,
   messages,
   input,
   isLoading,
+  onStartChat,
   onInputChange,
   onSendMessage,
   messagesEndRef,
   formatMessage,
   onInputFocus,
 }: {
+  session: Session | null;
   messages: Message[];
   input: string;
   isLoading: boolean;
+  onStartChat: () => void;
   onInputChange: (value: string) => void;
   onSendMessage: (e: React.FormEvent) => void;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
@@ -552,6 +563,15 @@ function ChatTab({
                         </span>
                       )}
                     </div>
+                    {/* In case this is the first message and the user is not signed in, show a prompt to sign up for starting the conversation */}
+                    {messages.length === 1 && !session && (
+                      <button
+                        onClick={onStartChat}
+                        className="mt-4 px-4 py-2 bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 text-white font-medium rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all"
+                      >
+                        Přihlaste se pro zahájení konverzace
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
