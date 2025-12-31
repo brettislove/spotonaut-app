@@ -69,7 +69,7 @@ export default function MapContent({ position, location }: MapContentProps) {
       center={position}
       zoom={15}
       style={{ height: "100%", width: "100%" }}
-      className="z-0 rounded-t-2xl"
+      className="z-0 sm:rounded-t-2xl"
       scrollWheelZoom={true}
     >
       <TileLayer
