@@ -245,13 +245,13 @@ export default function Header() {
                 <>
                   <button
                     onClick={() => handleAuthClick("login")}
-                    className="px-4 py-2 hover:cursor-pointer text-sm font-medium text-slate-300 transition-colors rounded-lg border border-white/10 bg-white/4 backdrop-blur-sm hover:bg-white/8 hover:text-white"
+                    className="px-4 py-2 hover:cursor-pointer text-sm font-semibold text-slate-300 transition-colors rounded-full border border-white/10 bg-white/4 backdrop-blur-sm hover:bg-white/8 hover:text-white"
                   >
                     Přihlásit se
                   </button>
                   <button
                     onClick={() => handleAuthClick("signup")}
-                    className="group relative px-4 py-2 hover:cursor-pointer text-sm font-semibold text-white rounded-full overflow-hidden bg-gradient-to-br from-purple-700 via-purple-800 to-purple-900 border border-purple-600/20 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40"
+                    className="group relative px-4 py-2 hover:cursor-pointer text-sm font-semibold text-white rounded-full overflow-hidden bg-gradient-to-br from-purple-400 via-purple-500/100 to-purple-700 border border-purple-600/20 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40"
                   >
                     <span className="relative z-10">Registrovat se</span>
                     <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-600 bg-gradient-to-r from-transparent via-purple-400/20 to-transparent opacity-50" />

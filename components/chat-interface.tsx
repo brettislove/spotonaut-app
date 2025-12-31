@@ -15,6 +15,7 @@ import { useAnalysis } from "@/lib/contexts/analysis-context";
 import Image from "next/image";
 import type { BusinessType } from "@/lib/constants/business-types";
 import { renderSourceLink } from "./grounding-sources";
+import { FiThumbsUp, FiThumbsDown } from "react-icons/fi";
 
 interface Message {
   id: string;
@@ -82,6 +83,9 @@ export default function ChatInterface() {
   >({});
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestPending, setRequestPending] = useState(false);
+  const [feedbackMap, setFeedbackMap] = useState<Record<string, "up" | "down">>(
+    {}
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
 
@@ -567,6 +571,13 @@ export default function ChatInterface() {
     navigateHome();
   };
 
+  const handleFeedback = (id: string, type: "up" | "down") => {
+    // optimistic UI update
+    setFeedbackMap((prev) => ({ ...prev, [id]: type }));
+    // placeholder side-effect: replace with API call or parent callback
+    console.log("feedback", { id, feedback: type });
+  };
+
   // Mobile Results View
   if (showMapView && isMobile && analysisData) {
     return (
@@ -718,7 +729,7 @@ export default function ChatInterface() {
                   </div>
                   <button
                     onClick={handleNewAnalysis}
-                    className="relative cursor-pointer px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2 overflow-hidden group"
+                    className="relative cursor-pointer px-3 py-1.5 bg-gradient-to-br bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-full transition-all shadow-md hover:shadow-lg flex items-center gap-2 overflow-hidden group"
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out"></span>
                     <svg
@@ -749,72 +760,113 @@ export default function ChatInterface() {
                           : "justify-start"
                       }`}
                     >
-                      <div
-                        className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                          message.role === "user"
-                            ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
-                            : "bg-slate-800 text-slate-100 border border-slate-700"
-                        }`}
-                      >
-                        <div
-                          className="text-sm leading-relaxed"
-                          dangerouslySetInnerHTML={{
-                            __html: message.content
-                              .replace(/```[\s\S]*?```/g, "")
-                              .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                              .replace(/\n/g, "<br>"),
-                          }}
-                        />
-                        <div
-                          className={`text-xs mt-2 ${
-                            message.role === "user"
-                              ? "text-blue-100/70"
-                              : "text-slate-500"
-                          }`}
-                        >
-                          {message.timestamp.toLocaleTimeString("cs-CZ", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                      {message.role === "user" ? (
+                        <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-gradient-to-b from-purple-500 via-purple-600 to-purple-700 text-white">
+                          <div
+                            className="text-sm leading-relaxed"
+                            dangerouslySetInnerHTML={{
+                              __html: message.content
+                                .replace(/```[\s\S]*?```/g, "")
+                                .replace(
+                                  /\*\*(.*?)\*\*/g,
+                                  "<strong>$1</strong>"
+                                )
+                                .replace(/\n/g, "<br>"),
+                            }}
+                          />
                         </div>
+                      ) : (
+                        // <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-slate-800 text-slate-100 border border-slate-700">
+                        <div className="mx-3 text-slate-200 text-sm leading-relaxed prose-invert">
+                          <div
+                            className="mt-2"
+                            dangerouslySetInnerHTML={{
+                              __html: message.content
+                                .replace(/```[\s\S]*?```/g, "")
+                                .replace(
+                                  /\*\*(.*?)\*\*/g,
+                                  "<strong>$1</strong>"
+                                )
+                                .replace(/\n/g, "<br>"),
+                            }}
+                          />
 
-                        {/* Sources - collapsible section */}
-                        {message.sources && message.sources.length > 0 && (
-                          <div className="mt-2">
-                            <button
-                              onClick={() =>
-                                setExpandedSources((prev) => ({
-                                  ...prev,
-                                  [message.id]: !prev[message.id],
-                                }))
-                              }
-                              aria-controls={`sources-content-${message.id}`}
-                              aria-expanded={!!expandedSources[message.id]}
-                              className="inline-flex items-center cursor-pointer gap-2 text-sm py-1 text-slate-400 hover:text-white transition-colors"
-                            >
-                              <span>
-                                {expandedSources[message.id]
-                                  ? "Skrýt zdroje"
-                                  : "Zobrazit zdroje"}
-                              </span>
-                            </button>
-                            {expandedSources[message.id] && (
-                              <div
-                                id={`sources-content-${message.id}`}
-                                className="mt-2 text-sm text-slate-400"
+                          {/* Divider */}
+                          <div className="border-t border-slate-700/50" />
+
+                          {/* Sources - collapsible section */}
+                          {message.sources && message.sources.length > 0 && (
+                            <div className="mt-2">
+                              <button
+                                onClick={() =>
+                                  setExpandedSources((prev) => ({
+                                    ...prev,
+                                    [message.id]: !prev[message.id],
+                                  }))
+                                }
+                                aria-controls={`sources-content-${message.id}`}
+                                aria-expanded={!!expandedSources[message.id]}
+                                className="inline-flex items-center cursor-pointer gap-2 text-sm py-1 text-slate-400 hover:text-white transition-colors"
                               >
-                                <div className="flex flex-wrap gap-2">
-                                  {message.sources.map((source, index) => (
-                                    <div key={index}>
-                                      {renderSourceLink(source)}
-                                    </div>
-                                  ))}
+                                <span>
+                                  {expandedSources[message.id]
+                                    ? "Skrýt zdroje"
+                                    : "Zobrazit zdroje"}
+                                </span>
+                              </button>
+                              {expandedSources[message.id] && (
+                                <div
+                                  id={`sources-content-${message.id}`}
+                                  className="mt-2 text-sm text-slate-400"
+                                >
+                                  <div className="flex flex-wrap gap-2">
+                                    {message.sources.map((source, index) => (
+                                      <div key={index}>
+                                        {renderSourceLink(source)}
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
+                              )}
+                            </div>
+                          )}
+                          {/* Feedback (thumbs up / thumbs down) */}
+                          <div className="mt-3 flex items-center gap-3">
+                            <span className="text-slate-400 text-xs">
+                              Jak hodnotíte tuto odpověď?
+                            </span>
+                            <button
+                              aria-label={`upvote-${message.id}`}
+                              onClick={() => handleFeedback(message.id, "up")}
+                              disabled={!!feedbackMap[message.id]}
+                              className={`cursor-pointerp-2 rounded-md flex items-center justify-center transition-colors ${
+                                feedbackMap[message.id] === "up"
+                                  ? "bg-blue-600 text-white"
+                                  : "text-slate-200"
+                              }`}
+                            >
+                              <FiThumbsUp className="w-5 h-5" />
+                            </button>
+                            <button
+                              aria-label={`downvote-${message.id}`}
+                              onClick={() => handleFeedback(message.id, "down")}
+                              disabled={!!feedbackMap[message.id]}
+                              className={`cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors ${
+                                feedbackMap[message.id] === "down"
+                                  ? "bg-rose-600 text-white"
+                                  : "text-slate-200"
+                              }`}
+                            >
+                              <FiThumbsDown className="w-5 h-5" />
+                            </button>
+                            {feedbackMap[message.id] && (
+                              <span className="text-xs ml-2 text-green-400">
+                                Děkujeme!
+                              </span>
                             )}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                   {isLoading && (
@@ -1282,7 +1334,7 @@ export default function ChatInterface() {
                               />
 
                               {/* Collapsible Sources Section */}
-                              {message.sources &&
+                              {/* {message.sources &&
                                 message.sources.length > 0 && (
                                   <div className="mt-2">
                                     <button
@@ -1319,7 +1371,7 @@ export default function ChatInterface() {
                                       </div>
                                     )}
                                   </div>
-                                )}
+                                )} */}
                             </div>
                           ))}
                         </div>
