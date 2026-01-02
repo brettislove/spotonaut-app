@@ -438,7 +438,7 @@ export default function AnalysisForm({
                 title="Plánované dny otevření"
                 description="Vyberte dny, kdy bude provozovna otevřená a nastavte počet hodin pro každý den. Celkové hodiny za týden se vypočtou z vybraných dnů."
               />
-              <span className="ml-3 inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-blue-700/40 to-blue-700/20 text-blue-100 border border-blue-700/30">
+              {/* <span className="ml-3 inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-blue-700/40 to-blue-700/20 text-blue-100 border border-blue-700/30">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="w-3 h-3 text-blue-100"
@@ -459,16 +459,23 @@ export default function AnalysisForm({
                   />
                 </svg>
                 <span>Plánováno</span>
-              </span>
+              </span> */}
             </label>
             <div className="space-y-3 relative">
               {/* Keep component in DOM but visually disabled (planned feature) */}
-              <div className="pointer-events-none opacity-60">
+              <div className="pointer-events-none opacity-40">
                 <OperatingDays
                   disabled={true}
                   onChange={handleOperatingDaysChange}
                   error={errors.operatingHours}
                 />
+              </div>
+
+              {/* Small overlay label indicating planned feature */}
+              <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                {/* <span className="text-lg text-blue-100 bg-gradient-to-r from-blue-700/20 to-blue-700/10 px-3 py-1 rounded-full border border-blue-700/30"> */}
+                Dostupné brzy...
+                {/* </span> */}
               </div>
 
               {/* Badge moved next to the label; kept OperatingDays in DOM but non-interactive */}

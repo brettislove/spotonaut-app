@@ -48,7 +48,7 @@ export default function FieldHelp({ title, description }: FieldHelpProps) {
         aria-controls={`fh-${id}`}
         onClick={() => setOpen((s) => !s)}
         title="Nápověda"
-        className="ms-2 inline-flex items-center align-middle h-4 leading-none text-slate-400 hover:text-slate-200"
+        className="cursor-pointer ms-2 inline-flex items-center align-middle h-4 leading-none text-slate-400 hover:text-slate-200"
       >
         <svg
           className="w-4 h-4"
