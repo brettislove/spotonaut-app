@@ -54,6 +54,7 @@ export default function AnalysisResultsMobile({
 }: AnalysisResultsMobileProps) {
   const [activeTab, setActiveTab] = useState<"metrics" | "chat">("metrics");
   const [isExpanded, setIsExpanded] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -177,10 +178,11 @@ export default function AnalysisResultsMobile({
               )}
 
               <div>
+                {/* New Analysis Button */}
                 {onNewAnalysis && (
                   <button
                     onClick={onNewAnalysis}
-                    className="absolute left-1/12 translate-y-1/6 px-3 py-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 hover:border-blue-500/50 rounded-lg transition-all flex items-center gap-1.5"
+                    className="absolute left-1/12 translate-y-1/6 px-3 py-1.5 transition-all flex items-center"
                   >
                     <svg
                       className="w-5 h-5"
@@ -198,42 +200,137 @@ export default function AnalysisResultsMobile({
                   </button>
                 )}
 
-                <div
-                  role="tablist"
-                  aria-label="Přepnout mezi metrikami a chatem"
-                  className="relative w-44 h-11 bg-slate-800/80 border border-slate-700 rounded-full p-1 flex items-center"
+                {/* Three-dot button for extra functions. Disabled for all users except admins. */}
+                <button
+                  disabled={session?.user?.email !== "crew@spotonaut.com"}
+                  onClick={() => setDrawerOpen((prev) => !prev)}
+                  className="absolute right-1/12 translate-y-1/6 px-3 py-0.5 text-slate-300 disabled:text-slate-600"
+                  aria-label="Open extra functions drawer"
                 >
-                  <button
-                    type="button"
-                    onClick={() => handleTabChange("metrics")}
-                    aria-pressed={activeTab === "metrics"}
-                    className={`z-20 flex-1 text-sm font-medium text-center transition-colors ${
-                      activeTab === "metrics" ? "text-white" : "text-slate-300"
-                    }`}
-                  >
-                    Metriky
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleTabChange("chat")}
-                    aria-pressed={activeTab === "chat"}
-                    className={`z-20 flex-1 text-sm font-medium text-center transition-colors ${
-                      activeTab === "chat" ? "text-white" : "text-slate-300"
-                    }`}
-                  >
-                    Chat
-                  </button>
-
-                  {/* Sliding knob (half width) */}
-                  <div
+                  <svg
+                    className="w-7 h-7"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
                     aria-hidden
-                    className={`absolute inset-y-1 left-1 w-[calc(50%_-_0.25rem)] rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 opacity-80 shadow-lg transform transition-transform duration-300 pointer-events-none ${
-                      activeTab === "chat"
-                        ? "translate-x-full"
-                        : "translate-x-0"
-                    }`}
-                  />
+                  >
+                    <circle cx="6" cy="12" r="1.5" />
+                    <circle cx="12" cy="12" r="1.5" />
+                    <circle cx="18" cy="12" r="1.5" />
+                  </svg>
+                </button>
+
+                {/* Tab Toggle Button */}
+                <div className="relative flex items-center gap-2">
+                  <div
+                    role="tablist"
+                    aria-label="Přepnout mezi metrikami a chatem"
+                    className="relative w-44 h-11 bg-slate-800/80 border border-slate-700 rounded-full p-1 flex items-center"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange("metrics")}
+                      aria-pressed={activeTab === "metrics"}
+                      className={`z-20 flex-1 text-sm font-medium text-center transition-colors ${
+                        activeTab === "metrics"
+                          ? "text-white"
+                          : "text-slate-300"
+                      }`}
+                    >
+                      Metriky
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange("chat")}
+                      aria-pressed={activeTab === "chat"}
+                      className={`z-20 flex-1 text-sm font-medium text-center transition-colors ${
+                        activeTab === "chat" ? "text-white" : "text-slate-300"
+                      }`}
+                    >
+                      Chat
+                    </button>
+
+                    {/* Sliding knob (half width) */}
+                    <div
+                      aria-hidden
+                      className={`absolute inset-y-1 left-1 w-[calc(50%_-_0.25rem)] rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 opacity-80 shadow-lg transform transition-transform duration-300 pointer-events-none ${
+                        activeTab === "chat"
+                          ? "translate-x-full"
+                          : "translate-x-0"
+                      }`}
+                    />
+                  </div>
                 </div>
+
+                {/* Drawer for extra functions */}
+                {drawerOpen && (
+                  <div className="absolute bottom-17 left-0 w-full bg-slate-900/95 backdrop-blur-md p-3">
+                    <div className="flex items-center justify-center gap-3">
+                      <button
+                        aria-label="export"
+                        className="w-10 h-10 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 3v12m0 0l4-4m-4 4l-4-4"
+                          />
+                          <path
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M5 21h14"
+                          />
+                        </svg>
+                      </button>
+
+                      <button
+                        aria-label="compare"
+                        className="w-10 h-10 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M3 10h4v11H3zM10 4h4v17h-4zM17 7h4v14h-4z"
+                          />
+                        </svg>
+                      </button>
+
+                      <button
+                        aria-label="info"
+                        className="w-10 h-10 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 8v.01M12 12v4"
+                          />
+                          <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
