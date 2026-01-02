@@ -178,7 +178,7 @@ export default function AuthModal({
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
         >
           <svg
             className="w-6 h-6"
@@ -213,7 +213,7 @@ export default function AuthModal({
               setConfirmPasswordValid(null);
               setAcceptTerms(false);
             }}
-            className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-all ${
+            className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-all cursor-pointer ${
               activeTab === "login"
                 ? "bg-purple-500 text-white"
                 : "text-slate-400 hover:text-white"
@@ -230,7 +230,7 @@ export default function AuthModal({
               setConfirmPasswordValid(null);
               setAcceptTerms(false);
             }}
-            className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-all ${
+            className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-all cursor-pointer ${
               activeTab === "signup"
                 ? "bg-purple-500 text-white"
                 : "text-slate-400 hover:text-white"
@@ -424,7 +424,7 @@ export default function AuthModal({
                   confirmPasswordValid !== true ||
                   !acceptTerms))
             }
-            className="w-full bg-gradient-to-br from-purple-400 via-purple-500/100 to-purple-700 text-white font-semibold py-3 px-4 rounded-full hover:from-purple-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-br from-purple-400 via-purple-500/100 to-purple-700 text-white font-semibold py-3 px-4 rounded-full hover:from-purple-600 hover:to-purple-700 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">

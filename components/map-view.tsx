@@ -67,7 +67,7 @@ export default function MapView({ data }: MapViewProps) {
   }
 
   return (
-    <div className="h-full w-full bg-slate-900/50 backdrop-blur-sm border border-slate-800 overflow-hidden flex flex-col">
+    <div className="h-full w-full bg-slate-900/50 backdrop-blur-sm border border-slate-800 overflow-hidden flex flex-col sm:rounded-t-2xl">
       {/* Map */}
       <div className="flex-1 relative">
         <MapContent
