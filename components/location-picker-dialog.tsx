@@ -19,7 +19,7 @@ export default function LocationPickerDialog({
   isOpen,
   onClose,
   onLocationSelect,
-  initialCenter = [50.0755, 14.4378], // Prague default
+  initialCenter = [49.1951, 16.6068], // Brno default
 }: LocationPickerDialogProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -41,7 +41,7 @@ export default function LocationPickerDialog({
       if (!mapRef.current && mapContainerRef.current) {
         const map = L.map(mapContainerRef.current, {
           center: currentCenter,
-          zoom: 15,
+          zoom: 13,
           zoomControl: true,
           scrollWheelZoom: true,
           dragging: true,
@@ -207,7 +207,7 @@ export default function LocationPickerDialog({
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-800 border-0 sm:border border-slate-700 rounded-none sm:rounded-xl shadow-2xl w-full max-w-3xl h-full sm:h-full sm:max-h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+      <div className="bg-slate-950 border-0 sm:border border-slate-700 rounded-none sm:rounded-xl shadow-2xl w-full max-w-3xl h-full sm:h-full sm:max-h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
           <div>
@@ -249,16 +249,16 @@ export default function LocationPickerDialog({
           {/* Center Pin */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-[1000]">
             <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 rounded-full flex items-center justify-center shadow-lg">
                 <div className="w-3 h-3 bg-white rounded-full" />
               </div>
-              <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-8 bg-purple-500" />
-              <div className="absolute top-full left-1/2 -translate-x-1/2 translate-y-8 w-3 h-3 bg-purple-500 rounded-full border-1 border-white shadow-lg" />
+              <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-8 bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800" />
+              <div className="absolute top-full left-1/2 -translate-x-1/2 translate-y-8 w-3 h-3 bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 rounded-full border-1 border-white shadow-lg" />
             </div>
           </div>
 
           {/* Address Display */}
-          <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 bg-slate-900/90 text-white text-xs px-3 py-2 rounded-lg border border-slate-700 z-[1000] max-w-md backdrop-blur-sm">
+          <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 text-white text-xs px-3 py-2 rounded-lg z-[1000] max-w-md bg-slate-900/80 border border-slate-700/50 backdrop-blur-sm">
             {isLoadingCurrentAddress ? (
               <div className="flex items-center gap-2 text-slate-400">
                 <svg
@@ -321,14 +321,14 @@ export default function LocationPickerDialog({
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-700 flex gap-2 sm:gap-3">
           <button
             onClick={onClose}
-            className="flex-1 bg-slate-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg hover:bg-slate-600 active:scale-95 transition-all touch-manipulation"
+            className="flex-1 text-white font-semibold text-sm px-4 py-2.5 rounded-full transition-all touch-manipulation bg-slate-900/80 border border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/70 active:scale-95"
           >
             Zrušit
           </button>
           <button
             onClick={handleConfirmLocation}
             disabled={isLoadingAddress}
-            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold text-sm px-4 py-2.5 rounded-lg hover:from-blue-600 hover:to-purple-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+            className="flex-1 bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 text-white font-semibold text-sm px-4 py-2.5 rounded-full hover:from-blue-400 hover:to-blue-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
           >
             {isLoadingAddress ? "Načítání..." : "Potvrdit lokalitu"}
           </button>

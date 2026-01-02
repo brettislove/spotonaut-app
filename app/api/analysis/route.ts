@@ -106,8 +106,24 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         const encoder = new TextEncoder();
 
+        // Track whether the stream controller has been closed to avoid
+        // attempting to enqueue after close which throws ERR_INVALID_STATE.
+        let streamClosed = false;
+
+        const safeEnqueue = (payload: Uint8Array) => {
+          if (streamClosed) return;
+          try {
+            controller.enqueue(payload);
+          } catch (err) {
+            // If enqueue fails because the controller is closed, mark closed
+            // and swallow the error to avoid crashing the whole handler.
+            console.warn("Stream enqueue failed (likely closed):", err);
+            streamClosed = true;
+          }
+        };
+
         const sendProgress = (step: ProgressStep) => {
-          controller.enqueue(
+          safeEnqueue(
             encoder.encode(
               `data: ${JSON.stringify({ type: "progress", step })}\n\n`
             )
@@ -115,7 +131,7 @@ export async function POST(request: NextRequest) {
         };
 
         const sendChunk = (text: string) => {
-          controller.enqueue(
+          safeEnqueue(
             encoder.encode(
               `data: ${JSON.stringify({ type: "chunk", text })}\n\n`
             )
@@ -360,43 +376,66 @@ export async function POST(request: NextRequest) {
 
           // Send final result
           sendProgress("complete");
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: "done",
-                analysis:
-                  fullText ||
-                  "Omlouváme se, nepodařilo se vygenerovat analýzu.",
-                data: {
-                  location: data.location,
-                  locationName,
-                  coordinates,
-                  metrics,
-                },
-                sources,
-                usedMapsGrounding,
-                groundedLocationData: groundedLocation,
-              })}\n\n`
-            )
-          );
-
-          controller.close();
+          try {
+            // Attempt to send the final "done" payload. Use safeEnqueue to
+            // avoid throwing if the controller is already closed.
+            safeEnqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  type: "done",
+                  analysis:
+                    fullText ||
+                    "Omlouváme se, nepodařilo se vygenerovat analýzu.",
+                  data: {
+                    location: data.location,
+                    locationName,
+                    coordinates,
+                    metrics,
+                  },
+                  sources,
+                  usedMapsGrounding,
+                  groundedLocationData: groundedLocation,
+                })}\n\n`
+              )
+            );
+          } finally {
+            // Close the controller if not already considered closed.
+            try {
+              if (!streamClosed) controller.close();
+            } catch (err) {
+              console.warn(
+                "Failed to close controller (already closed?):",
+                err
+              );
+            }
+            streamClosed = true;
+          }
         } catch (error) {
           console.error("Analysis stream error:", error);
           const errorMessage =
             error instanceof Error
               ? error.message
               : "Failed to process analysis";
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: "error",
-                error: "Nepodařilo se zpracovat analýzu",
-                details: errorMessage,
-              })}\n\n`
-            )
-          );
-          controller.close();
+          // Try to signal an error to the client, but avoid enqueueing if
+          // the controller is already closed.
+          try {
+            safeEnqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  type: "error",
+                  error: "Nepodařilo se zpracovat analýzu",
+                  details: errorMessage,
+                })}\n\n`
+              )
+            );
+          } finally {
+            try {
+              if (!streamClosed) controller.close();
+            } catch (err) {
+              console.warn("Failed to close controller in error handler:", err);
+            }
+            streamClosed = true;
+          }
         }
       },
     });

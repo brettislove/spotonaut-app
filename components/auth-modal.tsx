@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAnalysis } from "@/lib/contexts/analysis-context";
 import { signIn } from "next-auth/react";
 
 interface AuthModalProps {
@@ -26,6 +27,19 @@ export default function AuthModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Sync internal active tab with incoming `mode` prop so parent can switch tabs
+  useEffect(() => {
+    setActiveTab(mode);
+    // clear transient state when mode changes
+    setError("");
+    setSuccess("");
+    setConfirmPassword("");
+    setConfirmPasswordValid(null);
+    setAcceptTerms(false);
+  }, [mode]);
+
+  const { showToast } = useAnalysis();
 
   if (!isOpen) return null;
 
@@ -84,16 +98,24 @@ export default function AuthModal({
         password,
         redirect: false,
       });
-
       if (loginResult?.ok) {
         window.location.reload();
       } else {
+        // If auto-login didn't happen, show friendly success message and switch to login
         setSuccess("Účet byl vytvořen! Nyní se můžete přihlásit.");
         setActiveTab("login");
         setPassword("");
         setConfirmPassword(""); // clear confirm after signup
         setConfirmPasswordValid(null);
         setAcceptTerms(false);
+        // Notify user with toast that account was created and email was sent
+        try {
+          showToast(
+            "Registrace úspěšná — zkontrolujte svůj e-mail pro potvrzení."
+          );
+        } catch (e) {
+          // ignore if toast can't be shown
+        }
       }
     } catch (error) {
       setError(
@@ -116,11 +138,25 @@ export default function AuthModal({
         redirect: false,
       });
 
-      if (result?.error) {
-        throw new Error(result.error);
-      }
+      // Map known next-auth/client error codes to user-friendly messages
+      const mapNextAuthError = (err?: string | null) => {
+        if (!err) return "Přihlášení se nezdařilo";
+        const e = err.toString();
+        if (
+          e.toLowerCase().includes("credentials") ||
+          e.toLowerCase().includes("invalid") ||
+          e.toLowerCase().includes("neplatn") ||
+          e.toLowerCase().includes("configuration")
+        )
+          return "Neplatné přihlašovací údaje";
+        // fallback to the original error message
+        return e;
+      };
 
-      if (result?.ok) {
+      if (result?.error) {
+        // show friendly mapped message instead of raw token like 'Configuration'
+        setError(mapNextAuthError(result.error));
+      } else if (result?.ok) {
         window.location.reload();
       }
     } catch (error) {
@@ -132,13 +168,17 @@ export default function AuthModal({
     }
   };
 
+  // Inline validation flags
+  const passwordTooShort =
+    activeTab === "signup" && password.length > 0 && password.length < 6;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 relative">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
         >
           <svg
             className="w-6 h-6"
@@ -157,13 +197,13 @@ export default function AuthModal({
 
         {/* Title */}
         <h2 className="text-2xl font-bold text-white mb-6">
-          <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-br from-blue-500 via-purple-400 to-purple-600 bg-clip-text text-transparent">
             Přihlášení / Registrace
           </span>
         </h2>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 bg-slate-800/50 rounded-lg p-1">
+        <div className="flex gap-2 mb-6 bg-slate-800/50 rounded-full p-1">
           <button
             onClick={() => {
               setActiveTab("login");
@@ -173,9 +213,9 @@ export default function AuthModal({
               setConfirmPasswordValid(null);
               setAcceptTerms(false);
             }}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-all cursor-pointer ${
               activeTab === "login"
-                ? "bg-blue-500 text-white"
+                ? "bg-purple-500 text-white"
                 : "text-slate-400 hover:text-white"
             }`}
           >
@@ -190,9 +230,9 @@ export default function AuthModal({
               setConfirmPasswordValid(null);
               setAcceptTerms(false);
             }}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-all cursor-pointer ${
               activeTab === "signup"
-                ? "bg-blue-500 text-white"
+                ? "bg-purple-500 text-white"
                 : "text-slate-400 hover:text-white"
             }`}
           >
@@ -202,12 +242,12 @@ export default function AuthModal({
 
         {/* Error/Success messages */}
         {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-full text-red-400 text-sm">
             {error}
           </div>
         )}
         {success && (
-          <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 text-sm">
+          <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-sm">
             {success}
           </div>
         )}
@@ -263,7 +303,7 @@ export default function AuthModal({
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
+                className="w-full bg-slate-800 border border-slate-700 text-white rounded-full px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
                 placeholder="Vaše jméno"
                 disabled={isLoading}
               />
@@ -279,7 +319,7 @@ export default function AuthModal({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
+              className="w-full bg-slate-800 border border-slate-700 text-white rounded-full px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
               placeholder="vas@email.cz"
               disabled={isLoading}
             />
@@ -303,12 +343,21 @@ export default function AuthModal({
                 }
               }}
               required
-              className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
+              aria-invalid={passwordTooShort}
+              className={`w-full bg-slate-800 border text-white rounded-full px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all ${
+                passwordTooShort ? "border-red-500" : "border-slate-700"
+              }`}
               placeholder={
                 activeTab === "signup" ? "Alespoň 6 znaků" : "Vaše heslo"
               }
               disabled={isLoading}
             />
+
+            {passwordTooShort && (
+              <p className="mt-2 text-sm text-red-400">
+                Heslo musí mít alespoň 6 znaků
+              </p>
+            )}
           </div>
 
           {activeTab === "signup" && (
@@ -325,7 +374,7 @@ export default function AuthModal({
                   setConfirmPasswordValid(password === val);
                 }}
                 required
-                className={`w-full bg-slate-800 text-white rounded-lg px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all ${
+                className={`w-full bg-slate-800 text-white rounded-full px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all ${
                   confirmPasswordValid === false
                     ? "border-red-500"
                     : confirmPasswordValid === true
@@ -375,7 +424,7 @@ export default function AuthModal({
                   confirmPasswordValid !== true ||
                   !acceptTerms))
             }
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-br from-purple-400 via-purple-500/100 to-purple-700 text-white font-semibold py-3 px-4 rounded-full hover:from-purple-600 hover:to-purple-700 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">

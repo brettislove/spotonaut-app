@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import MapView from "./map-view";
 import { GroundingSources } from "./grounding-sources";
+import { FiThumbsUp, FiThumbsDown } from "react-icons/fi";
+import { Session } from "next-auth";
 
 interface Message {
   id: string;
@@ -28,37 +30,46 @@ interface AnalysisData {
 }
 
 interface AnalysisResultsMobileProps {
+  session: Session | null;
   analysisData: AnalysisData;
   messages: Message[];
   input: string;
   isLoading: boolean;
+  onStartChat: () => void;
   onInputChange: (value: string) => void;
   onSendMessage: (e: React.FormEvent) => void;
   onNewAnalysis?: () => void;
 }
 
 export default function AnalysisResultsMobile({
+  session,
   analysisData,
   messages,
   input,
   isLoading,
+  onStartChat,
   onInputChange,
   onSendMessage,
   onNewAnalysis,
 }: AnalysisResultsMobileProps) {
   const [activeTab, setActiveTab] = useState<"metrics" | "chat">("metrics");
   const [isExpanded, setIsExpanded] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const handleInputFocus = () => setIsExpanded(true);
+
   // Handle tab change and expand for chat
   const handleTabChange = (tab: "metrics" | "chat") => {
     setActiveTab(tab);
+    // When switching to chat, collapse the map and hide it
     if (tab === "chat") {
-      setIsExpanded(true);
+      setIsExpanded(false);
     }
   };
 
@@ -66,6 +77,16 @@ export default function AnalysisResultsMobile({
   useEffect(() => {
     if (activeTab === "chat" && messages.length > 0) {
       scrollToBottom();
+    }
+
+    // When switching to metrics, ensure the scroll container is at the top
+    if (activeTab === "metrics") {
+      // Use scrollTo if available for a smooth experience
+      if (scrollContainerRef.current?.scrollTo) {
+        scrollContainerRef.current.scrollTo({ top: 0 });
+      } else if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
     }
   }, [messages, activeTab]);
 
@@ -76,147 +97,31 @@ export default function AnalysisResultsMobile({
     return formatted;
   };
 
-  // Calculate heights based on expanded state
-  const mapHeight = isExpanded ? "25vh" : "35vh";
-  const contentHeight = isExpanded ? "calc(75vh - 4rem)" : "calc(65vh - 4rem)";
-
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col bg-slate-950 overflow-hidden">
-      {/* Fixed Map Area */}
-      <div
-        className="transition-all duration-300 ease-out relative flex-shrink-0"
-        style={{ height: mapHeight }}
-      >
-        <div className="absolute inset-0">
+    <div className="fixed inset-0 top-16 flex flex-col bg-slate-950 overflow-hidden">
+      {/* Fixed Map Area - only render for Metrics tab */}
+      {activeTab === "metrics" && (
+        <div className="absolute inset-0 h-[35vh] transition-all duration-300 ease-out relative flex-shrink-0">
           <MapView data={analysisData} />
         </div>
-
-        {/* Compact Metrics Badge - Shows when expanded */}
-        {isExpanded && analysisData.metrics && (
-          <div className="absolute bottom-2 left-2 right-2 bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-lg px-3 py-2">
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                <span className="text-white font-semibold">
-                  {analysisData.metrics.localityScore}/100
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-purple-400"></div>
-                <span className="text-white font-semibold">
-                  {analysisData.metrics.footfallScore}/100
-                </span>
-              </div>
-              <button
-                onClick={() => setIsExpanded(false)}
-                className="text-slate-400 hover:text-white transition-colors"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Bottom Panel - No Vaul, just a simple fixed panel */}
-      <div
-        className="flex-1 flex flex-col bg-slate-900 border-t border-slate-700 rounded-t-2xl overflow-hidden"
-        style={{ height: contentHeight }}
-      >
-        {/* Drag Handle / Expand Toggle */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex justify-center py-2 w-full hover:bg-slate-800/50 transition-colors"
-        >
-          <div className="w-12 h-1.5 bg-slate-600/50 rounded-full"></div>
-        </button>
-
-        {/* Tab Bar */}
-        <div className="flex items-center border-b border-slate-700/50 px-4 flex-shrink-0">
-          <button
-            onClick={() => handleTabChange("metrics")}
-            className={`flex-1 py-3 text-sm font-medium transition-all relative ${
-              activeTab === "metrics"
-                ? "text-white"
-                : "text-slate-400 hover:text-slate-300"
-            }`}
-          >
-            <span className="flex items-center justify-center gap-2">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-              Metriky
-            </span>
-            {activeTab === "metrics" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-            )}
-          </button>
-          <button
-            onClick={() => handleTabChange("chat")}
-            className={`flex-1 py-3 text-sm font-medium transition-all relative ${
-              activeTab === "chat"
-                ? "text-white"
-                : "text-slate-400 hover:text-slate-300"
-            }`}
-          >
-            <span className="flex items-center justify-center gap-2">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-              Chat
-              {messages.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-500 text-white rounded-full">
-                  {messages.length}
-                </span>
-              )}
-            </span>
-            {activeTab === "chat" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-            )}
-          </button>
-        </div>
-
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Tab Content - Single Scrollable Region */}
-        <div className="flex-1 overflow-y-auto overscroll-contain">
+        <div
+          ref={scrollContainerRef}
+          className="relative flex-1 overflow-y-auto overscroll-contain pb-28 lg:pb-0"
+        >
           {activeTab === "metrics" ? (
-            <MetricsTab data={analysisData} onNewAnalysis={onNewAnalysis} />
+            <MetricsTab data={analysisData} />
           ) : (
             <ChatTab
+              session={session}
               messages={messages}
               input={input}
               isLoading={isLoading}
+              onStartChat={onStartChat}
               onInputChange={onInputChange}
               onSendMessage={onSendMessage}
               messagesEndRef={messagesEndRef}
@@ -224,6 +129,211 @@ export default function AnalysisResultsMobile({
               onInputFocus={() => setIsExpanded(true)}
             />
           )}
+
+          {/* Gradient overlay so messages fade behind the mobile bottom bar */}
+          {activeTab === "chat" && (
+            <div className="fixed pointer-events-none absolute left-0 right-0 bottom-20 h-18 z-40 lg:hidden bg-gradient-to-t from-slate-900 to-transparent" />
+          )}
+        </div>
+
+        {/* Mobile fixed bottom bar with centered toggle (visible on small screens) */}
+        <div className="fixed left-0 right-0 bottom-0 lg:hidden z-50">
+          <div className="bg-slate-900/95 backdrop-blur-sm px-4 py-3">
+            <div className="flex flex-col items-center gap-3 w-full">
+              {/* Chat input shown here on mobile when Chat tab is active */}
+              {activeTab === "chat" && (
+                <form
+                  onSubmit={onSendMessage}
+                  className="w-full max-w-xl flex items-center gap-2 px-1"
+                >
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => onInputChange(e.target.value)}
+                    onFocus={handleInputFocus}
+                    placeholder="Napište zprávu..."
+                    disabled={isLoading || !session}
+                    className="flex-1 bg-slate-800 border border-slate-600 text-white placeholder-slate-400 rounded-xl px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isLoading || !input.trim()}
+                    className="px-3 py-2.5 bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 text-white font-medium rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[44px]"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                      />
+                    </svg>
+                  </button>
+                </form>
+              )}
+
+              <div>
+                {/* New Analysis Button */}
+                {onNewAnalysis && (
+                  <button
+                    onClick={onNewAnalysis}
+                    className="absolute left-1/12 translate-y-1/6 px-3 py-1.5 transition-all flex items-center"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="white"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                  </button>
+                )}
+
+                {/* Three-dot button for extra functions. Disabled for all users except admins. */}
+                <button
+                  disabled={session?.user?.email !== "crew@spotonaut.com"}
+                  onClick={() => setDrawerOpen((prev) => !prev)}
+                  className="absolute right-1/12 translate-y-1/6 px-3 py-0.5 text-slate-300 disabled:text-slate-600"
+                  aria-label="Open extra functions drawer"
+                >
+                  <svg
+                    className="w-7 h-7"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden
+                  >
+                    <circle cx="6" cy="12" r="1.5" />
+                    <circle cx="12" cy="12" r="1.5" />
+                    <circle cx="18" cy="12" r="1.5" />
+                  </svg>
+                </button>
+
+                {/* Tab Toggle Button */}
+                <div className="relative flex items-center gap-2">
+                  <div
+                    role="tablist"
+                    aria-label="Přepnout mezi metrikami a chatem"
+                    className="relative w-44 h-11 bg-slate-800/80 border border-slate-700 rounded-full p-1 flex items-center"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange("metrics")}
+                      aria-pressed={activeTab === "metrics"}
+                      className={`z-20 flex-1 text-sm font-medium text-center transition-colors ${
+                        activeTab === "metrics"
+                          ? "text-white"
+                          : "text-slate-300"
+                      }`}
+                    >
+                      Metriky
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange("chat")}
+                      aria-pressed={activeTab === "chat"}
+                      className={`z-20 flex-1 text-sm font-medium text-center transition-colors ${
+                        activeTab === "chat" ? "text-white" : "text-slate-300"
+                      }`}
+                    >
+                      Chat
+                    </button>
+
+                    {/* Sliding knob (half width) */}
+                    <div
+                      aria-hidden
+                      className={`absolute inset-y-1 left-1 w-[calc(50%_-_0.25rem)] rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 opacity-80 shadow-lg transform transition-transform duration-300 pointer-events-none ${
+                        activeTab === "chat"
+                          ? "translate-x-full"
+                          : "translate-x-0"
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* Drawer for extra functions */}
+                {drawerOpen && (
+                  <div className="absolute bottom-17 left-0 w-full bg-slate-900/95 backdrop-blur-md p-3">
+                    <div className="flex items-center justify-center gap-3">
+                      <button
+                        aria-label="export"
+                        className="w-10 h-10 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 3v12m0 0l4-4m-4 4l-4-4"
+                          />
+                          <path
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M5 21h14"
+                          />
+                        </svg>
+                      </button>
+
+                      <button
+                        aria-label="compare"
+                        className="w-10 h-10 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M3 10h4v11H3zM10 4h4v17h-4zM17 7h4v14h-4z"
+                          />
+                        </svg>
+                      </button>
+
+                      <button
+                        aria-label="info"
+                        className="w-10 h-10 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 8v.01M12 12v4"
+                          />
+                          <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -231,13 +341,7 @@ export default function AnalysisResultsMobile({
 }
 
 // Metrics Tab Component
-function MetricsTab({
-  data,
-  onNewAnalysis,
-}: {
-  data: AnalysisData;
-  onNewAnalysis?: () => void;
-}) {
+function MetricsTab({ data }: { data: AnalysisData }) {
   if (!data.metrics) return null;
 
   return (
@@ -267,9 +371,9 @@ function MetricsTab({
             </svg>
             {data.locationName || data.location}
           </h2>
-          <p className="text-slate-400 text-sm">Analýza lokality</p>
+          {/* <p className="text-slate-400 text-sm">Analýza lokality</p> */}
         </div>
-        {onNewAnalysis && (
+        {/* {onNewAnalysis && (
           <button
             onClick={onNewAnalysis}
             className="px-3 py-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-500/50 rounded-lg transition-all flex items-center gap-1.5"
@@ -289,7 +393,7 @@ function MetricsTab({
             </svg>
             Nová
           </button>
-        )}
+        )} */}
       </div>
 
       {/* Metrics Cards */}
@@ -420,26 +524,41 @@ function MetricsTab({
 
 // Chat Tab Component
 function ChatTab({
+  session,
   messages,
   input,
   isLoading,
+  onStartChat,
   onInputChange,
   onSendMessage,
   messagesEndRef,
   formatMessage,
   onInputFocus,
 }: {
+  session: Session | null;
   messages: Message[];
   input: string;
   isLoading: boolean;
+  onStartChat: () => void;
   onInputChange: (value: string) => void;
   onSendMessage: (e: React.FormEvent) => void;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
   formatMessage: (content: string) => string;
   onInputFocus?: () => void;
 }) {
+  const [feedbackMap, setFeedbackMap] = useState<Record<string, "up" | "down">>(
+    {}
+  );
+
+  const handleFeedback = (id: string, type: "up" | "down") => {
+    // optimistic UI update
+    setFeedbackMap((prev) => ({ ...prev, [id]: type }));
+    // placeholder side-effect: replace with API call or parent callback
+    console.log("feedback", { id, feedback: type });
+  };
+
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col min-h-0 bg-slate-900">
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0">
         {messages.length === 0 ? (
@@ -476,34 +595,82 @@ function ChatTab({
                   message.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                    message.role === "user"
-                      ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
-                      : "bg-slate-800 text-slate-100 border border-slate-700"
-                  }`}
-                >
-                  <div
-                    className={`text-sm leading-relaxed ${
-                      message.role === "assistant" ? "prose-invert" : ""
-                    }`}
-                    dangerouslySetInnerHTML={{
-                      __html: formatMessage(message.content),
-                    }}
-                  />
-                  <div
-                    className={`text-xs mt-2 ${
-                      message.role === "user"
-                        ? "text-blue-100/70"
-                        : "text-slate-500"
-                    }`}
-                  >
-                    {message.timestamp.toLocaleTimeString("cs-CZ", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                {message.role === "user" ? (
+                  <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-gradient-to-b from-purple-500 via-purple-600 to-purple-700 text-white">
+                    <div
+                      className="text-sm leading-relaxed"
+                      dangerouslySetInnerHTML={{
+                        __html: formatMessage(message.content),
+                      }}
+                    />
                   </div>
-                </div>
+                ) : (
+                  // Assistant messages: render as plain text on the app background (no bubble)
+                  <div className="mx-3 text-slate-200 text-sm leading-relaxed prose-invert">
+                    <b>Asistent:</b>
+                    <div
+                      className="mt-2"
+                      dangerouslySetInnerHTML={{
+                        __html: formatMessage(message.content),
+                      }}
+                    />
+
+                    {/* Divider */}
+                    <div className="mt-4 border-t border-slate-700/50" />
+
+                    {/* Grounding sources for this assistant message (if provided) */}
+                    {message.sources && message.sources.length > 0 && (
+                      <div className="mt-3">
+                        <GroundingSources sources={message.sources} />
+                      </div>
+                    )}
+
+                    {/* Feedback (thumbs up / thumbs down) */}
+                    <div className="mt-3 flex items-center gap-3">
+                      <span className="text-slate-400 text-xs">
+                        Jak hodnotíte tuto odpověď?
+                      </span>
+                      <button
+                        aria-label={`upvote-${message.id}`}
+                        onClick={() => handleFeedback(message.id, "up")}
+                        disabled={!!feedbackMap[message.id]}
+                        className={`p-2 rounded-md flex items-center justify-center transition-colors ${
+                          feedbackMap[message.id] === "up"
+                            ? "bg-blue-600 text-white"
+                            : "text-slate-200"
+                        }`}
+                      >
+                        <FiThumbsUp className="w-5 h-5" />
+                      </button>
+                      <button
+                        aria-label={`downvote-${message.id}`}
+                        onClick={() => handleFeedback(message.id, "down")}
+                        disabled={!!feedbackMap[message.id]}
+                        className={`p-2 rounded-md flex items-center justify-center transition-colors ${
+                          feedbackMap[message.id] === "down"
+                            ? "bg-rose-600 text-white"
+                            : "text-slate-200"
+                        }`}
+                      >
+                        <FiThumbsDown className="w-5 h-5" />
+                      </button>
+                      {feedbackMap[message.id] && (
+                        <span className="text-xs ml-2 text-green-400">
+                          Děkujeme!
+                        </span>
+                      )}
+                    </div>
+                    {/* In case this is the first message and the user is not signed in, show a prompt to sign up for starting the conversation */}
+                    {messages.length === 1 && !session && (
+                      <button
+                        onClick={onStartChat}
+                        className="mt-4 px-4 py-2 bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 text-white font-medium rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all"
+                      >
+                        Přihlaste se pro zahájení konverzace
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
             {isLoading && (
@@ -525,8 +692,8 @@ function ChatTab({
         )}
       </div>
 
-      {/* Chat Input - Fixed at bottom */}
-      <div className="flex-shrink-0 border-t border-slate-700/50 p-3 bg-slate-900">
+      {/* Chat Input - Fixed at bottom (desktop only). Hidden on mobile because mobile input is rendered inside the fixed bottom bar */}
+      <div className="hidden lg:flex-shrink-0 lg:flex lg:border-t lg:border-slate-700/50 lg:p-3 lg:bg-slate-900">
         <form onSubmit={onSendMessage} className="flex gap-2">
           <input
             type="text"

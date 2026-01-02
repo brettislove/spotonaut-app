@@ -57,12 +57,14 @@ export async function POST(req: NextRequest) {
 
     const resend = new Resend(RESEND_API_KEY);
 
-    const subject = `Request for more prompts: ${userEmail}`;
+    const subject = `Žádost o více promptů: ${userEmail}`;
     const html = `
-      <p>User <strong>${escapeHtml(
+      <p>Uživatel <strong>${escapeHtml(
         userName || userEmail
-      )}</strong> (${escapeHtml(userEmail)}) requested more chat prompts.</p>
-      <p>Please review and increase the user's quota if appropriate.</p>
+      )}</strong> (${escapeHtml(
+      userEmail
+    )}) požádal o více chatovacích promptů.</p>
+      <p>Prosím zkontrolujte a případně zvyšte uživatelský kvótu.</p>
     `;
 
     try {
@@ -82,11 +84,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Send confirmation to user
-    const userSubject = `We've received your request for more chat prompts`;
+    const userSubject = `Obdrželi jsme vaši žádost o více promptů`;
     const userHtml = `
-      <p>Hi ${escapeHtml(userName || "")},</p>
-      <p>We received your request for additional chat prompts. Our team will review it and get back to you shortly.</p>
-      <p>Thanks — the Spotonaut team</p>
+      <p>Ahoj ${escapeHtml(userName || "")},</p>
+      <p>Obdrželi jsme vaši žádost o další chatovací prompty. Náš tým ji zkontroluje a brzy se vám ozve.</p>
+      <p>Děkujeme — tým Spotonaut</p>
     `;
 
     try {
