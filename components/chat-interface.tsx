@@ -839,25 +839,25 @@ export default function ChatInterface() {
                               aria-label={`upvote-${message.id}`}
                               onClick={() => handleFeedback(message.id, "up")}
                               disabled={!!feedbackMap[message.id]}
-                              className={`cursor-pointerp-2 rounded-md flex items-center justify-center transition-colors ${
+                              className={`pb-1 cursor-pointer rounded-md flex items-center justify-center transition-colors text-slate-400 hover:text-white ${
                                 feedbackMap[message.id] === "up"
-                                  ? "bg-blue-600 text-white"
+                                  ? "text-white"
                                   : "text-slate-200"
                               }`}
                             >
-                              <FiThumbsUp className="w-5 h-5" />
+                              <FiThumbsUp className="w-4 h-4" />
                             </button>
                             <button
                               aria-label={`downvote-${message.id}`}
                               onClick={() => handleFeedback(message.id, "down")}
                               disabled={!!feedbackMap[message.id]}
-                              className={`cursor-pointer p-2 rounded-md flex items-center justify-center transition-colors ${
+                              className={`cursor-pointer rounded-md flex items-center justify-center transition-colors text-slate-400 hover:text-white ${
                                 feedbackMap[message.id] === "down"
-                                  ? "bg-rose-600 text-white"
+                                  ? "text-white"
                                   : "text-slate-200"
                               }`}
                             >
-                              <FiThumbsDown className="w-5 h-5" />
+                              <FiThumbsDown className="w-4 h-4" />
                             </button>
                             {feedbackMap[message.id] && (
                               <span className="text-xs ml-2 text-green-400">
@@ -904,7 +904,7 @@ export default function ChatInterface() {
                       <button
                         type="submit"
                         disabled={isLoading || requestPending || !input.trim()}
-                        className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white font-medium rounded-lg hover:from-purple-400 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Odeslat
                       </button>
