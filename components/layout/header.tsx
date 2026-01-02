@@ -157,7 +157,7 @@ export default function Header() {
                     }}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800/50 transition-colors"
                   >
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                    <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
                       {getInitials(session.user?.name)}
                     </div>
                     <span className="text-sm text-white max-w-[120px] truncate">
@@ -245,16 +245,16 @@ export default function Header() {
                 <>
                   <button
                     onClick={() => handleAuthClick("login")}
-                    className="px-4 py-2 hover:cursor-pointer text-sm font-medium text-slate-300 hover:text-white transition-colors"
+                    className="px-4 py-2 hover:cursor-pointer text-sm font-semibold text-slate-300 transition-colors rounded-full border border-white/10 bg-white/4 backdrop-blur-sm hover:bg-white/8 hover:text-white"
                   >
                     Přihlásit se
                   </button>
                   <button
                     onClick={() => handleAuthClick("signup")}
-                    className="group relative px-4 py-2 hover:cursor-pointer text-sm font-semibold bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg overflow-hidden"
+                    className="group relative px-4 py-2 hover:cursor-pointer text-sm font-semibold text-white rounded-full overflow-hidden bg-gradient-to-br from-purple-400 via-purple-500/100 to-purple-700 border border-purple-600/20 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40"
                   >
                     <span className="relative z-10">Registrovat se</span>
-                    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+                    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-600 bg-gradient-to-r from-transparent via-purple-400/20 to-transparent opacity-50" />
                   </button>
                 </>
               )}
@@ -444,12 +444,12 @@ export default function Header() {
           </div>
 
           {/* Mobile Auth Section - Bottom */}
-          <div className="border-t border-slate-800 p-3">
+          <div className="border-t border-slate-800 p-3 bg-slate-950">
             {session ? (
               <div className="space-y-2">
                 {/* User info */}
-                <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800/30">
-                  <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                <div className="flex items-center gap-3 px-3 py-2 rounded-full bg-slate-800/30">
+                  <div className="w-9 h-9 bg-gradient-to-br from-purple-400 via-purple-500/100 to-purple-700 rounded-full flex items-center justify-center text-white text-sm font-semibold">
                     {getInitials(session.user?.name)}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -518,7 +518,7 @@ export default function Header() {
                     handleAuthClick("login");
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors rounded-lg border border-slate-700"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-300 transition-colors rounded-full border border-white/10 bg-white/4 backdrop-blur-sm hover:bg-white/8 hover:text-white"
                 >
                   Přihlásit se
                 </button>
@@ -527,10 +527,10 @@ export default function Header() {
                     handleAuthClick("signup");
                     setIsMobileMenuOpen(false);
                   }}
-                  className="group relative w-full px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg overflow-hidden"
+                  className="group relative w-full px-4 py-2.5 hover:cursor-pointer text-sm font-semibold text-white rounded-full overflow-hidden bg-gradient-to-br from-purple-400 via-purple-500/100 to-purple-700 border border-purple-600/20 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40"
                 >
                   <span className="relative z-10">Registrovat se</span>
-                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-600 bg-gradient-to-r from-transparent via-purple-400/20 to-transparent opacity-50" />
                 </button>
               </div>
             )}
@@ -695,7 +695,7 @@ function ProfileSettingsModal({
               type="email"
               value={user?.email || ""}
               disabled
-              className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 text-slate-400 rounded-lg cursor-not-allowed"
+              className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 text-slate-400 rounded-2xl cursor-not-allowed"
             />
           </div>
 
@@ -709,7 +709,7 @@ function ProfileSettingsModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Vaše jméno"
-              className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 text-white rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
+              className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 text-white rounded-full focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
             />
           </div>
 
@@ -729,7 +729,7 @@ function ProfileSettingsModal({
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 text-white rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
+                  className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 text-white rounded-full focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
                 />
               </div>
 
@@ -742,7 +742,7 @@ function ProfileSettingsModal({
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 text-white rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
+                  className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 text-white rounded-full focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
                 />
               </div>
 
@@ -755,7 +755,7 @@ function ProfileSettingsModal({
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 text-white rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
+                  className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 text-white rounded-full focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
                 />
               </div>
             </div>
@@ -766,14 +766,14 @@ function ProfileSettingsModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-slate-700 text-white font-medium rounded-lg hover:bg-slate-600 transition-colors"
+              className="flex-1 px-4 py-2.5 bg-slate-700 text-white font-medium rounded-full hover:bg-slate-600 transition-colors"
             >
               Zrušit
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2.5 bg-gradient-to-br from-purple-400 via-purple-500/100 to-purple-700 text-white font-semibold rounded-full hover:from-purple-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? "Ukládání..." : "Uložit změny"}
             </button>

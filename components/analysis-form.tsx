@@ -2,7 +2,9 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import LocationPickerDialog from "./location-picker-dialog";
+import FieldHelp from "./ui/field-help";
 import BusinessTypeSelect from "./ui/business-type-select";
+import OperatingDays from "./operating-days";
 import type { BusinessType } from "@/lib/constants/business-types";
 
 interface AnalysisFormData {
@@ -60,6 +62,10 @@ export default function AnalysisForm({
   const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
   const [loadingTextIndex, setLoadingTextIndex] = useState(0);
 
+  // Daily hours map (managed by OperatingDays component)
+  const [dailyHours, setDailyHours] = useState<Record<string, number> | null>(
+    null
+  );
   const loadingTexts = [
     "Analyzuji lokalitu...",
     "Zjišťuji hustotu provozu...",
@@ -82,6 +88,8 @@ export default function AnalysisForm({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // dailyHours will be initialized by OperatingDays and reported via onChange
 
   // Cycle through loading texts
   useEffect(() => {
@@ -264,12 +272,11 @@ export default function AnalysisForm({
       newErrors.businessType = "Typ podnikání je povinný";
     }
 
-    if (
-      !formData.operatingHours ||
-      formData.operatingHours < 1 ||
-      formData.operatingHours > 168
-    ) {
-      newErrors.operatingHours = "Hodiny musí být mezi 1-168";
+    const selectedCount = dailyHours
+      ? Object.values(dailyHours).filter((h) => h > 0).length
+      : Math.max(0, Math.round((formData.operatingHours || 0) / 24));
+    if (selectedCount === 0) {
+      newErrors.operatingHours = "Vyberte alespoň jeden den";
     }
 
     setErrors(newErrors);
@@ -295,11 +302,24 @@ export default function AnalysisForm({
     }
   };
 
+  // Stable handler for OperatingDays to avoid changing reference each render
+  const handleOperatingDaysChange = useCallback(
+    (total: number, days: Record<string, number>) => {
+      setFormData((prev) => ({ ...prev, operatingHours: total }));
+      setDailyHours(days as Record<string, number>);
+      // clear operatingHours validation if present
+      setErrors((prev) => ({ ...prev, operatingHours: undefined }));
+    },
+    []
+  );
+
   return (
-    <div className="w-full max-w-2xl mx-auto p-6 bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl">
+    <div className="w-full max-w-2xl mx-auto p-6 bg-slate-950 border border-slate-700/60 rounded-xl shadow-2xl">
       <div className="mb-6">
-        <h3 className="text-xl font-semibold text-white">Analýza lokality</h3>
-        <p className="mt-1 text-sm text-slate-400">
+        <h3 className="text-xl font-semibold text-blue-100">
+          Analýza lokality
+        </h3>
+        <p className="mt-1 text-sm text-blue-200">
           Vyplňte základní informace o vašem podnikání potřebné pro analýzu
         </p>
       </div>
@@ -312,6 +332,10 @@ export default function AnalysisForm({
             className="block mb-2 text-sm font-medium text-white"
           >
             Cílová lokalita
+            <FieldHelp
+              title="Cílová lokalita"
+              description="Zadejte přesnou adresu nebo název místa. Můžete použít vyhledávání nebo vybrat lokaci z mapy. Pro nejlepší výsledky zadejte město a ulici."
+            />
           </label>
           <div className="relative">
             <input
@@ -322,7 +346,7 @@ export default function AnalysisForm({
               placeholder="např. Václavské náměstí, Praha"
               disabled={isLoading}
               autoComplete="off"
-              className={`block w-full p-2.5 pr-32 text-sm rounded-lg border bg-slate-800 border-slate-600 placeholder-slate-500 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
+              className={`block w-full p-2.5 pr-32 text-sm rounded-2xl border bg-slate-800 border-slate-600 placeholder-slate-500 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
                 errors.location
                   ? "border-red-500 focus:ring-red-500 focus:border-red-500"
                   : ""
@@ -367,7 +391,7 @@ export default function AnalysisForm({
             (suggestions.length > 0 || isLoadingSuggestions) && (
               <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                 {isLoadingSuggestions ? (
-                  <div className="px-4 py-3 text-sm text-slate-400">
+                  <div className="px-4 py-3 text-sm text-blue-200">
                     Načítání...
                   </div>
                 ) : (
@@ -377,12 +401,12 @@ export default function AnalysisForm({
                         <button
                           type="button"
                           onClick={() => handleSuggestionClick(suggestion)}
-                          className="flex flex-col items-start cursor-pointer w-full px-4 py-2 text-left hover:bg-slate-700 transition-colors"
+                          className="flex flex-col items-start cursor-pointer w-full px-4 py-2 text-left hover:bg-blue-700/40 transition-colors"
                         >
-                          <span className="text-sm font-medium text-white">
+                          <span className="text-sm font-medium text-blue-100">
                             {getShortLocationName(suggestion)}
                           </span>
-                          <span className="text-xs text-gray-400 mt-0.5 truncate w-full">
+                          <span className="text-xs text-blue-200 mt-0.5 truncate w-full">
                             {suggestion.display_name}
                           </span>
                         </button>
@@ -402,90 +426,60 @@ export default function AnalysisForm({
           error={errors.businessType}
         />
 
-        {/* Operating Hours and Timeframe - Side by Side */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Operating Days */}
+        <div className="grid grid-cols-1 gap-6">
           <div>
             <label
-              htmlFor="operatingHours"
+              htmlFor="operatingDays"
               className="block mb-2 text-sm font-medium text-white"
             >
-              Plánovaná otevírací doba (hodin/týden)
-            </label>
-            <div className="space-y-3">
-              <input
-                id="operatingHours"
-                type="range"
-                min="1"
-                max="168"
-                value={formData.operatingHours}
-                onChange={(e) =>
-                  updateField("operatingHours", parseInt(e.target.value))
-                }
-                disabled={isLoading}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: `linear-gradient(to right, rgb(59 130 246) 0%, rgb(59 130 246) ${
-                    (((formData.operatingHours || 40) - 1) / 167) * 100
-                  }%, rgb(55 65 81) ${
-                    (((formData.operatingHours || 40) - 1) / 167) * 100
-                  }%, rgb(55 65 81) 100%)`,
-                }}
+              Plánované dny otevření
+              <FieldHelp
+                title="Plánované dny otevření"
+                description="Vyberte dny, kdy bude provozovna otevřená a nastavte počet hodin pro každý den. Celkové hodiny za týden se vypočtou z vybraných dnů."
               />
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500">1h</span>
-                <span className="px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 border border-blue-500 rounded-lg">
-                  {formData.operatingHours || 40}h
-                </span>
-                <span className="text-sm text-slate-500">168h</span>
-              </div>
-            </div>
-            {errors.operatingHours && (
-              <p className="mt-2 text-sm text-red-500">
-                {errors.operatingHours}
-              </p>
-            )}
-          </div>
-
-          {/* Timeframe */}
-          <div>
-            <label
-              htmlFor="timeframe"
-              className="block mb-2 text-sm font-medium text-white"
-            >
-              Období analýzy
-            </label>
-            <div className="inline-flex rounded-lg shadow-sm" role="group">
-              {[
-                { value: "day", label: "Den", position: "first" },
-                { value: "week", label: "Týden", position: "middle" },
-                { value: "month", label: "Měsíc", position: "middle" },
-                { value: "year", label: "Rok", position: "last" },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() =>
-                    updateField(
-                      "timeframe",
-                      option.value as AnalysisFormData["timeframe"]
-                    )
-                  }
-                  disabled={isLoading}
-                  className={`cursor-pointer px-4 py-2 text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                    option.position === "first"
-                      ? "rounded-s-lg border-r-0"
-                      : option.position === "last"
-                      ? "rounded-e-lg"
-                      : "border-r-0"
-                  } ${
-                    formData.timeframe === option.value
-                      ? "bg-purple-600 text-white border-purple-600 hover:bg-purple-700 shadow-lg"
-                      : "bg-slate-800 text-slate-300 border-slate-600 hover:bg-slate-700 hover:text-white"
-                  }`}
+              <span className="ml-3 inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-blue-700/40 to-blue-700/20 text-blue-100 border border-blue-700/30">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-3 h-3 text-blue-100"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
                 >
-                  {option.label}
-                </button>
-              ))}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 8v4l3 3"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 20a8 8 0 100-16 8 8 0 000 16z"
+                  />
+                </svg>
+                <span>Plánováno</span>
+              </span>
+            </label>
+            <div className="space-y-3 relative">
+              {/* Keep component in DOM but visually disabled (planned feature) */}
+              <div className="pointer-events-none opacity-60">
+                <OperatingDays
+                  disabled={true}
+                  onChange={handleOperatingDaysChange}
+                  error={errors.operatingHours}
+                />
+              </div>
+
+              {/* Badge moved next to the label; kept OperatingDays in DOM but non-interactive */}
+
+              {/* Keep validation text hidden while the section is planned */}
+              {/* If you want to show validation in future, remove the comment tags below */}
+              {/* {errors.operatingHours && (
+                <p className="mt-2 text-sm text-red-500">
+                  {errors.operatingHours}
+                </p>
+              )} */}
             </div>
           </div>
         </div>
@@ -497,7 +491,7 @@ export default function AnalysisForm({
               type="button"
               onClick={onCancel}
               disabled={isLoading}
-              className="cursor-pointer flex-1 px-5 py-2.5 text-sm font-medium text-white bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 focus:ring-2 focus:outline-none focus:ring-slate-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="cursor-pointer flex-1 px-5 py-2.5 text-sm font-medium text-white bg-slate-800 border border-blue-600/20 rounded-lg hover:bg-blue-800/10 focus:ring-2 focus:outline-none focus:ring-blue-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Zrušit
             </button>
@@ -505,9 +499,12 @@ export default function AnalysisForm({
           <button
             type="submit"
             disabled={isLoading}
-            className="cursor-pointer flex-1 px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:outline-none focus:ring-blue-500 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group relative cursor-pointer flex-1 px-5 py-2.5 text-sm font-medium text-white rounded-full overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 border border-blue-600/20 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? loadingTexts[loadingTextIndex] : "Analyzovat"}
+            <span className="relative z-10">
+              {isLoading ? loadingTexts[loadingTextIndex] : "Analyzovat"}
+            </span>
+            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-600 bg-gradient-to-r from-transparent via-blue-400/30 to-transparent opacity-40" />
           </button>
         </div>
       </form>

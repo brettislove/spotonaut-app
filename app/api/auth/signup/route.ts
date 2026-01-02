@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { Resend } from "resend";
 
 const prisma = new PrismaClient();
 
@@ -56,6 +57,38 @@ export async function POST(request: NextRequest) {
         name: name || null,
       },
     });
+
+    // Send welcome / registration email via Resend (if configured)
+    try {
+      const RESEND_API_KEY = process.env.RESEND_API_KEY;
+      const RESEND_FROM =
+        process.env.RESEND_FROM || "Tým Spotonaut <crew@spotonaut.com>";
+
+      if (RESEND_API_KEY) {
+        const resend = new Resend(RESEND_API_KEY);
+        const subject = `Vítejte na Spotonaut — potvrzení registrace`;
+        const html = `
+          <p>Ahoj ${name ? `${name},` : ""}</p>
+          <p>Děkujeme za registraci do aplikace Spotonaut. Váš účet byl úspěšně vytvořen s tímto emailem: <strong>${email}</strong>.</p>
+          <p>Pokud jste registraci neprováděl(a), ihned nás, prosím, kontaktujte.</p>
+          <p>Děkujeme &ndash; Tým Spotonaut</p>
+        `;
+
+        try {
+          await resend.emails.send({
+            from: RESEND_FROM,
+            to: [email],
+            subject,
+            html,
+          });
+        } catch (err) {
+          console.error("Resend error (signup user):", err);
+          // proceed without failing the signup
+        }
+      }
+    } catch (err) {
+      console.error("Error sending welcome email:", err);
+    }
 
     return NextResponse.json({
       message: "Účet byl úspěšně vytvořen",

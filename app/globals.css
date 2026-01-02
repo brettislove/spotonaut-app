@@ -1,4 +1,5 @@
 @import "tailwindcss";
+/* @import "flowbite/src/themes/default"; */
 
 :root {
   --background: #ffffff;
@@ -127,5 +128,21 @@ body {
   white-space: nowrap; /* Do not wrap "Google Maps" text */
   color: white; /* acceptable gray per guidelines */
   text-decoration: none;
+}
+
+/* Remove native number input spinners for better custom steppers */
+input[type="number"].no-spinner::-webkit-outer-spin-button,
+input[type="number"].no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"].no-spinner {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+/* Allow compact steppers to shrink inside grid cells */
+.operating-day-cell {
+  min-width: 0;
 }
 

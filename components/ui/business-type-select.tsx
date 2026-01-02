@@ -6,6 +6,7 @@ import {
   CATEGORIES,
   type BusinessType,
 } from "@/lib/constants/business-types";
+import FieldHelp from "./field-help";
 
 interface BusinessTypeSelectProps {
   value: BusinessType | null;
@@ -24,6 +25,9 @@ export default function BusinessTypeSelect({
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+  const helpButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [showPopover, setShowPopover] = useState(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -41,6 +45,33 @@ export default function BusinessTypeSelect({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Close popover when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleOutside = (event: MouseEvent) => {
+      if (!showPopover) return;
+      const target = event.target as Node;
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(target) &&
+        helpButtonRef.current &&
+        !helpButtonRef.current.contains(target)
+      ) {
+        setShowPopover(false);
+      }
+    };
+
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowPopover(false);
+    };
+
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [showPopover]);
+
   // Focus search input when dropdown opens
   useEffect(() => {
     if (isOpen && searchInputRef.current) {
@@ -48,18 +79,34 @@ export default function BusinessTypeSelect({
     }
   }, [isOpen]);
 
-  // Filter business types based on search query
+  // Normalize string for diacritics-insensitive comparison
+  const normalize = (s: string) =>
+    s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+
+  // Filter business types based on search query (diacritics-insensitive)
   const filteredCategories = searchQuery
-    ? CATEGORIES.map((category) => ({
-        category,
-        types: BUSINESS_TYPES_BY_CATEGORY[category].filter((business) =>
-          business.type.toLowerCase().includes(searchQuery.toLowerCase())
-        ),
-      })).filter((cat) => cat.types.length > 0)
+    ? (() => {
+        const normalizedQuery = normalize(searchQuery);
+        return CATEGORIES.map((category) => ({
+          category,
+          types: BUSINESS_TYPES_BY_CATEGORY[category].filter((business) =>
+            normalize(business.type).includes(normalizedQuery)
+          ),
+        })).filter((cat) => cat.types.length > 0);
+      })()
     : CATEGORIES.map((category) => ({
         category,
         types: BUSINESS_TYPES_BY_CATEGORY[category],
       }));
+
+  // Track which categories are expanded. Initially all collapsed.
+  const [expandedCategories, setExpandedCategories] = useState<
+    Record<string, boolean>
+  >(() => Object.fromEntries(CATEGORIES.map((c) => [c, false])));
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories((prev) => ({ ...prev, [category]: !prev[category] }));
+  };
 
   const handleSelect = (businessType: BusinessType) => {
     onChange(businessType);
@@ -74,13 +121,14 @@ export default function BusinessTypeSelect({
         className="block mb-2 text-sm font-medium text-white"
       >
         Typ podnikání
+        <FieldHelp description="Vyberte typ podnikání, který nejlépe vystihuje vaši provozovnu. Tento výběr pomůže přizpůsobit odhad návštěvnosti a doporučené provozní parametry (např. průměrná útrata, otevírací doba)." />
       </label>
 
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled}
-        className={`inline-flex items-center justify-between w-full p-2.5 text-sm font-medium text-white bg-slate-800 border rounded-lg hover:bg-slate-700 focus:ring-2 focus:outline-none focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
+        className={`inline-flex items-center justify-between w-full p-2.5 text-sm font-medium text-white bg-slate-800 border rounded-2xl hover:bg-slate-700 focus:ring-2 focus:outline-none focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all ${
           error ? "border-red-500" : "border-slate-600"
         }`}
       >
@@ -129,32 +177,58 @@ export default function BusinessTypeSelect({
               filteredCategories.map(({ category, types }) => (
                 <div key={category}>
                   <div className="px-4 py-2 bg-slate-900/50 border-b border-slate-700">
-                    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                      {category}
-                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => toggleCategory(category)}
+                      aria-expanded={
+                        !!(searchQuery ? true : expandedCategories[category])
+                      }
+                      className="w-full flex items-center justify-between text-left"
+                    >
+                      <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                        {category}
+                      </h4>
+                      <svg
+                        className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
+                          (searchQuery ? true : expandedCategories[category])
+                            ? "rotate-180"
+                            : ""
+                        }`}
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 10 6"
+                      >
+                        <path
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="m1 1 4 4 4-4"
+                        />
+                      </svg>
+                    </button>
                   </div>
-                  <ul className="py-1">
-                    {types.map((business) => (
-                      <li key={business.type}>
-                        <button
-                          type="button"
-                          onClick={() => handleSelect(business)}
-                          className={`flex items-center justify-between w-full px-4 py-2.5 text-left hover:bg-slate-700 transition-colors ${
-                            value?.type === business.type
-                              ? "bg-slate-700 text-white"
-                              : "text-slate-200"
-                          }`}
-                        >
-                          <span className="text-sm">{business.type}</span>
-                          {business.avgSpend > 0 && (
-                            <span className="text-xs text-slate-400">
-                              ~{business.avgSpend} Kč/zákazník
-                            </span>
-                          )}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+
+                  {/* Show types when category is expanded OR when searching (so results are visible) */}
+                  {(searchQuery ? true : expandedCategories[category]) && (
+                    <ul className="py-1">
+                      {types.map((business) => (
+                        <li key={business.type}>
+                          <button
+                            type="button"
+                            onClick={() => handleSelect(business)}
+                            className={`flex items-center justify-between w-full px-4 py-2.5 text-left hover:bg-slate-700 transition-colors ${
+                              value?.type === business.type
+                                ? "bg-slate-700 text-white"
+                                : "text-slate-200"
+                            }`}
+                          >
+                            <span className="text-sm">{business.type}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               ))
             ) : (
