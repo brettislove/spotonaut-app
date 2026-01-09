@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import AuthProvider from "@/components/auth-provider";
 import { AnalysisProvider } from "@/lib/contexts/analysis-context";
@@ -172,7 +173,9 @@ export default function RootLayout({
       >
         <AuthProvider>
           <AnalysisProvider>
-            <PageTracker />
+            <Suspense fallback={null}>
+              <PageTracker />
+            </Suspense>
             <Header />
             {children}
           </AnalysisProvider>
