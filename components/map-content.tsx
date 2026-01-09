@@ -123,6 +123,12 @@ export default function MapContent({
     }
   };
 
+  // Move main location log out of JSX so it doesn't produce a void ReactNode
+  console.log("Main location marker:", {
+    name: location,
+    coordinates: position,
+  });
+
   return (
     <MapContainer
       center={position}
@@ -145,10 +151,8 @@ export default function MapContent({
           </div>
         </Popup>
       </Marker>
-      {console.log("Main location marker:", {
-        name: location,
-        coordinates: position,
-      })}
+
+      {/* console: moved out of JSX to avoid ReactNode void error */}
 
       {/* Render competitors */}
       {groundedLocationData?.competitors
