@@ -77,19 +77,19 @@ export default function RootLayout({
         <link
           rel="icon"
           sizes="112x112"
-          href="/spotonaut_logo-112.png"
+          href="/favicon-112.png"
           type="image/png"
         />
         <link
           rel="icon"
           sizes="192x192"
-          href="/spotonaut_logo-192.png"
+          href="/favicon-192.png"
           type="image/png"
         />
         <link
           rel="icon"
           sizes="512x512"
-          href="/spotonaut_logo-512.png"
+          href="/favicon-512.png"
           type="image/png"
         />
         <link
