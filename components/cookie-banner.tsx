@@ -27,7 +27,7 @@ export default function CookieBanner() {
 
   const rejectCookies = () => {
     try {
-      localStorage.setItem("cookieConsent", "rejected");
+      localStorage.setItem("cookieConsent", "declined");
     } catch (e) {
       console.warn("Failed to persist cookie consent", e);
     }
@@ -62,7 +62,11 @@ export default function CookieBanner() {
               </div>
               <p className="text-sm text-slate-300 mb-3">
                 Používáme cookies k zajištění základní funkčnosti webu a
-                zlepšení vaší uživatelské zkušenosti.
+                zlepšení vaší uživatelské zkušenosti. Sbíráme anonymní
+                analytická data (zobrazení stránek, používání funkcí,
+                země/region) pro zlepšení našich služeb. IP adresy jsou
+                hashovány denně, data uchováváme 90 dní. Neukládáme osobní
+                údaje.
               </p>
               <Link
                 href="/cookies"

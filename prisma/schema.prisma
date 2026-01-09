@@ -85,21 +85,31 @@ model AnonymousUsage {
 }
 
 model Analysis {
-  id                String   @id @default(cuid())
-  userId            String? // Nullable for anonymous analyses
-  locationName      String
-  location          String
-  coordinates       Json? // { lat: number, lng: number }
-  metrics           Json // { localityScore, footfallScore, recommendedHours }
-  groundingSources  Json? // [{ placeId, title, uri }] from Google Maps grounding
-  usedMapsGrounding Boolean  @default(false)
-  createdAt         DateTime @default(now())
+  id                    String   @id @default(cuid())
+  userId                String? // Nullable for anonymous analyses
+  locationName          String
+  location              String
+  coordinates           Json? // { lat: number, lng: number }
+  metrics               Json // { localityScore, footfallScore, recommendedHours }
+  groundingSources      Json? // [{ placeId, title, uri }] from Google Maps grounding
+  usedMapsGrounding     Boolean  @default(false)
+  businessType          String? // Type of business being analyzed
+  operatingHours        Int? // Hours per day
+  timeframe             String? // "morning", "afternoon", "evening", "night"
+  completedSuccessfully Boolean  @default(true) // Whether analysis completed without errors
+  errorMessage          String? // Error message if failed
+  processingTimeMs      Int? // Total processing time in milliseconds
+  apiResponseTimeMs     Int? // Google AI API response time in milliseconds
+  createdAt             DateTime @default(now())
 
   user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   feedbacks Feedback[]
 
   @@index([userId])
   @@index([createdAt])
+  @@index([createdAt, userId])
+  @@index([businessType])
+  @@index([completedSuccessfully])
   @@map("analyses")
 }
 
@@ -149,4 +159,126 @@ model ChatUsage {
 
   @@index([userId])
   @@map("chat_usage")
+}
+
+// Page view tracking with UTM parameters and geographic data
+model PageView {
+  id          String   @id @default(cuid())
+  userId      String? // Nullable for anonymous users
+  anonymousId String // Anonymized IP + fingerprint hash
+  path        String // Page path
+  referrer    String? // Document referrer
+  country     String? // Country from IP geolocation
+  region      String? // Region from IP geolocation
+  utmSource   String?  @map("utm_source")
+  utmMedium   String?  @map("utm_medium")
+  utmCampaign String?  @map("utm_campaign")
+  utmTerm     String?  @map("utm_term")
+  utmContent  String?  @map("utm_content")
+  userAgent   String? // Browser user agent
+  deviceType  String? // mobile, tablet, desktop
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([anonymousId])
+  @@index([userId])
+  @@index([path])
+  @@index([country])
+  @@map("page_views")
+}
+
+// User event tracking (form interactions, modal opens, etc.)
+model UserEvent {
+  id          String   @id @default(cuid())
+  userId      String? // Nullable for anonymous users
+  anonymousId String? // Anonymized IP + fingerprint hash
+  sessionId   String? // Session identifier for grouping events
+  eventType   String // "form_start", "form_submit", "auth_modal_open", etc.
+  eventData   Json? // Flexible data for each event type
+  page        String? // Current page when event occurred
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([eventType])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([anonymousId])
+  @@map("user_events")
+}
+
+// Daily aggregated analytics
+model DailyAnalytics {
+  id                 String   @id @default(cuid())
+  date               String   @unique // YYYY-MM-DD format
+  totalAnalyses      Int      @default(0)
+  anonymousAnalyses  Int      @default(0)
+  registeredAnalyses Int      @default(0)
+  uniqueVisitors     Int      @default(0)
+  anonymousVisitors  Int      @default(0)
+  registeredVisitors Int      @default(0)
+  chatMessages       Int      @default(0)
+  feedbackCount      Int      @default(0)
+  avgFeedbackRating  Float?
+  topBusinessTypes   Json? // [{ type: string, count: number }]
+  topLocations       Json? // [{ city: string, count: number }]
+  utmSources         Json? // { source: count }
+  countriesData      Json? // [{ country: string, count: number, anonymous: number, registered: number }]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([date])
+  @@map("daily_analytics")
+}
+
+// Hourly aggregated analytics (kept for 30 days)
+model HourlyAnalytics {
+  id                 String   @id @default(cuid())
+  timestamp          DateTime @unique // Start of hour
+  analyses           Int      @default(0)
+  anonymousAnalyses  Int      @default(0)
+  registeredAnalyses Int      @default(0)
+  chatMessages       Int      @default(0)
+  visitors           Int      @default(0)
+  anonymousVisitors  Int      @default(0)
+  registeredVisitors Int      @default(0)
+  createdAt          DateTime @default(now())
+
+  @@index([timestamp])
+  @@map("hourly_analytics")
+}
+
+// API performance tracking
+model ApiPerformance {
+  id                 String   @id @default(cuid())
+  date               String   @unique // YYYY-MM-DD format
+  totalRequests      Int      @default(0)
+  successfulRequests Int      @default(0)
+  failedRequests     Int      @default(0)
+  avgResponseTimeMs  Float? // Average response time
+  maxResponseTimeMs  Int? // Maximum response time
+  quotaUsed          Int      @default(0)
+  errors             Json? // { errorType: count }
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([date])
+  @@map("api_performance")
+}
+
+// User cohort retention tracking
+model UserCohort {
+  id                String   @id @default(cuid())
+  cohortDate        String // YYYY-MM-DD of first analysis
+  cohortWeek        String // ISO week (YYYY-Www format)
+  userId            String
+  firstAnalysisDate DateTime
+  totalUsers        Int      @default(1)
+  weeklyActivity    Json? // { week0: true, week1: false, week2: true, ... }
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([cohortWeek, userId])
+  @@index([cohortWeek])
+  @@index([cohortDate])
+  @@map("user_cohorts")
 }
