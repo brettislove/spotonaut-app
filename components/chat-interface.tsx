@@ -689,9 +689,17 @@ export default function ChatInterface() {
   // Desktop/Tablet View
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-950 font-sans relative overflow-hidden">
-      {/* Ambient glow effects */}
-      <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="fixed bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+      {/* Moon background */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <img
+          src="/Moon.png"
+          alt="Moon"
+          className="w-full h-full object-cover opacity-20"
+        />
+        {/* Ambient glow effects */}
+        <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="fixed bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+      </div>
 
       {/* Persistent AI disclaimer (small and unobtrusive) */}
       {!isMobile && (

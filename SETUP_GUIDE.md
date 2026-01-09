@@ -211,10 +211,118 @@ Verify `DATABASE_URL` is correct and PostgreSQL is running.
 
 - **users** - User accounts (email/password + OAuth)
 - **accounts** - OAuth provider connections
-- **analyses** - Saved location analyses
-- **anonymous_usage** - Usage tracking by IP + fingerprint
+- **analyses** - Saved location analyses with performance metrics
+- **anonymous_usage** - Usage tracking by anonymized IP + fingerprint
 - **verification_tokens** - Email verification (optional)
 - **password_reset_tokens** - Password reset tokens (to be implemented)
+- **page_views** - Page visit tracking with UTM parameters (90-day retention)
+- **user_events** - User interaction events (form, modal, etc., 90-day retention)
+- **daily_analytics** - Pre-aggregated daily statistics (kept indefinitely)
+- **hourly_analytics** - Pre-aggregated hourly statistics (30-day retention)
+- **api_performance** - API performance metrics (kept indefinitely)
+- **user_cohorts** - User retention cohort analysis (kept indefinitely)
+
+---
+
+## 🔒 Analytics & Privacy
+
+### Tracking Implementation
+
+The application now includes comprehensive analytics tracking with GDPR compliance:
+
+**What is tracked:**
+- Page views with UTM parameters (source, medium, campaign)
+- User events (form interactions, modal opens, button clicks)
+- Analysis performance metrics (processing time, API response time)
+- Geographic data (country/region from IP before anonymization)
+- Anonymous vs. registered user differentiation
+
+**Privacy measures:**
+- IP addresses are hashed with daily rotating salt (irreversible)
+- Raw tracking data (PageView, UserEvent) deleted after 90 days
+- Aggregated statistics kept indefinitely (no personal data)
+- User consent checked before tracking (cookie banner)
+- Geographic data extracted before IP anonymization
+
+### Environment Variables
+
+Add these to your `.env.local` (development) and Vercel dashboard (production):
+
+```bash
+# Generate with: openssl rand -base64 32
+CRON_SECRET=your-random-secret-here
+IP_HASH_SECRET=your-random-secret-here
+```
+
+### External Cron Setup (Required for Vercel Hobby Plan)
+
+Since Vercel Cron is only available on Pro/Enterprise plans, set up external cron jobs using a free service like [cron-job.org](https://cron-job.org):
+
+**1. Daily Aggregation** (runs at 00:30 UTC)
+- URL: `https://yourdomain.com/api/cron/aggregate-analytics?type=daily`
+- Schedule: `30 0 * * *`
+- Method: GET
+- Headers: `Authorization: Bearer ${CRON_SECRET}`
+
+**2. Hourly Aggregation** (runs at :15 every hour)
+- URL: `https://yourdomain.com/api/cron/aggregate-analytics?type=hourly`
+- Schedule: `15 * * * *`
+- Method: GET
+- Headers: `Authorization: Bearer ${CRON_SECRET}`
+
+**3. Data Cleanup** (runs daily at 02:00 UTC)
+- URL: `https://yourdomain.com/api/cron/cleanup-tracking`
+- Schedule: `0 2 * * *`
+- Method: GET
+- Headers: `Authorization: Bearer ${CRON_SECRET}`
+
+### Admin Dashboard Access
+
+Access admin dashboards at:
+- **Hub:** `/admin` - Central dashboard with overview cards
+- **Feedback:** `/admin/feedback` - User feedback and ratings
+- **Chat Usage:** `/admin/chat-usage` - Manage user chat quotas
+- **Analytics:** `/admin/analytics` - User activity analytics (basic version, enhanced with Recharts)
+
+Access is controlled via `ADMIN_EMAILS` environment variable (JSON array):
+```bash
+ADMIN_EMAILS='["admin@example.com","another-admin@example.com"]'
+```
+
+### Data Retention Policies
+
+- **PageView & UserEvent:** 90 days (GDPR compliant)
+- **HourlyAnalytics:** 30 days (detailed trends)
+- **DailyAnalytics:** Indefinite (aggregated, no personal data)
+- **ApiPerformance:** Indefinite (performance monitoring)
+- **UserCohort:** Indefinite (retention analysis)
+
+### Opportunistic Aggregation
+
+In addition to scheduled cron jobs, the system runs aggregation opportunistically:
+- After each analysis is completed
+- When cron endpoints are called manually
+- This ensures data is relatively fresh even without external cron
+
+### Manual Data Refresh
+
+Admins can manually trigger aggregation via the "Refresh Data" button on the analytics dashboard, which calls `/api/admin/analytics/refresh`.
+
+### Installing Recharts for Advanced Charts
+
+The basic analytics dashboard is functional without Recharts, but for advanced visualizations (line charts, pie charts, funnels, cohort heatmaps), install Recharts:
+
+```bash
+npm install recharts
+```
+
+After installation, the dashboard will automatically support:
+- Line charts for trends (anonymous vs. registered users)
+- Pie charts for UTM sources and business types
+- Bar charts for engagement metrics
+- Conversion funnel visualization
+- Cohort retention heatmap
+- API performance charts with alert indicators
 
 ---
 

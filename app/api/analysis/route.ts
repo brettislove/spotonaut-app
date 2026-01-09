@@ -15,6 +15,12 @@ import {
   type GroundedLocationData,
 } from "@/lib/google-ai/location-analysis";
 import type { ProgressStep } from "@/components/analysis-progress";
+import {
+  anonymizeIP,
+  extractIPFromHeaders,
+} from "@/lib/security/ip-anonymization";
+import { runAggregationsIfNeeded } from "@/lib/analytics/aggregation";
+import { runCleanupIfNeeded } from "@/lib/analytics/retention";
 
 // Debug: Log DATABASE_URL to check what Vercel is using
 console.log("DATABASE_URL in analysis route:", process.env.DATABASE_URL);
@@ -44,18 +50,16 @@ export async function POST(request: NextRequest) {
     // Get session to check if user is authenticated
     const session = await auth();
 
-    // Get IP address from headers
-    const forwarded = request.headers.get("x-forwarded-for");
-    const ip = forwarded
-      ? forwarded.split(",")[0].trim()
-      : request.headers.get("x-real-ip") || "unknown";
+    // Get IP address from headers and anonymize it
+    const ip = extractIPFromHeaders(request.headers);
+    const anonymizedIP = anonymizeIP(ip);
 
     // Check usage limits for anonymous users
     if (!session && data.fingerprint && ip !== "unknown") {
       const existingUsage = await prisma.anonymousUsage.findUnique({
         where: {
           ipAddress_fingerprint: {
-            ipAddress: ip,
+            ipAddress: anonymizedIP,
             fingerprint: data.fingerprint,
           },
         },
@@ -100,6 +104,15 @@ export async function POST(request: NextRequest) {
     archiveOldRecordsIfNeeded(prisma).catch((err) =>
       console.error("Archive check failed:", err)
     );
+
+    // Run aggregation and cleanup opportunistically (non-blocking)
+    runAggregationsIfNeeded(prisma);
+    runCleanupIfNeeded(prisma);
+
+    // Track performance metrics
+    const startTime = Date.now();
+    let apiStartTime = 0;
+    let apiEndTime = 0;
 
     // Create streaming response
     const stream = new ReadableStream({
@@ -295,6 +308,9 @@ export async function POST(request: NextRequest) {
             recommendedHours: "8-20",
           };
 
+          // Track API timing
+          apiStartTime = Date.now();
+
           const analysisStream = generateProAnalysisWithGroundingStream({
             location: data.location,
             businessType: data.businessType,
@@ -313,6 +329,9 @@ export async function POST(request: NextRequest) {
             }
           }
 
+          // Track API end time
+          apiEndTime = Date.now();
+
           // Step 4: Finalizing
           sendProgress("finalizing");
 
@@ -328,6 +347,11 @@ export async function POST(request: NextRequest) {
             recommendedHours: metrics.recommendedHours,
           };
 
+          // Calculate performance metrics
+          const processingTimeMs = Date.now() - startTime;
+          const apiResponseTimeMs =
+            apiEndTime > 0 ? apiEndTime - apiStartTime : null;
+
           // Save analysis to database (non-blocking)
           prisma.analysis
             .create({
@@ -342,6 +366,12 @@ export async function POST(request: NextRequest) {
                   sources.length > 0
                     ? JSON.parse(JSON.stringify(sources))
                     : undefined,
+                businessType: data.businessType.type,
+                operatingHours: data.operatingHours,
+                timeframe: data.timeframe,
+                completedSuccessfully: true,
+                processingTimeMs,
+                apiResponseTimeMs,
               },
             })
             .catch((dbError) => {
@@ -354,7 +384,7 @@ export async function POST(request: NextRequest) {
               .upsert({
                 where: {
                   ipAddress_fingerprint: {
-                    ipAddress: ip,
+                    ipAddress: anonymizedIP,
                     fingerprint: data.fingerprint,
                   },
                 },
@@ -363,7 +393,7 @@ export async function POST(request: NextRequest) {
                   lastAnalysisAt: new Date(),
                 },
                 create: {
-                  ipAddress: ip,
+                  ipAddress: anonymizedIP,
                   fingerprint: data.fingerprint,
                   analysisCount: 1,
                   lastAnalysisAt: new Date(),
@@ -416,6 +446,34 @@ export async function POST(request: NextRequest) {
             error instanceof Error
               ? error.message
               : "Failed to process analysis";
+
+          // Save failed analysis to database for tracking
+          const processingTimeMs = Date.now() - startTime;
+          prisma.analysis
+            .create({
+              data: {
+                userId: session?.user?.id || null,
+                locationName: data.location,
+                location: data.location,
+                coordinates: undefined,
+                metrics: {
+                  localityScore: 0,
+                  footfallScore: 0,
+                  recommendedHours: "",
+                },
+                usedMapsGrounding: false,
+                businessType: data.businessType.type,
+                operatingHours: data.operatingHours,
+                timeframe: data.timeframe,
+                completedSuccessfully: false,
+                errorMessage,
+                processingTimeMs,
+              },
+            })
+            .catch((dbError) => {
+              console.error("Failed to save error analysis:", dbError);
+            });
+
           // Try to signal an error to the client, but avoid enqueueing if
           // the controller is already closed.
           try {
