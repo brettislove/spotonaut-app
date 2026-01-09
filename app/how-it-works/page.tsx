@@ -6,15 +6,15 @@ export default function HowItWorksPage() {
       <div className="max-w-5xl mx-auto">
         <header className="mb-12 text-center">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4">
-            <span className="bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 bg-clip-text text-transparent">
               Jak to funguje
             </span>
           </h1>
           <p className="text-slate-300 max-w-2xl mx-auto text-lg">
             Výběr lokality může být <b className="text-blue-400">nejdražší</b>{" "}
-            rozhodnutí celého podnikání. Přitom se pořád často dělá{" "}
+            rozhodnutí celého podnikání. Přitom se ve většině případů dělá{" "}
             <b className="text-blue-400">„pocitově“</b>. Spotonaut vznikl proto,
-            aby podnikatelé, včetně začínajících, měli{" "}
+            aby podnikatelé, včetně těch začínajících, měli{" "}
             <b className="text-blue-400">
               rychlý, srozumitelný a jednotný způsob
             </b>
@@ -115,9 +115,9 @@ export default function HowItWorksPage() {
         <footer className="text-center">
           <Link
             href="/"
-            className="inline-block bg-gradient-to-r from-blue-400 to-purple-600 text-white py-3 px-8 rounded-2xl font-semibold shadow-lg"
+            className="inline-block bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 text-white py-3 px-8 rounded-full font-semibold shadow-lg border border-blue-700"
           >
-            Vyzkoušet Spotonaut
+            Vyzkoušej zdarma!
           </Link>
           <p className="text-slate-400 text-sm mt-4">
             Potřebuješ pomoct? Napiš nám na{" "}

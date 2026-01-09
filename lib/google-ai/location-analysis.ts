@@ -22,12 +22,15 @@ export interface GroundedCompetitor {
   priceLevel?: number | null;
   mapsUrl?: string | null;
   openingHours?: string | null;
+  coordinates?: Coordinates | null;
+  address?: string | null;
 }
 
 export interface GroundedFootfallProxy {
   type: "transit" | "shopping" | "office" | "residential" | "other";
   description: string;
   distanceMeters?: number;
+  coordinates?: Coordinates | null;
 }
 
 export interface GroundedLocationData {
@@ -101,14 +104,23 @@ PŘESNÁ STRUKTURA JSON:
       "userRatingsTotal": number | null,
       "priceLevel": number | null,
       "mapsUrl": string | null,
-      "openingHours": string | null
+      "openingHours": string | null,
+      "coordinates": {
+        "lat": number,
+        "lng": number
+      } | null,
+      "address": string | null
     }
   ],
   "footfallProxies": [
     {
       "type": "transit" | "shopping" | "office" | "residential" | "other",
       "description": string,
-      "distanceMeters": number | null
+      "distanceMeters": number | null,
+      "coordinates": {
+        "lat": number,
+        "lng": number
+      } | null
     }
   ],
   "averageRating": number | null,

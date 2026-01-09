@@ -97,7 +97,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full bg-slate-950/95 backdrop-blur-sm border-b border-slate-800">
+      <header className="sticky top-0 z-50 w-full bg-slate-950/95 backdrop-blur-lg">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -135,7 +135,7 @@ export default function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-sm font-medium transition-colors ${
+                  className={`text-md font-medium transition-colors ${
                     pathname === link.href
                       ? "text-white"
                       : "text-slate-400 hover:text-white"
