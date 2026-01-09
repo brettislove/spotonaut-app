@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import type { LatLngExpression } from "leaflet";
 import { GroundingSources } from "./grounding-sources";
+import type { GroundedLocationData } from "@/lib/google-ai/location-analysis";
 
 interface AnalysisData {
   location: string;
@@ -18,6 +19,7 @@ interface AnalysisData {
     recommendedHours: string;
   };
   sources?: Array<{ title: string; uri: string }>;
+  groundedLocationData?: GroundedLocationData;
 }
 
 interface MapViewProps {
@@ -27,6 +29,8 @@ interface MapViewProps {
 interface MapContentProps {
   position: LatLngExpression;
   location: string;
+  groundedLocationData?: GroundedLocationData;
+  filterState?: Record<string, boolean>;
 }
 
 // Import Map component dynamically to avoid SSR issues
@@ -44,6 +48,37 @@ const MapContent = dynamic<MapContentProps>(
 
 export default function MapView({ data }: MapViewProps) {
   const [isMounted, setIsMounted] = useState(false);
+  const [filterState, setFilterState] = useState<Record<string, boolean>>(
+    () => {
+      // Load from localStorage or default to all visible
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("mapFilters");
+        return saved
+          ? JSON.parse(saved)
+          : {
+              competitors: true,
+              transit: true,
+              shopping: true,
+              office: true,
+              residential: true,
+              other: true,
+            };
+      }
+      return {
+        competitors: true,
+        transit: true,
+        shopping: true,
+        office: true,
+        residential: true,
+        other: true,
+      };
+    }
+  );
+
+  // Save filter state to localStorage
+  useEffect(() => {
+    localStorage.setItem("mapFilters", JSON.stringify(filterState));
+  }, [filterState]);
 
   useEffect(() => {
     // Use timeout to avoid SSR hydration issues
@@ -68,11 +103,49 @@ export default function MapView({ data }: MapViewProps) {
 
   return (
     <div className="h-full w-full bg-slate-900/50 backdrop-blur-sm border border-slate-800 overflow-hidden flex flex-col sm:rounded-t-2xl">
+      {/* Filter Menu */}
+      {data.groundedLocationData && (
+        <div className="p-3 bg-slate-900/90 backdrop-blur-sm border-b border-slate-700">
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-slate-300 text-sm font-medium mr-2">
+              Filtry:
+            </span>
+            {Object.entries(filterState).map(([key, isVisible]) => (
+              <button
+                key={key}
+                onClick={() =>
+                  setFilterState((prev) => ({ ...prev, [key]: !prev[key] }))
+                }
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                  isVisible
+                    ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                    : "bg-slate-700/50 text-slate-400 border border-slate-600/30"
+                }`}
+              >
+                {key === "competitors"
+                  ? "Konkurence"
+                  : key === "transit"
+                  ? "Doprava"
+                  : key === "shopping"
+                  ? "Nákupy"
+                  : key === "office"
+                  ? "Kanceláře"
+                  : key === "residential"
+                  ? "Bydlení"
+                  : "Ostatní"}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Map */}
       <div className="flex-1 relative">
         <MapContent
           position={position}
           location={data.locationName || data.location}
+          groundedLocationData={data.groundedLocationData}
+          filterState={filterState}
         />
       </div>
 
