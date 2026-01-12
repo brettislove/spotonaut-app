@@ -33,6 +33,25 @@ export interface GroundedFootfallProxy {
   coordinates?: Coordinates | null;
 }
 
+export interface GroundedRealEstateListing {
+  id: string;
+  source: "sreality" | "bezrealitky";
+  title: string;
+  price: number;
+  pricePerSqm?: number;
+  currency: string;
+  transactionType: "rent" | "sale";
+  coordinates?: Coordinates;
+  address: string;
+  locality?: string;
+  category: string;
+  size?: number;
+  url: string;
+  images?: string[];
+  labels?: string[];
+  distanceMeters?: number;
+}
+
 export interface GroundedLocationData {
   /**
    * Original user-entered location query (e.g. address or place name)
@@ -49,6 +68,7 @@ export interface GroundedLocationData {
 
   competitors: GroundedCompetitor[];
   footfallProxies: GroundedFootfallProxy[];
+  availableProperties?: GroundedRealEstateListing[];
 
   averageRating?: number | null;
   reviewSentiment?: "positive" | "mixed" | "negative" | "unknown";
