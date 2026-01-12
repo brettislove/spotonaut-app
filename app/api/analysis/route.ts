@@ -298,6 +298,51 @@ export async function POST(request: NextRequest) {
             };
           }
 
+          // Step 2.5: Fetch Real Estate Listings
+          if (coordinates) {
+            try {
+              console.log("Fetching real estate listings for:", {
+                coordinates,
+                businessType: data.businessType.type,
+              });
+
+              const realEstateResponse = await fetch(
+                `${request.nextUrl.origin}/api/real-estate-listings?` +
+                  `lat=${coordinates.lat}&lng=${coordinates.lng}&` +
+                  `radius=1000&businessType=${encodeURIComponent(
+                    data.businessType.type
+                  )}`,
+                {
+                  headers: {
+                    "User-Agent": "Spotonaut-Internal/1.0",
+                  },
+                }
+              );
+
+              if (realEstateResponse.ok) {
+                const realEstateData = await realEstateResponse.json();
+                if (
+                  realEstateData.listings &&
+                  Array.isArray(realEstateData.listings)
+                ) {
+                  groundedLocation.availableProperties =
+                    realEstateData.listings;
+                  console.log(
+                    `Found ${realEstateData.listings.length} real estate listings`
+                  );
+                }
+              } else {
+                console.warn(
+                  "Real estate API returned error:",
+                  realEstateResponse.status
+                );
+              }
+            } catch (error) {
+              console.error("Failed to fetch real estate listings:", error);
+              // Non-critical - continue without listings
+            }
+          }
+
           // Step 3: Pro Analysis with Streaming
           sendProgress("pro_analysis");
 

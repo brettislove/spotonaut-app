@@ -62,6 +62,7 @@ export default function MapView({ data }: MapViewProps) {
               office: true,
               residential: true,
               other: true,
+              "available-properties": true,
             };
       }
       return {
@@ -71,6 +72,7 @@ export default function MapView({ data }: MapViewProps) {
         office: true,
         residential: true,
         other: true,
+        "available-properties": true,
       };
     }
   );
@@ -132,6 +134,8 @@ export default function MapView({ data }: MapViewProps) {
                   ? "Kanceláře"
                   : key === "residential"
                   ? "Bydlení"
+                  : key === "available-properties"
+                  ? "Dostupné prostory"
                   : "Ostatní"}
               </button>
             ))}

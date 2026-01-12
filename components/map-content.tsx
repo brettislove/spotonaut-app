@@ -118,6 +118,8 @@ export default function MapContent({
         return "#8b5cf6"; // purple
       case "residential":
         return "#f59e0b"; // yellow
+      case "available-properties":
+        return "#ec4899"; // pink
       default:
         return "#6b7280"; // gray
     }
@@ -250,6 +252,114 @@ export default function MapContent({
                       {Math.round(proxy.distanceMeters)}m away
                     </div>
                   )}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+
+      {/* Render available commercial properties */}
+      {groundedLocationData?.availableProperties
+        ?.filter(
+          (property) =>
+            property.coordinates && filterState?.["available-properties"]
+        )
+        .map((property) => {
+          console.log("Available property marker:", {
+            source: property.source,
+            title: property.title,
+            coordinates: property.coordinates,
+            price: property.price,
+          });
+          return (
+            <Marker
+              key={`property-${property.source}-${property.id}`}
+              position={[property.coordinates!.lat, property.coordinates!.lng]}
+              icon={createMarkerIcon(
+                "available-properties",
+                getMarkerColor("available-properties")
+              )}
+            >
+              <Popup>
+                <div className="text-sm max-w-64">
+                  <strong className="text-pink-600 block mb-1">
+                    {property.title}
+                  </strong>
+                  <div className="text-gray-600 text-xs mb-2">
+                    {property.category}
+                  </div>
+                  {property.price && (
+                    <div className="flex items-center gap-1 mt-1 font-semibold text-base">
+                      <span>{property.price.toLocaleString("cs-CZ")} Kč</span>
+                      {property.transactionType === "rent" && (
+                        <span className="text-xs text-gray-500 font-normal">
+                          / měsíc
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {property.pricePerSqm && property.size && (
+                    <div className="text-gray-500 text-xs">
+                      {property.pricePerSqm.toLocaleString("cs-CZ")} Kč/m²
+                    </div>
+                  )}
+                  {property.size && (
+                    <div className="text-gray-600 text-sm mt-1">
+                      <span className="font-medium">{property.size} m²</span>
+                    </div>
+                  )}
+                  {property.address && (
+                    <div className="text-gray-600 text-xs mt-1">
+                      📍 {property.address}
+                    </div>
+                  )}
+                  {property.distanceMeters && (
+                    <div className="text-gray-500 text-xs mt-1">
+                      {Math.round(property.distanceMeters)}m od lokace
+                    </div>
+                  )}
+                  {property.labels && property.labels.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {property.labels.slice(0, 3).map((label, idx) => (
+                        <span
+                          key={idx}
+                          className="text-xs bg-gray-100 px-1.5 py-0.5 rounded"
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <a
+                    href={property.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 text-xs mt-2 block hover:underline font-medium"
+                  >
+                    Zobrazit inzerát →
+                  </a>
+                  <div className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-200">
+                    Zdroj:{" "}
+                    {property.source === "sreality" ? (
+                      <a
+                        href="https://www.sreality.cz"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-500 hover:underline"
+                      >
+                        Sreality.cz
+                      </a>
+                    ) : (
+                      <a
+                        href="https://www.bezrealitky.cz"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-500 hover:underline"
+                      >
+                        Bezrealitky.cz
+                      </a>
+                    )}
+                  </div>
                 </div>
               </Popup>
             </Marker>
