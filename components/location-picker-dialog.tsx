@@ -247,7 +247,10 @@ export default function LocationPickerDialog({
           />
 
           {/* Center Pin */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-[1000]">
+          <div
+            className="absolute top-1/2 left-1/2 pointer-events-none z-[1000]"
+            style={{ transform: "translate(-50%, -60px)" }}
+          >
             <div className="relative">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 rounded-full flex items-center justify-center shadow-lg">
                 <div className="w-3 h-3 bg-white rounded-full" />
