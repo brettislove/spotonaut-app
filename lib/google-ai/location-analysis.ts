@@ -99,6 +99,13 @@ TVŮJ ÚKOL:
 - NEPROVÁDÍŠ obchodní analýzu, pouze sbíráš DATA.
 - Pokud si nejsi jistý, nech pole raději null/undefined – NEHÁDEJ.
 
+KRITICKY DŮLEŽITÉ - SOUŘADNICE:
+- Dostaneš PŘESNÉ GPS souřadnice (latitude, longitude) v toolConfig.
+- Tyto souřadnice jsou DŮVĚRYHODNÉ a FINÁLNÍ - byly již správně geokódovány.
+- NIKDY NESMÍŠ SÁM GEOKÓDOVAT lokalitu nebo měnit poskytnuté souřadnice!
+- Použij poskytnuté souřadnice jako střed vyhledávání pro Google Maps nástroje.
+- Pokud najdeš místo na Google Maps, NEMĚŇ souřadnice - ponech je tak jak byly poskytnuty.
+
 VÝSTUP:
 - Vrať POUZE JEDEN JSON OBJEKT ve formátu níže.
 - Bez vysvětlujícího textu okolo, žádné další věty.
@@ -155,6 +162,7 @@ POZNÁMKY:
 - "footfallProxies" = místa naznačující návštěvnost (zastávky, obchodní centra, školy, kanceláře…).
 - "groundingStatus" nastav na "used", pokud se ti podařilo získat smysluplná data z Google Maps,
   jinak "insufficient" nebo "failed".
+- COORDINATES v JSON VRAŤ TAK, JAK BYLY POSKYTNUTY V toolConfig - NEMĚŇ JE!
 `;
 
 const HYBRID_PRO_SYSTEM_PROMPT = `
@@ -239,7 +247,19 @@ export async function getGroundedLocationDataWithFlash(
 }> {
   const { location, businessType, coordinates } = params;
 
-  const userPrompt = `
+  const userPrompt = coordinates
+    ? `
+PŘESNÉ GPS SOUŘADNICE (již geokódovány): lat=${coordinates.lat}, lng=${coordinates.lng}
+Adresa/lokalita: "${location}"
+Typ podnikání: ${businessType.type} (kategorie: ${businessType.category})
+
+DŮLEŽITÉ: Souřadnice jsou FINÁLNÍ a SPRÁVNÉ. Negeokóduj znovu lokalitu!
+Použij poskytnuté GPS souřadnice jako střed pro vyhledávání na Google Maps.
+Najdi konkurenci, body návštěvnosti a další data OKOLO těchto souřadnic.
+
+Vrať POUZE JSON objekt podle zadaného schématu.
+`
+    : `
 Lokalita k analýze: "${location}"
 Typ podnikání: ${businessType.type} (kategorie: ${businessType.category})
 
@@ -290,6 +310,9 @@ v České republice a vrať POUZE JSON objekt podle zadaného schématu.
     ? {
         ...parsed,
         locationQuery: parsed.locationQuery || location,
+        // ALWAYS preserve the original coordinates from input
+        // The Flash agent may return different coordinates which could be wrong
+        coordinates: coordinates || parsed.coordinates || undefined,
         groundingStatus:
           parsed.groundingStatus || (usedMaps ? "used" : "insufficient"),
       }

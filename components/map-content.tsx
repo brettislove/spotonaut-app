@@ -122,7 +122,7 @@ export default function MapContent({
         return "Kanceláře";
       case "residential":
         return "Bydlení";
-      case "available-properties":
+      case "availableProperties":
         return "Dostupné prostory";
       default:
         return "Ostatní";
@@ -149,7 +149,7 @@ export default function MapContent({
         return groundedLocationData?.footfallProxies?.some(
           (proxy) => proxy.type === "residential"
         );
-      case "available-properties":
+      case "availableProperties":
         return (groundedLocationData?.availableProperties?.length ?? 0) > 0;
       case "other":
         return groundedLocationData?.footfallProxies?.some(
@@ -172,18 +172,12 @@ export default function MapContent({
         return "#8b5cf6"; // purple
       case "residential":
         return "#f59e0b"; // yellow
-      case "available-properties":
+      case "availableProperties":
         return "#ec4899"; // pink
       default:
         return "#6b7280"; // gray
     }
   };
-
-  // Move main location log out of JSX so it doesn't produce a void ReactNode
-  console.log("Main location marker:", {
-    name: location,
-    coordinates: position,
-  });
 
   return (
     <div className="relative h-full w-full overflow-visible">
@@ -209,21 +203,12 @@ export default function MapContent({
           </Popup>
         </Marker>
 
-        {/* console: moved out of JSX to avoid ReactNode void error */}
-
         {/* Render competitors */}
         {(groundedLocationData?.competitors ?? [])
           .filter(
             (competitor) => competitor.coordinates && filterState?.competitors
           )
           .map((competitor, index) => {
-            console.log("Competitor marker:", {
-              name: competitor.name,
-              coordinates: competitor.coordinates,
-              category: competitor.category,
-              rating: competitor.rating,
-              distanceMeters: competitor.distanceMeters,
-            });
             return (
               <Marker
                 key={`competitor-${index}`}
@@ -273,12 +258,6 @@ export default function MapContent({
         {(groundedLocationData?.footfallProxies ?? [])
           .filter((proxy) => proxy.coordinates && filterState?.[proxy.type])
           .map((proxy, index) => {
-            console.log("Footfall proxy marker:", {
-              type: proxy.type,
-              description: proxy.description,
-              coordinates: proxy.coordinates,
-              distanceMeters: proxy.distanceMeters,
-            });
             return (
               <Marker
                 key={`proxy-${proxy.type}-${index}`}
@@ -317,15 +296,9 @@ export default function MapContent({
         {(groundedLocationData?.availableProperties ?? [])
           .filter(
             (property) =>
-              property.coordinates && filterState?.["available-properties"]
+              property.coordinates && filterState?.availableProperties
           )
           .map((property) => {
-            console.log("Available property marker:", {
-              source: property.source,
-              title: property.title,
-              coordinates: property.coordinates,
-              price: property.price,
-            });
             return (
               <Marker
                 key={`property-${property.source}-${property.id}`}
@@ -334,8 +307,8 @@ export default function MapContent({
                   property.coordinates!.lng,
                 ]}
                 icon={createMarkerIcon(
-                  "available-properties",
-                  getMarkerColor("available-properties")
+                  "availableProperties",
+                  getMarkerColor("availableProperties")
                 )}
               >
                 <Popup>

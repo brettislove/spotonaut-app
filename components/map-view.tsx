@@ -63,7 +63,7 @@ export default function MapView({ data }: MapViewProps) {
               office: true,
               residential: true,
               other: true,
-              "available-properties": true,
+              availableProperties: true,
             };
       }
       return {
@@ -73,7 +73,7 @@ export default function MapView({ data }: MapViewProps) {
         office: true,
         residential: true,
         other: true,
-        "available-properties": true,
+        availableProperties: true,
       };
     }
   );
@@ -89,7 +89,7 @@ export default function MapView({ data }: MapViewProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  // Default to Prague center if no coordinates
+  // Default to Brno center if no coordinates
   const position: LatLngExpression = useMemo(() => {
     return data.coordinates
       ? [data.coordinates.lat, data.coordinates.lng]

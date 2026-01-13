@@ -12,6 +12,10 @@ interface AnalysisFormData {
   businessType: BusinessType;
   operatingHours: number;
   timeframe: "day" | "week" | "month" | "year";
+  coordinates?: {
+    lat: number;
+    lon: number;
+  };
 }
 
 interface AnalysisFormProps {
@@ -266,6 +270,9 @@ export default function AnalysisForm({
 
     if (!locationInput.trim()) {
       newErrors.location = "Lokalita je povinná";
+    } else if (!fullLocationData) {
+      newErrors.location =
+        "Lokalita je moc obecná, nebo se nám ji nepodařilo určit. Vyberte lokalitu ze seznamu návrhů nebo z mapy";
     }
 
     if (!formData.businessType) {
@@ -281,12 +288,17 @@ export default function AnalysisForm({
 
     setErrors(newErrors);
 
-    if (Object.keys(newErrors).length === 0 && formData.businessType) {
+    if (
+      Object.keys(newErrors).length === 0 &&
+      formData.businessType &&
+      fullLocationData
+    ) {
       onSubmit({
         location: locationToSubmit,
         businessType: formData.businessType,
         operatingHours: formData.operatingHours!,
         timeframe: formData.timeframe!,
+        coordinates: fullLocationData.coordinates,
       });
     }
   };

@@ -30,6 +30,10 @@ interface AnalysisFormData {
   businessType: BusinessType;
   operatingHours: number;
   timeframe: "day" | "week" | "month" | "year";
+  coordinates?: {
+    lat: number;
+    lon: number;
+  };
 }
 
 // Rate limit for RPM (requests per minute) - 2.5-pro allows 150 RPM
@@ -369,6 +373,7 @@ export default function ChatInterface() {
           body: JSON.stringify({
             ...data,
             fingerprint,
+            coordinates: data.coordinates,
           }),
         });
 
