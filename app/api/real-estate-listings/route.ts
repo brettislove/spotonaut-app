@@ -365,6 +365,7 @@ export async function GET(request: NextRequest) {
     const lat = parseFloat(searchParams.get("lat") || "");
     const lng = parseFloat(searchParams.get("lng") || "");
     const radius = parseInt(searchParams.get("radius") || "1000");
+    // #TODO: Sreality does not reflect specified business type
     const businessType = searchParams.get("businessType") || "";
     const source = searchParams.get("source") || "all"; // "sreality" | "bezrealitky" | "all"
 

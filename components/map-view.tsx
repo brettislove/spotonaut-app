@@ -31,6 +31,7 @@ interface MapContentProps {
   location: string;
   groundedLocationData?: GroundedLocationData;
   filterState?: Record<string, boolean>;
+  onFilterChange?: (key: string) => void;
 }
 
 // Import Map component dynamically to avoid SSR issues
@@ -95,6 +96,10 @@ export default function MapView({ data }: MapViewProps) {
       : [49.1951, 16.6068];
   }, [data.coordinates]);
 
+  const handleFilterChange = (key: string) => {
+    setFilterState((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   if (!isMounted) {
     return (
       <div className="h-full w-full bg-slate-900/50 backdrop-blur-sm border border-slate-800 flex items-center justify-center">
@@ -104,52 +109,15 @@ export default function MapView({ data }: MapViewProps) {
   }
 
   return (
-    <div className="h-full w-full bg-slate-900/50 backdrop-blur-sm border border-slate-800 overflow-hidden flex flex-col sm:rounded-t-2xl">
-      {/* Filter Menu */}
-      {data.groundedLocationData && (
-        <div className="p-3 bg-slate-900/90 backdrop-blur-sm border-b border-slate-700">
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-slate-300 text-sm font-medium mr-2">
-              Filtry:
-            </span>
-            {Object.entries(filterState).map(([key, isVisible]) => (
-              <button
-                key={key}
-                onClick={() =>
-                  setFilterState((prev) => ({ ...prev, [key]: !prev[key] }))
-                }
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                  isVisible
-                    ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                    : "bg-slate-700/50 text-slate-400 border border-slate-600/30"
-                }`}
-              >
-                {key === "competitors"
-                  ? "Konkurence"
-                  : key === "transit"
-                  ? "Doprava"
-                  : key === "shopping"
-                  ? "Nákupy"
-                  : key === "office"
-                  ? "Kanceláře"
-                  : key === "residential"
-                  ? "Bydlení"
-                  : key === "available-properties"
-                  ? "Dostupné prostory"
-                  : "Ostatní"}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
+    <div className="h-full w-full bg-slate-900/50 backdrop-blur-sm border border-slate-800 flex flex-col sm:rounded-t-2xl">
       {/* Map */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative overflow-visible">
         <MapContent
           position={position}
           location={data.locationName || data.location}
           groundedLocationData={data.groundedLocationData}
           filterState={filterState}
+          onFilterChange={handleFilterChange}
         />
       </div>
 
