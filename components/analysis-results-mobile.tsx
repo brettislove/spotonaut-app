@@ -101,7 +101,7 @@ export default function AnalysisResultsMobile({
     <div className="fixed inset-0 top-16 flex flex-col bg-slate-950 overflow-hidden">
       {/* Fixed Map Area - only render for Metrics tab */}
       {activeTab === "metrics" && (
-        <div className="absolute inset-0 h-[35vh] transition-all duration-300 ease-out relative flex-shrink-0">
+        <div className="absolute inset-0 h-[35vh] transition-all duration-300 ease-out relative flex-shrink-0 z-[10]">
           <MapView data={analysisData} />
         </div>
       )}
