@@ -51,22 +51,8 @@ export default function MapView({ data }: MapViewProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [filterState, setFilterState] = useState<Record<string, boolean>>(
     () => {
-      // Load from localStorage or default to all visible
-      if (typeof window !== "undefined") {
-        const saved = localStorage.getItem("mapFilters");
-        return saved
-          ? JSON.parse(saved)
-          : {
-              competitors: true,
-              transit: true,
-              shopping: true,
-              office: true,
-              residential: true,
-              other: true,
-              availableProperties: true,
-            };
-      }
-      return {
+      // Default filter state with all filters visible
+      const defaultFilters = {
         competitors: true,
         transit: true,
         shopping: true,
@@ -75,6 +61,21 @@ export default function MapView({ data }: MapViewProps) {
         other: true,
         availableProperties: true,
       };
+
+      // Load from localStorage or use default
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("mapFilters");
+        if (saved) {
+          try {
+            const savedFilters = JSON.parse(saved);
+            // Merge saved filters with defaults to ensure new filters are included
+            return { ...defaultFilters, ...savedFilters };
+          } catch {
+            return defaultFilters;
+          }
+        }
+      }
+      return defaultFilters;
     }
   );
 

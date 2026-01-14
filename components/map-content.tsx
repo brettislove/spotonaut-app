@@ -405,7 +405,7 @@ export default function MapContent({
             {/* Dropdown Trigger */}
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="bg-slate-900/90 backdrop-blur-sm border border-slate-700 rounded-full px-3 py-2 text-slate-300 text-sm font-medium flex items-center gap-2 hover:bg-slate-800/90 transition-colors"
+              className="bg-slate-900/90 backdrop-blur-sm border border-slate-700 rounded-full px-3 py-2 text-slate-300 text-sm font-medium flex items-center gap-2 cursor-pointer hover:bg-slate-800/90 transition-colors"
             >
               <svg
                 className="w-4 h-4"
