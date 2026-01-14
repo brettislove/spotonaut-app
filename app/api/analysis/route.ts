@@ -41,6 +41,10 @@ interface AnalysisRequest {
   operatingHours: number;
   timeframe: "day" | "week" | "month" | "year";
   fingerprint?: string;
+  coordinates?: {
+    lat: number;
+    lon: number;
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -86,14 +90,6 @@ export async function POST(request: NextRequest) {
     ) {
       return NextResponse.json(
         { error: "Všechna pole jsou povinná" },
-        { status: 400 }
-      );
-    }
-
-    // Validate ranges
-    if (data.operatingHours < 1 || data.operatingHours > 168) {
-      return NextResponse.json(
-        { error: "Provozní hodiny musí být mezi 1-168" },
         { status: 400 }
       );
     }
@@ -152,44 +148,22 @@ export async function POST(request: NextRequest) {
         };
 
         try {
-          // Step 1: Geocoding (parallel with quota check)
-          sendProgress("geocoding");
-
-          const [geocodeResult, quotaResult] = await Promise.allSettled([
-            fetch(
-              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-                data.location
-              )}&limit=1`,
-              {
-                headers: {
-                  "User-Agent": "Spotonaut-App/1.0",
-                },
-              }
-            ).then((res) => res.json()),
-            // Always check global maps quota regardless of authentication state
-            checkGlobalMapsQuota(prisma),
-          ]);
-
+          // Step 1: Use provided coordinates or geocode if needed
           let coordinates = null;
-          let geocodeData:
-            | { lat: string; lon: string; display_name: string }[]
-            | null = null;
 
-          if (geocodeResult.status === "fulfilled") {
-            geocodeData = geocodeResult.value;
-            if (geocodeData && geocodeData.length > 0) {
-              coordinates = {
-                lat: parseFloat(geocodeData[0].lat),
-                lng: parseFloat(geocodeData[0].lon),
-              };
-              console.log("Geocoded coordinates:", coordinates);
-            }
-          } else {
-            console.error("Geocoding error:", geocodeResult.reason);
+          if (data.coordinates) {
+            // Use coordinates provided from frontend (already geocoded)
+            coordinates = {
+              lat: data.coordinates.lat,
+              lng: data.coordinates.lon,
+            };
+            console.log("Using provided coordinates:", coordinates);
           }
 
-          const quotaStatus =
-            quotaResult.status === "fulfilled" ? quotaResult.value : null;
+          sendProgress("geocoding");
+
+          // Always check global maps quota regardless of authentication state
+          const quotaStatus = await checkGlobalMapsQuota(prisma);
 
           console.log("Quota check result:", {
             hasSession: !!session,
@@ -298,6 +272,51 @@ export async function POST(request: NextRequest) {
             };
           }
 
+          // Step 2.5: Fetch Real Estate Listings
+          if (coordinates) {
+            try {
+              console.log("Fetching real estate listings for:", {
+                coordinates,
+                businessType: data.businessType.type,
+              });
+
+              const realEstateResponse = await fetch(
+                `${request.nextUrl.origin}/api/real-estate-listings?` +
+                  `lat=${coordinates.lat}&lng=${coordinates.lng}&` +
+                  `radius=1000&businessType=${encodeURIComponent(
+                    data.businessType.type
+                  )}`,
+                {
+                  headers: {
+                    "User-Agent": "Spotonaut-Internal/1.0",
+                  },
+                }
+              );
+
+              if (realEstateResponse.ok) {
+                const realEstateData = await realEstateResponse.json();
+                if (
+                  realEstateData.listings &&
+                  Array.isArray(realEstateData.listings)
+                ) {
+                  groundedLocation.availableProperties =
+                    realEstateData.listings;
+                  console.log(
+                    `Found ${realEstateData.listings.length} real estate listings`
+                  );
+                }
+              } else {
+                console.warn(
+                  "Real estate API returned error:",
+                  realEstateResponse.status
+                );
+              }
+            } catch (error) {
+              console.error("Failed to fetch real estate listings:", error);
+              // Non-critical - continue without listings
+            }
+          }
+
           // Step 3: Pro Analysis with Streaming
           sendProgress("pro_analysis");
 
@@ -335,10 +354,7 @@ export async function POST(request: NextRequest) {
           // Step 4: Finalizing
           sendProgress("finalizing");
 
-          const locationName =
-            geocodeData && geocodeData.length > 0
-              ? geocodeData[0].display_name
-              : data.location;
+          const locationName = data.location;
 
           // Transform BusinessAnalysisMetrics into InputJsonObject
           const metricsJsonObject = {
@@ -407,6 +423,13 @@ export async function POST(request: NextRequest) {
           // Send final result
           sendProgress("complete");
           try {
+            // Debug: Log availableProperties before sending
+            console.log("Sending groundedLocationData with properties:", {
+              hasAvailableProperties: !!groundedLocation.availableProperties,
+              count: groundedLocation.availableProperties?.length || 0,
+              firstProperty: groundedLocation.availableProperties?.[0],
+            });
+
             // Attempt to send the final "done" payload. Use safeEnqueue to
             // avoid throwing if the controller is already closed.
             safeEnqueue(
