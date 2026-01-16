@@ -31,6 +31,12 @@ export interface RealEstateListing {
   url: string;
   images?: string[];
   labels?: string[];
+  seo?: {
+    category_main_cb: number;
+    category_sub_cb: number;
+    category_type_cb: number;
+    locality: string;
+  };
   distanceMeters?: number;
 }
 
@@ -283,6 +289,12 @@ async function fetchSrealityListings(
         gps?: { lat: number; lon: number };
         _links?: { self?: { href: string }; images?: Array<{ href: string }> };
         labels?: string[];
+        seo?: {
+          category_main_cb: number;
+          category_sub_cb: number;
+          category_type_cb: number;
+          locality: string;
+        };
       }) => {
         const listing: RealEstateListing = {
           id: `sreality-${estate.hash_id}`,
@@ -296,9 +308,12 @@ async function fetchSrealityListings(
           locality: estate.locality,
           category: getCategoryName(estate.category),
           size: estate.m2,
-          url: `https://www.sreality.cz${estate._links?.self?.href || ""}`,
+          url: estate.seo
+            ? buildSrealityUrl(estate.seo, estate.hash_id)
+            : `https://www.sreality.cz${estate._links?.self?.href || ""}`,
           images: estate._links?.images?.map((img) => img.href) || [],
           labels: estate.labels || [],
+          seo: estate.seo,
         };
 
         // Add coordinates if available
@@ -344,6 +359,96 @@ function getCategoryName(category: number): string {
     default:
       return "Neznámé";
   }
+}
+
+/**
+ * Build proper Sreality.cz webpage URL from SEO data
+ */
+function buildSrealityUrl(
+  seo: {
+    category_main_cb: number;
+    category_sub_cb: number;
+    category_type_cb: number;
+    locality: string;
+  },
+  hashId: number
+): string {
+  // Map transaction type
+  const transactionType = seo.category_type_cb === 2 ? "pronajem" : "prodej";
+
+  // Map main category
+  let mainCategory = "";
+  switch (seo.category_main_cb) {
+    case 1:
+      mainCategory = "byty";
+      break;
+    case 2:
+      mainCategory = "domy";
+      break;
+    case 3:
+      mainCategory = "pozemky";
+      break;
+    case 4:
+      mainCategory = "komercni";
+      break;
+    case 5:
+      mainCategory = "ostatni";
+      break;
+    default:
+      mainCategory = "ostatni";
+  }
+
+  // Map sub category (simplified mapping)
+  let subCategory = "";
+  if (seo.category_main_cb === 4) {
+    // Commercial
+    switch (seo.category_sub_cb) {
+      case 25:
+        subCategory = "kancelare";
+        break;
+      case 26:
+        subCategory = "sklad";
+        break;
+      case 28:
+        subCategory = "obchodni-prostor";
+        break;
+      case 29:
+        subCategory = "sklady";
+        break;
+      case 30:
+        subCategory = "prostory";
+        break;
+      case 31:
+        subCategory = "obchody";
+        break;
+      case 32:
+        subCategory = "restaurace";
+        break;
+      case 33:
+        subCategory = "výroba";
+        break;
+      case 34:
+        subCategory = "kancelare";
+        break; // Default to office
+      default:
+        subCategory = "prostory"; // Default commercial space
+    }
+  } else if (seo.category_main_cb === 1) {
+    // Apartments
+    subCategory = ""; // Apartments don't have subcategories in URL
+  }
+
+  // Clean up locality (remove trailing dashes and other artifacts)
+  const cleanLocality = seo.locality.replace(/-+$/, "").replace(/^-+/, "");
+
+  // Build URL
+  const baseUrl = "https://www.sreality.cz/detail";
+  const categoryPath = subCategory
+    ? `${mainCategory}/${subCategory}`
+    : mainCategory;
+  const url = `${baseUrl}/${transactionType}/${categoryPath}/${cleanLocality}/${hashId}`;
+
+  return url;
 }
 
 // ==================== BEZREALITKY.CZ API ====================
@@ -439,8 +544,20 @@ export async function GET(request: NextRequest) {
     // Combine and filter results
     const allListings = [...results.sreality.data, ...results.bezrealitky.data];
 
+    // First, filter by distance (remove listings outside the requested radius)
+    const withinRadiusListings = allListings.filter((property) => {
+      // If no distance calculated, keep it (we'll sort it to the end anyway)
+      if (property.distanceMeters === undefined) return true;
+      // Only keep listings within the requested radius (with some tolerance)
+      return property.distanceMeters <= radius * 1.1; // 10% tolerance
+    });
+
+    console.log(
+      `Filtered ${allListings.length} listings to ${withinRadiusListings.length} within ${radius}m radius`
+    );
+
     // Apply relevance filtering
-    const filteredListings = allListings.filter((property) => {
+    const filteredListings = withinRadiusListings.filter((property) => {
       const filters = getRelevantPropertyFilters(businessType);
 
       // Size filter (if size is available)

@@ -1448,13 +1448,13 @@ export default function ChatInterface() {
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setShowConfirmDialog(false)}
-                className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-lg transition-all border border-slate-700"
+                className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-full transition-all border border-slate-700"
               >
                 Zrušit
               </button>
               <button
                 onClick={confirmNewAnalysis}
-                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium rounded-lg transition-all shadow-lg"
+                className="flex-1 px-4 py-2.5 bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 border border-blue-600/20 hover:from-blue-600 hover:to-purple-600 text-white font-medium rounded-full transition-all shadow-lg"
               >
                 Pokračovat
               </button>
@@ -1495,13 +1495,13 @@ export default function ChatInterface() {
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setShowConfirmDialog(false)}
-                className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-lg transition-all border border-slate-700"
+                className="flex-1 px-4 py-2.5 bg-slate-800 cursor-pointer hover:bg-slate-700 text-white font-medium rounded-full transition-all border border-slate-700"
               >
                 Zrušit
               </button>
               <button
                 onClick={confirmNewAnalysis}
-                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium rounded-lg transition-all shadow-lg"
+                className="flex-1 px-4 py-2.5 bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 border border-blue-600/20 cursor-pointer hover:from-blue-400 hover:to-blue-600 text-white font-medium rounded-full transition-all shadow-lg"
               >
                 Pokračovat
               </button>
