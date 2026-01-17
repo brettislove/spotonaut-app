@@ -22,17 +22,6 @@ import {
 import { runAggregationsIfNeeded } from "@/lib/analytics/aggregation";
 import { runCleanupIfNeeded } from "@/lib/analytics/retention";
 
-// Debug: Log DATABASE_URL to check what Vercel is using
-console.log("DATABASE_URL in analysis route:", process.env.DATABASE_URL);
-console.log(
-  "DATABASE_URL starts with postgres:",
-  process.env.DATABASE_URL?.startsWith("postgres")
-);
-console.log(
-  "All env vars:",
-  Object.keys(process.env).filter((k) => k.includes("DATABASE"))
-);
-
 const prisma = new PrismaClient();
 
 interface AnalysisRequest {
@@ -423,13 +412,6 @@ export async function POST(request: NextRequest) {
           // Send final result
           sendProgress("complete");
           try {
-            // Debug: Log availableProperties before sending
-            console.log("Sending groundedLocationData with properties:", {
-              hasAvailableProperties: !!groundedLocation.availableProperties,
-              count: groundedLocation.availableProperties?.length || 0,
-              firstProperty: groundedLocation.availableProperties?.[0],
-            });
-
             // Attempt to send the final "done" payload. Use safeEnqueue to
             // avoid throwing if the controller is already closed.
             safeEnqueue(

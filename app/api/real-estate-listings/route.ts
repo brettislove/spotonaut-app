@@ -240,6 +240,11 @@ async function fetchSrealityListings(
   const { main, sub } = filters.sreality;
 
   // Build Sreality API URL
+  /* TODO: Example URLs for reference:
+  Search by country and region - https://www.sreality.cz/api/v1/estates/search?category_type_cb=2&category_main_cb=4&locality_country_id=112&locality_region_id=9
+  Search by municipality - https://www.sreality.cz/api/cs/v2/estates?category_main_cb=4&category_type_cb=2&region_entity_type=municipality&region_entity_id=3468
+  */
+
   const boundsParam = `${bounds.minLat},${bounds.minLng}|${bounds.maxLat},${bounds.maxLng}`;
   const url = new URL("https://www.sreality.cz/api/cs/v2/estates");
   url.searchParams.set("category_main_cb", main.toString()); // e.g., 4 = Commercial properties
