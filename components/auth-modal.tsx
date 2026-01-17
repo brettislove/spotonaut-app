@@ -60,6 +60,13 @@ export default function AuthModal({
     setError("");
     setSuccess("");
 
+    // Custom validation for empty fields
+    if (!email || !password) {
+      setError("Vyplňte prosím všechna povinná pole");
+      setIsLoading(false);
+      return;
+    }
+
     // Require acceptance of terms before signup
     if (!acceptTerms) {
       setError("Musíte souhlasit s Podmínkami použití");
@@ -130,6 +137,12 @@ export default function AuthModal({
     e.preventDefault();
     setIsLoading(true);
     setError("");
+
+    if (!email || !password) {
+      setError("Zadejte prosím email a heslo");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const result = await signIn("credentials", {
@@ -318,7 +331,7 @@ export default function AuthModal({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
+              // required - removed for custom validation
               className="w-full bg-slate-800 border border-slate-700 text-white rounded-full px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
               placeholder="vas@email.cz"
               disabled={isLoading}
@@ -342,7 +355,7 @@ export default function AuthModal({
                   );
                 }
               }}
-              required
+              // required - removed for custom validation
               aria-invalid={passwordTooShort}
               className={`w-full bg-slate-800 border text-white rounded-full px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all ${
                 passwordTooShort ? "border-red-500" : "border-slate-700"
@@ -373,7 +386,6 @@ export default function AuthModal({
                   setConfirmPassword(val);
                   setConfirmPasswordValid(password === val);
                 }}
-                required
                 className={`w-full bg-slate-800 text-white rounded-full px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all ${
                   confirmPasswordValid === false
                     ? "border-red-500"
@@ -417,13 +429,7 @@ export default function AuthModal({
 
           <button
             type="submit"
-            disabled={
-              isLoading ||
-              (activeTab === "signup" &&
-                (password.length < 6 ||
-                  confirmPasswordValid !== true ||
-                  !acceptTerms))
-            }
+            disabled={isLoading}
             className="w-full bg-gradient-to-br from-purple-400 via-purple-500/100 to-purple-700 text-white font-semibold py-3 px-4 rounded-full hover:from-purple-600 hover:to-purple-700 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (

@@ -100,17 +100,6 @@ export default function KontaktPage() {
             </a>
           </div>
         </section>
-
-        <footer className="border-t border-slate-800 pt-6 text-xs text-slate-500">
-          <div className="mb-2">
-            Upozornění: výše uvedené údaje jsou uvedeny jako vzor. Nahraďte
-            prosím text v hranatých závorkách skutečnými údaji vaší společnosti.
-          </div>
-          <div>
-            Pokud chcete, mohu doplnit automatický kontaktní formulář, validaci
-            a server-side zpracování zpráv.
-          </div>
-        </footer>
       </div>
     </div>
   );
