@@ -237,28 +237,25 @@ async function fetchSrealityListings(
   await waitForRateLimit("sreality");
 
   const filters = getRelevantPropertyFilters(businessType);
-  const { main, sub } = filters.sreality;
+  const { main } = filters.sreality;
 
-  // Build Sreality API URL
-  /* TODO: Example URLs for reference:
-  Search by country and region - https://www.sreality.cz/api/v1/estates/search?category_type_cb=2&category_main_cb=4&locality_country_id=112&locality_region_id=9
-  Search by municipality - https://www.sreality.cz/api/cs/v2/estates?category_main_cb=4&category_type_cb=2&region_entity_type=municipality&region_entity_id=3468
-  */
+  // Build Sreality API URL using v1 endpoint
+  // Example: https://www.sreality.cz/api/v1/estates/search?category_main_cb=4&locality_country_id=112&lang=cs&top_timestamp_to=1768771571&lat_max=49.1996&lat_min=49.1906&lon_max=16.6153&lon_min=16.6015&zoom=15
+  const url = new URL("https://www.sreality.cz/api/v1/estates/search");
+  url.searchParams.set("category_main_cb", main.toString()); // 4 = Commercial properties
+  url.searchParams.set("locality_country_id", "112"); // Czech Republic
+  url.searchParams.set("lang", "cs");
+  url.searchParams.set(
+    "top_timestamp_to",
+    Math.floor(Date.now() / 1000).toString()
+  );
+  url.searchParams.set("lat_min", bounds.minLat.toString());
+  url.searchParams.set("lat_max", bounds.maxLat.toString());
+  url.searchParams.set("lon_min", bounds.minLng.toString());
+  url.searchParams.set("lon_max", bounds.maxLng.toString());
+  url.searchParams.set("zoom", "15");
 
-  const boundsParam = `${bounds.minLat},${bounds.minLng}|${bounds.maxLat},${bounds.maxLng}`;
-  const url = new URL("https://www.sreality.cz/api/cs/v2/estates");
-  url.searchParams.set("category_main_cb", main.toString()); // e.g., 4 = Commercial properties
-  // Only set subcategory if it's meaningful (not all commercial - we'll search all types)
-  // Sub-categories are unreliable, so we search all commercial spaces (category 4)
-  // and filter by keywords instead
-  // if (sub && sub !== 40) {
-  //   url.searchParams.set("category_sub_cb", sub.toString());
-  // }
-  url.searchParams.set("category_type_cb", "2"); // 1 = Sale, 2 = Rent
-  url.searchParams.set("per_page", "60");
-  url.searchParams.set("bounds", boundsParam);
-
-  console.log("Fetching from Sreality:", url.toString());
+  console.log("Fetching from Sreality v1 API:", url.toString());
 
   try {
     const response = await fetchWithRetry(url.toString(), {
@@ -276,63 +273,90 @@ async function fetchSrealityListings(
 
     const data = await response.json();
 
-    if (!data._embedded?.estates) {
-      console.warn("No estates found in Sreality response");
+    if (!data.results || !Array.isArray(data.results)) {
+      console.warn("No results found in Sreality v1 response");
       return [];
     }
 
-    const listings: RealEstateListing[] = data._embedded.estates.map(
+    const listings: RealEstateListing[] = data.results.map(
       (estate: {
         hash_id: number;
-        name: string;
+        advert_name: string;
         price: number;
-        price_czk?: { value_raw: number; alt?: { value_raw: number } };
-        type: number;
-        category: number;
-        m2?: number;
-        locality?: string;
-        gps?: { lat: number; lon: number };
-        _links?: { self?: { href: string }; images?: Array<{ href: string }> };
-        labels?: string[];
+        price_czk?: number;
+        price_czk_m2?: number;
+        price_summary?: number;
+        price_summary_czk?: number;
+        price_summary_czk_m2?: number;
+        category_type_cb: { name: string; value: number };
+        category_main_cb: { name: string; value: number };
+        category_sub_cb?: { name: string; value: number };
+        advert_images?: string[];
         seo?: {
           category_main_cb: number;
           category_sub_cb: number;
           category_type_cb: number;
-          locality: string;
+        };
+        locality?: {
+          gps_lat?: number;
+          gps_lon?: number;
+          city?: string;
+          street?: string;
+          housenumber?: string;
+          citypart?: string;
+          citypart_seo_name?: string;
         };
       }) => {
+        // Build address from locality components
+        const addressParts = [];
+        if (estate.locality?.street) addressParts.push(estate.locality.street);
+        if (estate.locality?.housenumber)
+          addressParts.push(estate.locality.housenumber);
+        if (estate.locality?.citypart)
+          addressParts.push(estate.locality.citypart);
+        else if (estate.locality?.city) addressParts.push(estate.locality.city);
+        const address = addressParts.join(", ");
+
         const listing: RealEstateListing = {
           id: `sreality-${estate.hash_id}`,
           source: "sreality",
-          title: estate.name || "Bez názvu",
-          price: estate.price_czk?.value_raw || estate.price || 0,
-          pricePerSqm: estate.price_czk?.alt?.value_raw,
+          title: estate.advert_name || "Bez názvu",
+          price:
+            estate.price_summary_czk || estate.price_czk || estate.price || 0,
+          pricePerSqm: estate.price_summary_czk_m2 || estate.price_czk_m2,
           currency: "CZK",
-          transactionType: estate.type === 2 ? "rent" : "sale",
-          address: estate.locality || "",
-          locality: estate.locality,
-          category: getCategoryName(estate.category),
-          size: estate.m2,
-          url: estate.seo
-            ? buildSrealityUrl(estate.seo, estate.hash_id)
-            : `https://www.sreality.cz${estate._links?.self?.href || ""}`,
-          images: estate._links?.images?.map((img) => img.href) || [],
-          labels: estate.labels || [],
-          seo: estate.seo,
+          transactionType:
+            estate.category_type_cb.value === 2 ? "rent" : "sale",
+          address: address || "",
+          locality: estate.locality?.city,
+          category:
+            estate.category_sub_cb?.name || estate.category_main_cb.name,
+          size: undefined, // v1 API doesn't include size in main response
+          url: buildSrealityUrl(
+            estate.category_type_cb.value,
+            estate.category_main_cb.value,
+            estate.category_sub_cb?.value,
+            estate.locality?.citypart_seo_name ||
+              estate.locality?.city?.toLowerCase().replace(/\s+/g, "-") ||
+              "",
+            estate.hash_id
+          ),
+          images: estate.advert_images?.map((img) => `https:${img}`) || [],
+          labels: [],
         };
 
         // Add coordinates if available
-        if (estate.gps?.lat && estate.gps?.lon) {
+        if (estate.locality?.gps_lat && estate.locality?.gps_lon) {
           listing.coordinates = {
-            lat: estate.gps.lat,
-            lng: estate.gps.lon,
+            lat: estate.locality.gps_lat,
+            lng: estate.locality.gps_lon,
           };
           listing.distanceMeters = Math.round(
             calculateDistance(
               centerLat,
               centerLng,
-              estate.gps.lat,
-              estate.gps.lon
+              estate.locality.gps_lat,
+              estate.locality.gps_lon
             )
           );
         }
@@ -367,23 +391,21 @@ function getCategoryName(category: number): string {
 }
 
 /**
- * Build proper Sreality.cz webpage URL from SEO data
+ * Build proper Sreality.cz webpage URL from category and locality data
  */
 function buildSrealityUrl(
-  seo: {
-    category_main_cb: number;
-    category_sub_cb: number;
-    category_type_cb: number;
-    locality: string;
-  },
+  categoryTypeValue: number,
+  categoryMainValue: number,
+  categorySubValue: number | undefined,
+  localitySeoName: string,
   hashId: number
 ): string {
   // Map transaction type
-  const transactionType = seo.category_type_cb === 2 ? "pronajem" : "prodej";
+  const transactionType = categoryTypeValue === 2 ? "pronajem" : "prodej";
 
   // Map main category
   let mainCategory = "";
-  switch (seo.category_main_cb) {
+  switch (categoryMainValue) {
     case 1:
       mainCategory = "byty";
       break;
@@ -405,9 +427,9 @@ function buildSrealityUrl(
 
   // Map sub category (simplified mapping)
   let subCategory = "";
-  if (seo.category_main_cb === 4) {
+  if (categoryMainValue === 4 && categorySubValue) {
     // Commercial
-    switch (seo.category_sub_cb) {
+    switch (categorySubValue) {
       case 25:
         subCategory = "kancelare";
         break;
@@ -438,13 +460,13 @@ function buildSrealityUrl(
       default:
         subCategory = "prostory"; // Default commercial space
     }
-  } else if (seo.category_main_cb === 1) {
+  } else if (categoryMainValue === 1) {
     // Apartments
     subCategory = ""; // Apartments don't have subcategories in URL
   }
 
-  // Clean up locality (remove trailing dashes and other artifacts)
-  const cleanLocality = seo.locality.replace(/-+$/, "").replace(/^-+/, "");
+  // Clean up locality
+  const cleanLocality = localitySeoName.replace(/-+$/, "").replace(/^-+/, "");
 
   // Build URL
   const baseUrl = "https://www.sreality.cz/detail";
