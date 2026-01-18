@@ -179,6 +179,8 @@ export default function MapContent({
     }
   };
 
+  console.log("Rendering MapContent with center at ", position);
+
   return (
     <div className="relative h-full w-full overflow-visible">
       <MapContainer
@@ -240,13 +242,23 @@ export default function MapContent({
                     )}
                     {competitor.distanceMeters && (
                       <div className="text-gray-500 text-xs mt-1">
-                        {Math.round(competitor.distanceMeters)}m away
+                        {Math.round(competitor.distanceMeters)}m daleko
                       </div>
                     )}
                     {competitor.address && (
                       <div className="text-gray-600 text-xs mt-1">
                         {competitor.address}
                       </div>
+                    )}
+                    {competitor.mapsUrl && (
+                      <a
+                        href={competitor.mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline text-xs mt-1 block"
+                      >
+                        Zobrazit na Google Maps
+                      </a>
                     )}
                   </div>
                 </Popup>
@@ -283,7 +295,7 @@ export default function MapContent({
                     <div className="text-gray-600">{proxy.description}</div>
                     {proxy.distanceMeters && (
                       <div className="text-gray-500 text-xs mt-1">
-                        {Math.round(proxy.distanceMeters)}m away
+                        {Math.round(proxy.distanceMeters)}m daleko
                       </div>
                     )}
                   </div>

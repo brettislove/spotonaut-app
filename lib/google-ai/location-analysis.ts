@@ -1,10 +1,18 @@
 import type { BusinessType } from "@/lib/constants/business-types";
+import { FOOTFALL_PROXY_TYPES } from "@/lib/constants/business-types";
 import { genai, BASIC_SYSTEM_PROMPT } from "./client";
 import {
   extractGroundingSources,
   hasGroundingMetadata,
   type GroundingSource,
 } from "./usage";
+import {
+  searchPlacesWithCache,
+  logPlacesApiError,
+  calculateDistance,
+  type PlacesSearchResult,
+} from "@/lib/google-maps/places";
+import { PrismaClient } from "@prisma/client";
 
 export type GroundingStatus = "not_used" | "used" | "insufficient" | "failed";
 
@@ -90,6 +98,66 @@ export interface HybridAnalysisResult {
   usedMapsGrounding: boolean;
   sources: GroundingSource[];
 }
+
+const FLASH_PLACES_ANALYSIS_PROMPT = `
+Jsi asistent pro analýzu dat z Google Places API.
+
+TVŮJ ÚKOL:
+- Dostaneš strukturovaná data z Google Places API o konkurenci a bodech návštěvnosti v lokalitě.
+- ANALYZUJ tato data a vrať strukturovaný výstup ve formátu JSON.
+- NEPROVÁDÍŠ obchodní analýzu – pouze kategorizuješ a sumarizuješ získaná data.
+
+VÝSTUP:
+- Vrať POUZE JEDEN JSON OBJEKT ve formátu níže.
+- Bez vysvětlujícího textu okolo, žádné další věty.
+
+PŘESNÁ STRUKTURA JSON:
+\`\`\`json
+{
+  "locationQuery": string,
+  "resolvedAddress": string | null,
+  "coordinates": {
+    "lat": number,
+    "lng": number
+  } | null,
+  "primaryPlaceId": string | null,
+  "primaryMapsUrl": string | null,
+  "categories": string[] | null,
+  "competitors": [
+    {
+      "name": string,
+      "category": string | null,
+      "distanceMeters": number | null,
+      "coordinates": {
+        "lat": number,
+        "lng": number
+      } | null,
+      "address": string | null
+    }
+  ],
+  "footfallProxies": [
+    {
+      "type": "transit" | "shopping" | "office" | "residential" | "other",
+      "description": string,
+      "distanceMeters": number | null,
+      "coordinates": {
+        "lat": number,
+        "lng": number
+      } | null
+    }
+  ],
+  "notes": string | null,
+  "groundingStatus": "used" | "insufficient"
+}
+\`\`\`
+
+POZNÁMKY:
+- "competitors" = konkurenční podniky v okolí, seřaď je podle vzdálenosti.
+- "footfallProxies" = místa naznačující návštěvnost (zastávky, obchodní centra, školy...).
+- Pro každý competitor/proxy, pokud máš GPS souřadnice, zahrň je.
+- "averageRating" = průměrný rating z nalezených konkurentů (pokud mají ratings).
+- "groundingStatus" nastav na "used" pokud máš smysluplná data, jinak "insufficient".
+`;
 
 const FLASH_GROUNDING_SYSTEM_PROMPT = `
 Jsi asistent pro získávání dat z Google Maps.
@@ -236,6 +304,7 @@ interface FlashGroundingParams {
   location: string;
   businessType: BusinessType;
   coordinates?: Coordinates | null;
+  prisma?: PrismaClient;
 }
 
 export async function getGroundedLocationDataWithFlash(
@@ -245,7 +314,168 @@ export async function getGroundedLocationDataWithFlash(
   usedMapsGrounding: boolean;
   sources: GroundingSource[];
 }> {
-  const { location, businessType, coordinates } = params;
+  const { location, businessType, coordinates, prisma } = params;
+
+  // Try Places API first if we have coordinates and Prisma client
+  if (coordinates && prisma) {
+    try {
+      console.log("Attempting Places API search for:", businessType.type);
+
+      const competitorTypes = businessType.competitorTypes || [];
+      const footfallProxyTypes = FOOTFALL_PROXY_TYPES;
+
+      // Search Places API with caching
+      const placesResult: PlacesSearchResult = await searchPlacesWithCache(
+        prisma,
+        coordinates.lat,
+        coordinates.lng,
+        businessType.type,
+        competitorTypes,
+        footfallProxyTypes
+      );
+
+      console.log("Places API search successful:", {
+        competitors: placesResult.competitors.length,
+        footfallProxies: placesResult.footfallProxies.length,
+        usedCache: placesResult.usedCache,
+        ids: placesResult.competitors.map((c) => c.id),
+      });
+
+      // Convert Places API results to prompt for Gemini Flash analysis
+      const placesDataForAnalysis = {
+        competitors: placesResult.competitors.map((place) => ({
+          id: place.id,
+          name: place.displayName,
+          address: place.formattedAddress,
+          location: place.location,
+          types: place.types,
+          distanceMeters: calculateDistance(
+            coordinates.lat,
+            coordinates.lng,
+            place.location.latitude,
+            place.location.longitude
+          ),
+        })),
+        footfallProxies: placesResult.footfallProxies.map((place) => ({
+          id: place.id,
+          name: place.displayName,
+          types: place.types,
+          location: place.location,
+          distanceMeters: calculateDistance(
+            coordinates.lat,
+            coordinates.lng,
+            place.location.latitude,
+            place.location.longitude
+          ),
+        })),
+      };
+
+      // Ask Gemini Flash to analyze the Places data
+      const analysisPrompt = `
+LOKALITA: "${location}"
+TYP PODNIKÁNÍ: ${businessType.type} (kategorie: ${businessType.category})
+SOUŘADNICE: lat=${coordinates.lat}, lng=${coordinates.lng}
+
+DATA Z GOOGLE PLACES API:
+
+**KONKURENCE (${placesDataForAnalysis.competitors.length} míst):**
+${JSON.stringify(placesDataForAnalysis.competitors, null, 2)}
+
+**BODY NÁVŠTĚVNOSTI (${placesDataForAnalysis.footfallProxies.length} míst):**
+${JSON.stringify(placesDataForAnalysis.footfallProxies, null, 2)}
+
+Analyzuj tato data a vrať JSON objekt podle zadaného schématu.
+Zaměř se na:
+- Kategorizaci konkurentů podle typu a vzdálenosti
+- Identifikaci bodů návštěvnosti (transit, shopping, office, atd.)
+- Celkový sentiment na základě ratingů
+- Průměrný rating konkurence
+`;
+
+      const response = await genai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: analysisPrompt }],
+          },
+        ],
+        config: {
+          systemInstruction: FLASH_PLACES_ANALYSIS_PROMPT,
+        },
+      });
+
+      const rawText = response.text || "";
+      const jsonBlock = extractJsonBlock(rawText);
+      const parsed =
+        jsonBlock && safelyParseJson<GroundedLocationData>(jsonBlock);
+
+      console.log("Flash analysis of Places data complete");
+
+      if (parsed) {
+        const groundedLocation: GroundedLocationData = {
+          locationQuery: parsed.locationQuery || location,
+          resolvedAddress: parsed.resolvedAddress,
+          coordinates: coordinates,
+          primaryPlaceId: parsed.primaryPlaceId,
+          primaryMapsUrl: parsed.primaryMapsUrl,
+          categories: parsed.categories,
+          competitors: parsed.competitors,
+          footfallProxies: parsed.footfallProxies,
+          averageRating: parsed.averageRating,
+          reviewSentiment: parsed.reviewSentiment,
+          notes: parsed.notes,
+          groundingStatus: parsed.groundingStatus || "used",
+        };
+
+        // Create sources from Places API results with proper Google Maps URLs
+        const sources: GroundingSource[] = placesResult.competitors
+          .slice(0, 5)
+          .map((place) => ({
+            placeId: place.id,
+            title: place.displayName,
+            // Use Google Maps URL scheme with place ID for accurate location
+            // Format: https://www.google.com/maps/search/?api=1&query=NAME&query_place_id=PLACE_ID
+            uri: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+              place.displayName
+            )}&query_place_id=${place.id}`,
+          }));
+
+        return {
+          groundedLocation,
+          usedMapsGrounding: true,
+          sources,
+        };
+      }
+
+      // If parsing failed, continue to fallback
+      console.warn(
+        "Failed to parse Flash analysis, falling back to Gemini grounding"
+      );
+    } catch (error) {
+      console.error("Places API search failed:", error);
+
+      // Log the error for monitoring
+      if (prisma) {
+        await logPlacesApiError(
+          prisma,
+          coordinates.lat,
+          coordinates.lng,
+          businessType.type,
+          error instanceof Error ? error.message : "Unknown error",
+          error instanceof Error && "status" in error
+            ? String(error.status)
+            : undefined
+        );
+      }
+
+      console.log("Falling back to Gemini grounding with Google Maps tools");
+      // Continue to fallback below
+    }
+  }
+
+  // Fallback: Use Gemini's built-in Google Maps grounding (original behavior)
+  console.log("Using Gemini grounding fallback for:", businessType.type);
 
   const userPrompt = coordinates
     ? `
@@ -301,18 +531,27 @@ v České republice a vrať POUZE JSON objekt podle zadaného schématu.
   const jsonBlock = extractJsonBlock(rawText);
   const parsed = jsonBlock && safelyParseJson<GroundedLocationData>(jsonBlock);
 
-  console.log("Flash grounding response:", parsed);
+  console.log(
+    "Gemini grounding fallback response:",
+    parsed ? "success" : "failed"
+  );
 
   const usedMaps = hasGroundingMetadata(response);
   const sources = extractGroundingSources(response);
 
   const groundedLocation: GroundedLocationData = parsed
     ? {
-        ...parsed,
         locationQuery: parsed.locationQuery || location,
-        // ALWAYS preserve the original coordinates from input
-        // The Flash agent may return different coordinates which could be wrong
+        resolvedAddress: parsed.resolvedAddress,
         coordinates: coordinates || parsed.coordinates || undefined,
+        primaryPlaceId: parsed.primaryPlaceId,
+        primaryMapsUrl: parsed.primaryMapsUrl,
+        categories: parsed.categories,
+        competitors: parsed.competitors,
+        footfallProxies: parsed.footfallProxies,
+        averageRating: parsed.averageRating,
+        reviewSentiment: parsed.reviewSentiment,
+        notes: parsed.notes,
         groundingStatus:
           parsed.groundingStatus || (usedMaps ? "used" : "insufficient"),
       }

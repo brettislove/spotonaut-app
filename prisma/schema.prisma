@@ -282,3 +282,48 @@ model UserCohort {
   @@index([cohortDate])
   @@map("user_cohorts")
 }
+
+// Places API cache for 24h TTL
+model PlacesApiCache {
+  id           String   @id @default(cuid())
+  locationHash String   @unique // Hash of lat+lng+businessType+radius
+  lat          Float
+  lng          Float
+  businessType String
+  radius       Int      @default(500)
+  placesData   Json // Cached Places API response
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([locationHash])
+  @@index([expiresAt])
+  @@map("places_api_cache")
+}
+
+// Places API monthly quota tracking (Pro tier: 5k/month)
+model PlacesApiUsage {
+  id           String   @id @default(cuid())
+  month        String   @unique // "YYYY-MM" format
+  count        Int      @default(0)
+  monthlyLimit Int      @default(5000)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([month])
+  @@map("places_api_usage")
+}
+
+// Places API error logging for monitoring fallback behavior
+model PlacesApiError {
+  id           String   @id @default(cuid())
+  lat          Float
+  lng          Float
+  businessType String
+  errorMessage String
+  errorCode    String? // HTTP status code or API error code
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([businessType])
+  @@map("places_api_errors")
+}

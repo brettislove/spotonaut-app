@@ -195,6 +195,7 @@ export async function POST(request: NextRequest) {
                 location: data.location,
                 businessType: data.businessType,
                 coordinates,
+                prisma, // Pass Prisma client for Places API and caching
               });
 
               console.log("Flash grounding result:", {
