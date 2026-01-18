@@ -36,7 +36,7 @@ export const BUSINESS_TYPE_TO_COMMERCIAL_CATEGORY: Record<
   PropertyTypeMapping
 > = {
   // ==================== GASTRO CATEGORIES ====================
-  "Kavárna s sebou": {
+  "Káva s sebou": {
     sreality: { main: 4, sub: 35 },
     keywords: ["kavárna", "café", "bistro", "gastro", "restaurace"],
     minSize: 20,

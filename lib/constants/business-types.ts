@@ -88,7 +88,7 @@ export const BUSINESS_TYPES: BusinessType[] = [
     competitorTypes: ["electronics_store"],
   },
   {
-    type: "Kavárna s sebou",
+    type: "Káva s sebou",
     category: "Gastro",
     avgSpend: 70,
     conversionRate: 0.06,
