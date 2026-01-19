@@ -54,3 +54,4 @@ prisma/*.db-journal
 
 # Google OAuth client secret file
 client_secret_815496212228-6b730gjloun1leaek1of98fqvvv01dch.apps.googleusercontent.com.json
+.env.production
