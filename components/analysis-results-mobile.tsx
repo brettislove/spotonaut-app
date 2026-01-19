@@ -547,7 +547,7 @@ function ChatTab({
   onInputFocus?: () => void;
 }) {
   const [feedbackMap, setFeedbackMap] = useState<Record<string, "up" | "down">>(
-    {}
+    {},
   );
 
   const handleFeedback = (id: string, type: "up" | "down") => {

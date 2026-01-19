@@ -16,8 +16,17 @@ import Image from "next/image";
 import type { BusinessType } from "@/lib/constants/business-types";
 import { renderSourceLink } from "./grounding-sources";
 import { FiThumbsUp, FiThumbsDown } from "react-icons/fi";
+import { MAX_MESSAGE_LENGTH } from "@/lib/constants/chat";
+import { useRateLimit } from "@/lib/hooks/useRateLimit";
+import { useChat } from "@/lib/hooks/useChat";
+import ConfirmationDialog from "./chat/ConfirmationDialog";
+import {
+  handleFeedback,
+  scrollToBottom,
+  showAuthModalAction,
+} from "@/utils/chat";
 
-interface Message {
+export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
@@ -35,12 +44,6 @@ interface AnalysisFormData {
     lon: number;
   };
 }
-
-// Rate limit for RPM (requests per minute) - 2.5-pro allows 150 RPM
-const MAX_REQUESTS_PER_MINUTE = 149;
-
-// Character limit for chat messages
-const MAX_MESSAGE_LENGTH = 2000;
 
 export default function ChatInterface() {
   const { data: session } = useSession();
@@ -65,13 +68,21 @@ export default function ChatInterface() {
     submitFeedback,
     showToast,
   } = useAnalysis();
-
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<"login" | "signup">(
-    "signup"
-  );
+  const {
+    input,
+    setInput,
+    isLoading,
+    setIsLoading,
+    requestPending,
+    showAuthModal,
+    setShowAuthModal,
+    authModalMode,
+    setAuthModalMode,
+    showRequestModal,
+    setShowRequestModal,
+    sendMessage,
+  } = useChat();
+  const { checkRateLimit } = useRateLimit();
   const [isMobile, setIsMobile] = useState(false);
   const [pendingAnalysisData, setPendingAnalysisData] =
     useState<AnalysisFormData | null>(null);
@@ -79,19 +90,14 @@ export default function ChatInterface() {
   const [pendingNewAnalysis, setPendingNewAnalysis] = useState(false);
   const [progressStep, setProgressStep] = useState<ProgressStep>("geocoding");
   const [streamingText, setStreamingText] = useState("");
-  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
-    null
-  );
+  const [, setStreamingMessageId] = useState<string | null>(null);
   const [expandedSources, setExpandedSources] = useState<
     Record<string, boolean>
   >({});
-  const [showRequestModal, setShowRequestModal] = useState(false);
-  const [requestPending, setRequestPending] = useState(false);
   const [feedbackMap, setFeedbackMap] = useState<Record<string, "up" | "down">>(
-    {}
+    {},
   );
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const requestTimestamps = useRef<number[]>([]);
 
   // Detect mobile on mount and resize
   useEffect(() => {
@@ -149,6 +155,7 @@ export default function ChatInterface() {
   }, [
     session,
     fingerprint,
+    setInput,
     setShowAnalysisForm,
     setShowMapView,
     setHasCompletedAnalysis,
@@ -166,171 +173,14 @@ export default function ChatInterface() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingAnalysisData, session, fingerprint]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    scrollToBottom(messagesEndRef);
   }, [messages]);
 
-  const checkRateLimit = React.useCallback((): boolean => {
-    const now = Date.now();
-    const oneMinuteAgo = now - 60000;
-
-    // Remove timestamps older than 1 minute
-    requestTimestamps.current = requestTimestamps.current.filter(
-      (timestamp) => timestamp > oneMinuteAgo
-    );
-
-    // Check if we've hit the limit
-    if (requestTimestamps.current.length >= MAX_REQUESTS_PER_MINUTE) {
-      return false;
-    }
-
-    // Add current timestamp
-    requestTimestamps.current.push(now);
-    return true;
-  }, []);
-
-  const showAuthModalAction = () => {
-    setAuthModalMode("login");
-    setShowAuthModal(true);
-  };
-
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading || !hasCompletedAnalysis) return;
-
-    if (requestPending) {
-      // Inform the user their request for more prompts is pending
-      showToast(
-        "Žádost o další prompty je v procesu schválení. Prosím vyčkejte na potvrzení."
-      );
-      return;
-    }
-
-    // Validate message length
-    if (input.length > MAX_MESSAGE_LENGTH) {
-      const errorMessage: Message = {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: `Vaše zpráva je příliš dlouhá (${input.length} znaků). Maximální délka je ${MAX_MESSAGE_LENGTH} znaků. Zkuste svůj dotaz zkrátit.`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-      return;
-    }
-
-    // Check if user is authenticated
-    if (!session) {
-      // Store the message before showing auth modal
-      localStorage.setItem("pendingChatMessage", input);
-      showAuthModalAction();
-      return;
-    }
-
-    // Check rate limit
-    if (!checkRateLimit()) {
-      const rateLimitMessage: Message = {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: "Příliš mnoho požadavků. Prosím, zkuste to znovu za chvíli.",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, rateLimitMessage]);
-      return;
-    }
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input,
-      timestamp: new Date(),
-    };
-
-    setIsLoading(true);
-
-    try {
-      // Claim a prompt for this user (server-side lifetime quota) BEFORE
-      // appending the user's message to avoid a 'ghost' message when claim fails.
-      const claimRes = await fetch("/api/chat/usage/claim", { method: "POST" });
-      const claimData = await claimRes.json().catch(() => ({}));
-      if (!claimRes.ok) {
-        // If over quota, open request modal or mark pending state
-        if (claimRes.status === 403 && claimData.limitExceeded) {
-          if (claimData.requestPending) {
-            // User already requested more; set pending state and show a toast.
-            setRequestPending(true);
-            showToast("Žádost o další prompty je v procesu schválení.");
-            setIsLoading(false);
-            return;
-          }
-          setShowRequestModal(true);
-          setIsLoading(false);
-          return;
-        }
-        // other errors — show generic message
-        throw new Error(claimData.error || "Failed to claim prompt");
-      }
-
-      // Claim succeeded: append user's message and clear input
-      setMessages((prev) => [...prev, userMessage]);
-      setInput("");
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: [...messages, userMessage].map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-          coordinates: analysisData?.coordinates,
-          groundedLocationData: analysisData?.groundedLocationData,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // If server enforces limit, open request modal
-        if (response.status === 403 && data.limitExceeded) {
-          setShowRequestModal(true);
-          setIsLoading(false);
-          return;
-        }
-
-        throw new Error(data.error || data.details || "Failed to get response");
-      }
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: data.message,
-        timestamp: new Date(),
-        sources: data.sources || [], // Include sources in the message
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error("Error sending message:", error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content:
-          error instanceof Error
-            ? error.message
-            : "Sorry, I encountered an error. Please try again.",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // const showAuthModalAction = () => {
+  //   setAuthModalMode("login");
+  //   setShowAuthModal(true);
+  // };
 
   const handleAnalysisSubmit = React.useCallback(
     async (data: AnalysisFormData) => {
@@ -437,8 +287,8 @@ export default function ChatInterface() {
                       prev.map((msg) =>
                         msg.id === messageId
                           ? { ...msg, content: fullAnalysisText }
-                          : msg
-                      )
+                          : msg,
+                      ),
                     );
                   } else if (data.type === "done") {
                     // Mark that free analysis has been used (for anonymous users)
@@ -455,8 +305,8 @@ export default function ChatInterface() {
                               content: data.analysis,
                               sources: data.sources || [],
                             }
-                          : msg
-                      )
+                          : msg,
+                      ),
                     );
 
                     // Show map view with analysis data
@@ -476,7 +326,7 @@ export default function ChatInterface() {
                     setProgressStep("complete");
                   } else if (data.type === "error") {
                     throw new Error(
-                      data.error || data.details || "Analysis failed"
+                      data.error || data.details || "Analysis failed",
                     );
                   }
                 } catch (parseError) {
@@ -540,10 +390,13 @@ export default function ChatInterface() {
       checkRateLimit,
       setMessages,
       setAnalysisData,
+      setAuthModalMode,
+      setIsLoading,
       setShowMapView,
+      setShowAuthModal,
       setHasCompletedAnalysis,
       setShowAnalysisForm,
-    ]
+    ],
   );
 
   const handleAnalysisCancel = () => {
@@ -576,13 +429,6 @@ export default function ChatInterface() {
     navigateHome();
   };
 
-  const handleFeedback = (id: string, type: "up" | "down") => {
-    // optimistic UI update
-    setFeedbackMap((prev) => ({ ...prev, [id]: type }));
-    // placeholder side-effect: replace with API call or parent callback
-    console.log("feedback", { id, feedback: type });
-  };
-
   // Mobile Results View
   if (showMapView && isMobile && analysisData) {
     return (
@@ -593,7 +439,9 @@ export default function ChatInterface() {
           messages={messages}
           input={input}
           isLoading={isLoading}
-          onStartChat={showAuthModalAction}
+          onStartChat={() =>
+            showAuthModalAction(setAuthModalMode, setShowAuthModal)
+          }
           onInputChange={setInput}
           onSendMessage={sendMessage}
           onNewAnalysis={handleNewAnalysis}
@@ -696,11 +544,15 @@ export default function ChatInterface() {
     <div className="min-h-[calc(100vh-4rem)] bg-slate-950 font-sans relative overflow-hidden">
       {/* Moon background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <img
-          src="/Moon.png"
-          alt="Moon"
-          className="w-full h-full object-cover opacity-20"
-        />
+        <div className="w-full h-full relative">
+          <Image
+            src="/Moon.png"
+            alt="Moon"
+            fill
+            className="object-cover opacity-20"
+            priority
+          />
+        </div>
         {/* Ambient glow effects */}
         <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
         <div className="fixed bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -782,7 +634,7 @@ export default function ChatInterface() {
                                 .replace(/```[\s\S]*?```/g, "")
                                 .replace(
                                   /\*\*(.*?)\*\*/g,
-                                  "<strong>$1</strong>"
+                                  "<strong>$1</strong>",
                                 )
                                 .replace(/\n/g, "<br>"),
                             }}
@@ -798,7 +650,7 @@ export default function ChatInterface() {
                                 .replace(/```[\s\S]*?```/g, "")
                                 .replace(
                                   /\*\*(.*?)\*\*/g,
-                                  "<strong>$1</strong>"
+                                  "<strong>$1</strong>",
                                 )
                                 .replace(/\n/g, "<br>"),
                             }}
@@ -850,7 +702,9 @@ export default function ChatInterface() {
                             </span>
                             <button
                               aria-label={`upvote-${message.id}`}
-                              onClick={() => handleFeedback(message.id, "up")}
+                              onClick={() =>
+                                handleFeedback(message.id, "up", setFeedbackMap)
+                              }
                               disabled={!!feedbackMap[message.id]}
                               className={`pb-1 cursor-pointer rounded-md flex items-center justify-center transition-colors text-slate-400 hover:text-white ${
                                 feedbackMap[message.id] === "up"
@@ -862,7 +716,13 @@ export default function ChatInterface() {
                             </button>
                             <button
                               aria-label={`downvote-${message.id}`}
-                              onClick={() => handleFeedback(message.id, "down")}
+                              onClick={() =>
+                                handleFeedback(
+                                  message.id,
+                                  "down",
+                                  setFeedbackMap,
+                                )
+                              }
                               disabled={!!feedbackMap[message.id]}
                               className={`cursor-pointer rounded-md flex items-center justify-center transition-colors text-slate-400 hover:text-white ${
                                 feedbackMap[message.id] === "down"
@@ -1011,7 +871,7 @@ export default function ChatInterface() {
                                   .replace(/```[\s\S]*?```/g, "")
                                   .replace(
                                     /\*\*(.*?)\*\*/g,
-                                    "<strong>$1</strong>"
+                                    "<strong>$1</strong>",
                                   )
                                   .replace(/\n/g, "<br>"),
                               }}
@@ -1340,51 +1200,11 @@ export default function ChatInterface() {
                                     .replace(/```[\s\S]*?```/g, "")
                                     .replace(
                                       /\*\*(.*?)\*\*/g,
-                                      "<strong>$1</strong>"
+                                      "<strong>$1</strong>",
                                     )
                                     .replace(/\n/g, "<br>"),
                                 }}
                               />
-
-                              {/* Collapsible Sources Section */}
-                              {/* {message.sources &&
-                                message.sources.length > 0 && (
-                                  <div className="mt-2">
-                                    <button
-                                      onClick={() =>
-                                        setExpandedSources((prev) => ({
-                                          ...prev,
-                                          [message.id]: !prev[message.id],
-                                        }))
-                                      }
-                                      aria-controls={`sources-content-${message.id}`}
-                                      aria-expanded={
-                                        !!expandedSources[message.id]
-                                      }
-                                      className="text-blue-500 underline text-sm"
-                                    >
-                                      {expandedSources[message.id]
-                                        ? "Skrýt zdroje"
-                                        : "Zobrazit zdroje"}
-                                    </button>
-                                    {expandedSources[message.id] && (
-                                      <div
-                                        id={`sources-content-${message.id}`}
-                                        className="mt-2 pl-4 text-sm text-slate-400"
-                                      >
-                                        <div className="flex flex-wrap gap-2">
-                                          {message.sources.map(
-                                            (source, index) => (
-                                              <div key={index}>
-                                                {renderSourceLink(source)}
-                                              </div>
-                                            )
-                                          )}
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                )} */}
                             </div>
                           ))}
                         </div>
@@ -1417,97 +1237,11 @@ export default function ChatInterface() {
       />
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg
-                  className="w-6 h-6 text-yellow-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-white font-semibold text-lg mb-2">
-                  Zahájit novou analýzu?
-                </h3>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Spuštění nové analýzy smaže aktuální výsledky a historii
-                  konverzace. Tato akce je nevratná.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={() => setShowConfirmDialog(false)}
-                className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-full transition-all border border-slate-700"
-              >
-                Zrušit
-              </button>
-              <button
-                onClick={confirmNewAnalysis}
-                className="flex-1 px-4 py-2.5 bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 border border-blue-600/20 hover:from-blue-600 hover:to-purple-600 text-white font-medium rounded-full transition-all shadow-lg"
-              >
-                Pokračovat
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Confirmation Dialog */}
-      {showConfirmDialog && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg
-                  className="w-6 h-6 text-yellow-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-white font-semibold text-lg mb-2">
-                  Zahájit novou analýzu?
-                </h3>
-                <p className="text-slate-400 text-sm leading-relaxed">
-                  Spuštění nové analýzy smaže aktuální výsledky a historii
-                  konverzace. Tato akce je nevratná.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={() => setShowConfirmDialog(false)}
-                className="flex-1 px-4 py-2.5 bg-slate-800 cursor-pointer hover:bg-slate-700 text-white font-medium rounded-full transition-all border border-slate-700"
-              >
-                Zrušit
-              </button>
-              <button
-                onClick={confirmNewAnalysis}
-                className="flex-1 px-4 py-2.5 bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 border border-blue-600/20 cursor-pointer hover:from-blue-400 hover:to-blue-600 text-white font-medium rounded-full transition-all shadow-lg"
-              >
-                Pokračovat
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmationDialog
+          isOpen={showConfirmDialog}
+          setShowConfirmDialog={setShowConfirmDialog}
+          confirmNewAnalysis={confirmNewAnalysis}
+        />
       )}
 
       {/* Feedback Modal */}
