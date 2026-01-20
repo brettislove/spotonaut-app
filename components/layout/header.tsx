@@ -16,7 +16,7 @@ export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<"login" | "signup">(
-    "login"
+    "login",
   );
   const [showProfileSettings, setShowProfileSettings] = useState(false);
   const [, startTransition] = useTransition();
@@ -135,7 +135,7 @@ export default function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-md font-medium transition-colors ${
+                  className={`text-md font-semibold transition-colors ${
                     pathname === link.href
                       ? "text-white"
                       : "text-slate-400 hover:text-white"
@@ -155,7 +155,7 @@ export default function Header() {
                       e.stopPropagation();
                       setIsUserMenuOpen(!isUserMenuOpen);
                     }}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800/50 transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer"
                   >
                     <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
                       {getInitials(session.user?.name)}
@@ -196,7 +196,7 @@ export default function Header() {
                           setShowProfileSettings(true);
                           setIsUserMenuOpen(false);
                         }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors flex items-center gap-2"
+                        className="w-full px-4 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
                       >
                         <svg
                           className="w-4 h-4"
@@ -221,7 +221,7 @@ export default function Header() {
                       </button>
                       <button
                         onClick={handleSignOut}
-                        className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors flex items-center gap-2"
+                        className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors flex items-center gap-2 cursor-pointer"
                       >
                         <svg
                           className="w-4 h-4"
@@ -635,7 +635,7 @@ function ProfileSettingsModal({
       }, 1500);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Došlo k neočekávané chybě"
+        err instanceof Error ? err.message : "Došlo k neočekávané chybě",
       );
     } finally {
       setIsLoading(false);

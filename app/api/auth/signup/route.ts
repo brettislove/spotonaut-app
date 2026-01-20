@@ -2,18 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { Resend } from "resend";
+import { getPromoQuota } from "@/lib/constants/chat";
 
 const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name } = await request.json();
+    const { email, password, name, promoCode } = await request.json();
 
     // Validate input
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email a heslo jsou povinné" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
     if (!emailRegex.test(email)) {
       return NextResponse.json(
         { error: "Neplatný formát emailu" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -30,10 +31,26 @@ export async function POST(request: NextRequest) {
     if (password.length < 6) {
       return NextResponse.json(
         { error: "Heslo musí mít alespoň 6 znaků" },
-        { status: 400 }
+        { status: 400 },
       );
     }
+    // Validate promo code if provided
+    let promoQuota: number | null = null;
+    let normalizedPromoCode: string | null = null;
 
+    if (promoCode && typeof promoCode === "string" && promoCode.trim()) {
+      const trimmedCode = promoCode.trim();
+      promoQuota = getPromoQuota(trimmedCode);
+
+      if (promoQuota === null) {
+        return NextResponse.json(
+          { error: "Neplatný promo kód" },
+          { status: 400 },
+        );
+      }
+
+      normalizedPromoCode = trimmedCode.toUpperCase();
+    }
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -42,21 +59,34 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { error: "Uživatel s tímto emailem již existuje" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user with promo code if valid
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name: name || null,
+        promoCode: normalizedPromoCode,
       },
     });
+
+    // Create ChatUsage record with bonus quota if promo code was used
+    if (promoQuota !== null && normalizedPromoCode) {
+      await prisma.chatUsage.create({
+        data: {
+          userId: user.id,
+          quota: promoQuota,
+          quotaSource: `promo:${normalizedPromoCode}`,
+          promptCount: 0,
+        },
+      });
+    }
 
     // Send welcome / registration email via Resend (if configured)
     try {
@@ -102,7 +132,7 @@ export async function POST(request: NextRequest) {
     console.error("Signup error:", error);
     return NextResponse.json(
       { error: "Nepodařilo se vytvořit účet" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -23,6 +23,7 @@ export default function AuthModal({
     boolean | null
   >(null); // new: null = untouched
   const [name, setName] = useState("");
+  const [promoCode, setPromoCode] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -36,6 +37,7 @@ export default function AuthModal({
     setSuccess("");
     setConfirmPassword("");
     setConfirmPasswordValid(null);
+    setPromoCode("");
     setAcceptTerms(false);
   }, [mode]);
 
@@ -90,7 +92,12 @@ export default function AuthModal({
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          promoCode: promoCode.trim() || undefined,
+        }),
       });
 
       const data = await response.json();
@@ -118,7 +125,7 @@ export default function AuthModal({
         // Notify user with toast that account was created and email was sent
         try {
           showToast(
-            "Registrace úspěšná — zkontrolujte svůj e-mail pro potvrzení."
+            "Registrace úspěšná — zkontrolujte svůj e-mail pro potvrzení.",
           );
         } catch (e) {
           // ignore if toast can't be shown
@@ -126,7 +133,7 @@ export default function AuthModal({
       }
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Registrace se nezdařila"
+        error instanceof Error ? error.message : "Registrace se nezdařila",
       );
     } finally {
       setIsLoading(false);
@@ -174,7 +181,7 @@ export default function AuthModal({
       }
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Přihlášení se nezdařilo"
+        error instanceof Error ? error.message : "Přihlášení se nezdařilo",
       );
     } finally {
       setIsLoading(false);
@@ -224,6 +231,7 @@ export default function AuthModal({
               setSuccess("");
               setConfirmPassword(""); // clear confirm when switching
               setConfirmPasswordValid(null);
+              setPromoCode("");
               setAcceptTerms(false);
             }}
             className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-all cursor-pointer ${
@@ -241,6 +249,7 @@ export default function AuthModal({
               setSuccess("");
               setConfirmPassword(""); // clear confirm when switching
               setConfirmPasswordValid(null);
+              setPromoCode("");
               setAcceptTerms(false);
             }}
             className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-all cursor-pointer ${
@@ -351,7 +360,7 @@ export default function AuthModal({
                 // Re-validate confirm immediately when password changes (only in signup mode)
                 if (activeTab === "signup") {
                   setConfirmPasswordValid(
-                    confirmPassword ? val === confirmPassword : null
+                    confirmPassword ? val === confirmPassword : null,
                   );
                 }
               }}
@@ -390,8 +399,8 @@ export default function AuthModal({
                   confirmPasswordValid === false
                     ? "border-red-500"
                     : confirmPasswordValid === true
-                    ? "border-green-500"
-                    : "border-slate-700"
+                      ? "border-green-500"
+                      : "border-slate-700"
                 }`}
                 placeholder="Zopakujte heslo"
                 disabled={isLoading}
@@ -404,6 +413,22 @@ export default function AuthModal({
               {confirmPasswordValid === true && (
                 <p className="mt-2 text-sm text-green-400">Hesla se shodují</p>
               )}
+            </div>
+          )}
+
+          {activeTab === "signup" && (
+            <div className="mb-6">
+              <label className="block text-slate-300 text-sm font-medium mb-2">
+                Promo kód (volitelné)
+              </label>
+              <input
+                type="text"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 text-white rounded-full px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all uppercase placeholder:normal-case"
+                disabled={isLoading}
+                maxLength={20}
+              />
             </div>
           )}
 
