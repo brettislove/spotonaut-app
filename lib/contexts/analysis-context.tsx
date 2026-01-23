@@ -43,6 +43,7 @@ interface AnalysisContextType {
   messages: Message[];
   analysisData: AnalysisData | null;
   hasCompletedAnalysis: boolean;
+  isAnalyzing: boolean;
   showMapView: boolean;
   showAnalysisForm: boolean;
   fingerprint: string | null;
@@ -53,6 +54,7 @@ interface AnalysisContextType {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   setAnalysisData: React.Dispatch<React.SetStateAction<AnalysisData | null>>;
   setHasCompletedAnalysis: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsAnalyzing: React.Dispatch<React.SetStateAction<boolean>>;
   setShowMapView: React.Dispatch<React.SetStateAction<boolean>>;
   setShowAnalysisForm: React.Dispatch<React.SetStateAction<boolean>>;
   resetAnalysis: () => void;
@@ -63,13 +65,13 @@ interface AnalysisContextType {
   submitFeedback: (
     rating: number,
     comment: string,
-    feedbackType: string
+    feedbackType: string,
   ) => Promise<boolean>;
   showToast: (message: string) => void;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(
-  undefined
+  undefined,
 );
 
 interface PersistedState {
@@ -90,13 +92,14 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
   const [fingerprint, setFingerprint] = useState<string | null>(null);
   const [restoredState, setRestoredState] = useState<PersistedState | null>(
-    null
+    null,
   );
 
   // State
   const [messages, setMessages] = useState<Message[]>([]);
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
   const [hasCompletedAnalysis, setHasCompletedAnalysis] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showMapView, setShowMapView] = useState(false);
   const [showAnalysisForm, setShowAnalysisForm] = useState(true);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -336,7 +339,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         throw error;
       }
     },
-    [fingerprint, dismissFeedback]
+    [fingerprint, dismissFeedback],
   );
 
   // Show toast notification
@@ -348,6 +351,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     messages,
     analysisData,
     hasCompletedAnalysis,
+    isAnalyzing,
     showMapView,
     showAnalysisForm,
     fingerprint,
@@ -356,6 +360,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     setMessages,
     setAnalysisData,
     setHasCompletedAnalysis,
+    setIsAnalyzing,
     setShowMapView,
     setShowAnalysisForm,
     resetAnalysis,

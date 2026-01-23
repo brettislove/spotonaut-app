@@ -2,29 +2,17 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import AnalysisForm from "./analysis-form";
 import AuthModal from "./auth-modal";
-import FeedbackModal from "./feedback-modal";
 import Toast from "./toast";
-import RequestMorePromptsModal from "./request-more-prompts-modal";
-import AnalysisResultsMobile from "./analysis-results-mobile";
-import MapView from "./map-view";
 import RotatingText from "./ui/rotating-text";
 import AnalysisProgress, { type ProgressStep } from "./analysis-progress";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import Image from "next/image";
 import type { BusinessType } from "@/lib/constants/business-types";
-import { renderSourceLink } from "./grounding-sources";
-import { FiThumbsUp, FiThumbsDown } from "react-icons/fi";
-import { MAX_MESSAGE_LENGTH } from "@/lib/constants/chat";
 import { useRateLimit } from "@/lib/hooks/useRateLimit";
 import { useChat } from "@/lib/hooks/useChat";
-import ConfirmationDialog from "./chat/ConfirmationDialog";
-import {
-  handleFeedback,
-  scrollToBottom,
-  showAuthModalAction,
-} from "@/utils/chat";
 
 export interface Message {
   id: string;
@@ -47,56 +35,38 @@ interface AnalysisFormData {
 
 export default function ChatInterface() {
   const { data: session } = useSession();
+  const router = useRouter();
   const {
     messages,
     setMessages,
-    analysisData,
     setAnalysisData,
     hasCompletedAnalysis,
     setHasCompletedAnalysis,
-    showMapView,
+    setIsAnalyzing,
     setShowMapView,
     showAnalysisForm,
     setShowAnalysisForm,
     fingerprint,
-    navigateHome,
     clearRestoredState,
-    showFeedbackModal,
     toastMessage,
-    triggerFeedbackIfEligible,
-    dismissFeedback,
-    submitFeedback,
     showToast,
   } = useAnalysis();
   const {
-    input,
     setInput,
     isLoading,
     setIsLoading,
-    requestPending,
     showAuthModal,
     setShowAuthModal,
     authModalMode,
     setAuthModalMode,
-    showRequestModal,
-    setShowRequestModal,
-    sendMessage,
   } = useChat();
   const { checkRateLimit } = useRateLimit();
   const [isMobile, setIsMobile] = useState(false);
   const [pendingAnalysisData, setPendingAnalysisData] =
     useState<AnalysisFormData | null>(null);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [pendingNewAnalysis, setPendingNewAnalysis] = useState(false);
   const [progressStep, setProgressStep] = useState<ProgressStep>("geocoding");
   const [streamingText, setStreamingText] = useState("");
   const [, setStreamingMessageId] = useState<string | null>(null);
-  const [expandedSources, setExpandedSources] = useState<
-    Record<string, boolean>
-  >({});
-  const [feedbackMap, setFeedbackMap] = useState<Record<string, "up" | "down">>(
-    {},
-  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Detect mobile on mount and resize
@@ -174,13 +144,8 @@ export default function ChatInterface() {
   }, [pendingAnalysisData, session, fingerprint]);
 
   useEffect(() => {
-    scrollToBottom(messagesEndRef);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  // const showAuthModalAction = () => {
-  //   setAuthModalMode("login");
-  //   setShowAuthModal(true);
-  // };
 
   const handleAnalysisSubmit = React.useCallback(
     async (data: AnalysisFormData) => {
@@ -210,6 +175,7 @@ export default function ChatInterface() {
       }
 
       setIsLoading(true);
+      setIsAnalyzing(true);
       setProgressStep("geocoding");
       setStreamingText("");
       setStreamingMessageId(null);
@@ -319,11 +285,14 @@ export default function ChatInterface() {
                       setShowMapView(true);
                       setHasCompletedAnalysis(true);
                       setShowAnalysisForm(false);
+                      // Navigate to analysis page
+                      router.push("/analysis");
                     }
 
                     setStreamingText("");
                     setStreamingMessageId(null);
                     setProgressStep("complete");
+                    setIsAnalyzing(false);
                   } else if (data.type === "error") {
                     throw new Error(
                       data.error || data.details || "Analysis failed",
@@ -363,6 +332,9 @@ export default function ChatInterface() {
             setShowMapView(true);
             setHasCompletedAnalysis(true);
             setShowAnalysisForm(false);
+            setIsAnalyzing(false);
+            // Navigate to analysis page
+            router.push("/analysis");
           }
         }
       } catch (error) {
@@ -380,6 +352,7 @@ export default function ChatInterface() {
         setStreamingText("");
         setStreamingMessageId(null);
         setProgressStep("geocoding");
+        setIsAnalyzing(false);
       } finally {
         setIsLoading(false);
       }
@@ -392,10 +365,12 @@ export default function ChatInterface() {
       setAnalysisData,
       setAuthModalMode,
       setIsLoading,
+      setIsAnalyzing,
       setShowMapView,
       setShowAuthModal,
       setHasCompletedAnalysis,
       setShowAnalysisForm,
+      router,
     ],
   );
 
@@ -406,140 +381,7 @@ export default function ChatInterface() {
     }
   };
 
-  const handleNewAnalysis = () => {
-    // Trigger feedback modal if eligible (before showing confirmation or navigating)
-    const feedbackShown = triggerFeedbackIfEligible();
-
-    // If feedback modal will be shown, mark that we have a pending new analysis
-    if (feedbackShown) {
-      setPendingNewAnalysis(true);
-      return; // Wait for feedback to be submitted/dismissed
-    }
-
-    // If no feedback modal, proceed with new analysis
-    if (hasCompletedAnalysis) {
-      setShowConfirmDialog(true);
-    } else {
-      navigateHome();
-    }
-  };
-
-  const confirmNewAnalysis = () => {
-    setShowConfirmDialog(false);
-    navigateHome();
-  };
-
-  // Mobile Results View
-  if (showMapView && isMobile && analysisData) {
-    return (
-      <>
-        <AnalysisResultsMobile
-          session={session}
-          analysisData={analysisData}
-          messages={messages}
-          input={input}
-          isLoading={isLoading}
-          onStartChat={() =>
-            showAuthModalAction(setAuthModalMode, setShowAuthModal)
-          }
-          onInputChange={setInput}
-          onSendMessage={sendMessage}
-          onNewAnalysis={handleNewAnalysis}
-        />
-        <AuthModal
-          isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
-          mode={authModalMode}
-        />
-        <RequestMorePromptsModal
-          isOpen={showRequestModal}
-          onClose={() => setShowRequestModal(false)}
-        />
-        <FeedbackModal
-          isOpen={showFeedbackModal}
-          onClose={() => {
-            dismissFeedback();
-            // If there was a pending new analysis, proceed with it
-            if (pendingNewAnalysis) {
-              setPendingNewAnalysis(false);
-              if (hasCompletedAnalysis) {
-                setShowConfirmDialog(true);
-              } else {
-                navigateHome();
-              }
-            }
-          }}
-          onSubmit={async (rating, comment, feedbackType) => {
-            try {
-              await submitFeedback(rating, comment, feedbackType);
-              // If there was a pending new analysis, proceed with it after successful submission
-              if (pendingNewAnalysis) {
-                setPendingNewAnalysis(false);
-                if (hasCompletedAnalysis) {
-                  setShowConfirmDialog(true);
-                } else {
-                  navigateHome();
-                }
-              }
-            } catch (error) {
-              // Error handling is done in submitFeedback
-              throw error;
-            }
-          }}
-        />
-        {/* Confirmation Dialog for Mobile */}
-        {showConfirmDialog && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <svg
-                    className="w-6 h-6 text-yellow-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-white font-semibold text-lg mb-2">
-                    Zahájit novou analýzu?
-                  </h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">
-                    Spuštění nové analýzy smaže aktuální výsledky a historii
-                    konverzace. Tato akce je nevratná.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setShowConfirmDialog(false)}
-                  className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-lg transition-all border border-slate-700"
-                >
-                  Zrušit
-                </button>
-                <button
-                  onClick={confirmNewAnalysis}
-                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium rounded-lg transition-all shadow-lg"
-                >
-                  Pokračovat
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        <Toast message={toastMessage} onDismiss={() => showToast("")} />
-      </>
-    );
-  }
-
-  // Desktop/Tablet View
+  // Homepage: Form-only view
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-950 font-sans relative overflow-hidden">
       {/* Moon background */}
@@ -566,283 +408,296 @@ export default function ChatInterface() {
         </div>
       )}
 
-      {showMapView ? (
-        <div className="flex items-center justify-center h-[calc(100vh-4rem)] p-4 lg:p-8">
-          <div className="w-full max-w-6xl h-full flex flex-col lg:flex-row gap-4 lg:gap-6">
-            {/* Map View with Chat Sidebar */}
-            <div className="flex-1 flex flex-col lg:flex-row bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl overflow-hidden">
-              {/* Map Content */}
-              <div className="w-full lg:w-1/2 p-4 lg:p-6 overflow-hidden">
-                <MapView data={analysisData!} />
-              </div>
+      <main
+        className={`flex flex-col z-10 transition-all duration-700 ease-in-out ${
+          showAnalysisForm
+            ? "h-[calc(100vh-4rem)] w-full mx-auto overflow-y-auto"
+            : "min-h-[calc(100vh-4rem)] w-full max-w-4xl mx-auto py-8 px-4"
+        }`}
+      >
+        {showAnalysisForm ? (
+          <div className="w-full max-w-7xl mx-auto px-4 py-8 lg:py-12">
+            {/* Heading - visible on mobile only, at the top */}
+            <div className="space-y-4 mb-8 lg:hidden">
+              <h1 className="text-4xl font-bold text-white leading-tight">
+                Zjisti, kde{" "}
+                <RotatingText
+                  words={["otevřít", "vydělat", "začít", "růst"]}
+                  className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600"
+                  typingSpeed={80}
+                  deletingSpeed={40}
+                  delayBetweenWords={2500}
+                />
+              </h1>
+              <p className="text-lg text-slate-400 leading-relaxed">
+                Spotonaut využívá pokročilou AI analýzu k vyhodnocení potenciálu
+                vaší lokality.{" "}
+                <b className="text-white">Zaregistrujte se zdarma</b> a využijte
+                tak možnost zhodnotit výsledná data s naším{" "}
+                <b className="text-white">AI asistentem!</b>
+              </p>
+            </div>
 
-              {/* Chat Sidebar - Attached to map */}
-              <div className="w-full lg:w-1/2 border-t lg:border-t-0 lg:border-l border-slate-700 bg-slate-900/80 flex flex-col">
-                {/* Chat Header with New Analysis Button */}
-                <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Image
-                      src="/spotonaut_character.svg"
-                      alt="Spotonaut"
-                      width={32}
-                      height={32}
-                      className="w-10 h-10"
-                    />
-                    <h2 className="text-purple-500 font-semibold text-lg">
-                      AI Asistent
-                    </h2>
+            {/* Form - mobile first */}
+            <div className="relative mb-8 lg:hidden">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-20"></div>
+              <div className="relative">
+                {isLoading ? (
+                  <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl p-6 min-h-[600px] flex flex-col items-center justify-center">
+                    <div className="mb-8">
+                      <Image
+                        src="/spotonaut_character.svg"
+                        alt="Spotonaut"
+                        width={120}
+                        height={120}
+                        className="w-32 h-32 animate-pulse"
+                      />
+                    </div>
+                    <div className="w-full max-w-md space-y-6">
+                      <AnalysisProgress
+                        currentStep={progressStep}
+                        streamingText={streamingText}
+                      />
+                    </div>
                   </div>
-                  <button
-                    onClick={handleNewAnalysis}
-                    className="relative cursor-pointer px-3 py-1.5 bg-gradient-to-br bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-full transition-all shadow-md hover:shadow-lg flex items-center gap-2 overflow-hidden group"
-                  >
-                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out"></span>
-                    <svg
-                      className="w-4 h-4 relative z-10"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                    <span className="relative z-10">Nová analýza</span>
-                  </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {/* Google Maps attribution styles moved to `app/globals.css` */}
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${
-                        message.role === "user"
-                          ? "justify-end"
-                          : "justify-start"
-                      }`}
-                    >
-                      {message.role === "user" ? (
-                        <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-gradient-to-b from-purple-500 via-purple-600 to-purple-700 text-white">
-                          <div
-                            className="text-sm leading-relaxed"
-                            dangerouslySetInnerHTML={{
-                              __html: message.content
-                                .replace(/```[\s\S]*?```/g, "")
-                                .replace(
-                                  /\*\*(.*?)\*\*/g,
-                                  "<strong>$1</strong>",
-                                )
-                                .replace(/\n/g, "<br>"),
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        // <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-slate-800 text-slate-100 border border-slate-700">
-                        <div className="mx-3 text-slate-200 text-sm leading-relaxed prose-invert">
-                          <div
-                            className="mt-2"
-                            dangerouslySetInnerHTML={{
-                              __html: message.content
-                                .replace(/```[\s\S]*?```/g, "")
-                                .replace(
-                                  /\*\*(.*?)\*\*/g,
-                                  "<strong>$1</strong>",
-                                )
-                                .replace(/\n/g, "<br>"),
-                            }}
-                          />
-
-                          {/* Divider */}
-                          <div className="border-t border-slate-700/50" />
-
-                          {/* Sources - collapsible section */}
-                          {message.sources && message.sources.length > 0 && (
-                            <div className="mt-2">
-                              <button
-                                onClick={() =>
-                                  setExpandedSources((prev) => ({
-                                    ...prev,
-                                    [message.id]: !prev[message.id],
-                                  }))
-                                }
-                                aria-controls={`sources-content-${message.id}`}
-                                aria-expanded={!!expandedSources[message.id]}
-                                className="inline-flex items-center cursor-pointer gap-2 text-sm py-1 text-slate-400 hover:text-white transition-colors"
-                              >
-                                <span>
-                                  {expandedSources[message.id]
-                                    ? "Skrýt zdroje"
-                                    : "Zobrazit zdroje"}
-                                </span>
-                              </button>
-                              {expandedSources[message.id] && (
-                                <div
-                                  id={`sources-content-${message.id}`}
-                                  className="mt-2 text-sm text-slate-400"
-                                >
-                                  <div className="flex flex-wrap gap-2">
-                                    {message.sources.map((source, index) => (
-                                      <div key={index}>
-                                        {renderSourceLink(source)}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          {/* Feedback (thumbs up / thumbs down) */}
-                          <div className="mt-3 flex items-center gap-3">
-                            <span className="text-slate-400 text-xs">
-                              Jak hodnotíte tuto odpověď?
-                            </span>
-                            <button
-                              aria-label={`upvote-${message.id}`}
-                              onClick={() =>
-                                handleFeedback(message.id, "up", setFeedbackMap)
-                              }
-                              disabled={!!feedbackMap[message.id]}
-                              className={`pb-1 cursor-pointer rounded-md flex items-center justify-center transition-colors text-slate-400 hover:text-white ${
-                                feedbackMap[message.id] === "up"
-                                  ? "text-white"
-                                  : "text-slate-200"
-                              }`}
-                            >
-                              <FiThumbsUp className="w-4 h-4" />
-                            </button>
-                            <button
-                              aria-label={`downvote-${message.id}`}
-                              onClick={() =>
-                                handleFeedback(
-                                  message.id,
-                                  "down",
-                                  setFeedbackMap,
-                                )
-                              }
-                              disabled={!!feedbackMap[message.id]}
-                              className={`cursor-pointer rounded-md flex items-center justify-center transition-colors text-slate-400 hover:text-white ${
-                                feedbackMap[message.id] === "down"
-                                  ? "text-white"
-                                  : "text-slate-200"
-                              }`}
-                            >
-                              <FiThumbsDown className="w-4 h-4" />
-                            </button>
-                            {feedbackMap[message.id] && (
-                              <span className="text-xs ml-2 text-green-400">
-                                Děkujeme!
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {isLoading && (
-                    <div className="flex justify-start">
-                      <div className="bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                            <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                            <div className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"></div>
-                          </div>
-                          <span className="text-slate-400 text-sm">
-                            Přemýšlím...
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Chat Input */}
-                <div className="p-4 border-t border-slate-700">
-                  <form onSubmit={sendMessage} className="space-y-2">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder="Napište svou zprávu..."
-                        disabled={isLoading || requestPending}
-                        maxLength={MAX_MESSAGE_LENGTH}
-                        className="flex-1 bg-slate-800/50 border border-slate-600 text-white placeholder-slate-400 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all disabled:opacity-50"
-                      />
-                      <button
-                        type="submit"
-                        disabled={isLoading || requestPending || !input.trim()}
-                        className="px-4 py-2 bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white font-medium rounded-lg hover:from-purple-400 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Odeslat
-                      </button>
-                    </div>
-                    {input.length > MAX_MESSAGE_LENGTH * 0.8 && (
-                      <div
-                        className={`text-xs text-right ${
-                          input.length > MAX_MESSAGE_LENGTH
-                            ? "text-red-400"
-                            : "text-slate-400"
-                        }`}
-                      >
-                        {input.length} / {MAX_MESSAGE_LENGTH} znaků
-                      </div>
-                    )}
-                  </form>
-                </div>
+                ) : (
+                  <AnalysisForm
+                    onSubmit={handleAnalysisSubmit}
+                    onCancel={handleAnalysisCancel}
+                    isLoading={isLoading}
+                    showCancelButton={hasCompletedAnalysis}
+                  />
+                )}
               </div>
             </div>
-          </div>
-        </div>
-      ) : (
-        <main
-          className={`flex flex-col z-10 transition-all duration-700 ease-in-out ${
-            showAnalysisForm
-              ? "h-[calc(100vh-4rem)] w-full mx-auto overflow-y-auto"
-              : "min-h-[calc(100vh-4rem)] w-full max-w-4xl mx-auto py-8 px-4"
-          }`}
-        >
-          {showAnalysisForm ? (
-            <div className="w-full max-w-7xl mx-auto px-4 py-8 lg:py-12">
-              {/* Heading - visible on mobile only, at the top */}
-              <div className="space-y-4 mb-8 lg:hidden">
-                <h1 className="text-4xl font-bold text-white leading-tight">
-                  Zjisti, kde{" "}
-                  <RotatingText
-                    words={["otevřít", "vydělat", "začít", "růst"]}
-                    className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600"
-                    typingSpeed={80}
-                    deletingSpeed={40}
-                    delayBetweenWords={2500}
-                  />
-                </h1>
-                <p className="text-lg text-slate-400 leading-relaxed">
-                  Spotonaut využívá pokročilou AI analýzu k vyhodnocení
-                  potenciálu vaší lokality.{" "}
-                  <b className="text-white">Zaregistrujte se zdarma</b> a
-                  využijte tak možnost zhodnotit výsledná data s naším{" "}
-                  <b className="text-white">AI asistentem!</b>
-                </p>
+
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+              <div className="space-y-8 lg:pt-8">
+                {/* Heading - desktop only */}
+                <div className="space-y-4 hidden lg:block">
+                  <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight">
+                    Zjisti, kde{" "}
+                    <RotatingText
+                      words={["otevřít", "vydělat", "začít", "růst"]}
+                      className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600"
+                      typingSpeed={80}
+                      deletingSpeed={40}
+                      delayBetweenWords={2500}
+                    />
+                  </h1>
+                  <p className="text-lg text-slate-400 leading-relaxed">
+                    Spotonaut využívá pokročilou AI analýzu k vyhodnocení
+                    potenciálu vaší lokality.{" "}
+                    <b className="text-white">Zaregistrujte se zdarma</b> a
+                    využijte tak možnost zhodnotit výsledná data s naším{" "}
+                    <b className="text-white">AI asistentem!</b>
+                  </p>
+                </div>
+
+                {/* Features Grid */}
+                <div className="grid sm:grid-cols-2 gap-3 lg:max-h-100 lg:overflow-y-auto lg:pr-4">
+                  <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
+                    <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center mb-3">
+                      <svg
+                        className="w-6 h-6 text-blue-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 10h8"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 13h5"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="text-white font-semibold mb-1">
+                      AI Asistent
+                    </h3>
+                    <p className="text-slate-400 text-sm">
+                      Pokročilé zhodnocení výsledků pomocí chatbota.
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
+                    <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center mb-3">
+                      <svg
+                        className="w-6 h-6 text-purple-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="text-white font-semibold mb-1">Lokalita</h3>
+                    <p className="text-slate-400 text-sm">
+                      Integrace reálných mapových dat.
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
+                    <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center mb-3">
+                      <svg
+                        className="w-6 h-6 text-green-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="text-white font-semibold mb-1">Rychlost</h3>
+                    <p className="text-slate-400 text-sm">
+                      Výsledky do pár minut.
+                    </p>
+                  </div>
+
+                  {/* Planned / Coming soon features */}
+                  <div className="bg-slate-900/20 border border-dashed border-slate-700/30 rounded-lg p-4 text-left opacity-90">
+                    <div className="flex items-start justify-between">
+                      <div className="w-10 h-10 bg-gradient-to-br from-slate-700/10 to-slate-600/10 rounded-lg flex items-center justify-center mb-3">
+                        <svg
+                          className="w-6 h-6 text-slate-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 20a8 8 0 100-16 8 8 0 000 16z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-slate-700/40 to-slate-700/20 text-slate-200">
+                        Plánováno
+                      </span>
+                    </div>
+                    <h3 className="text-white font-semibold mb-1">
+                      Export reportů
+                    </h3>
+                    <p className="text-slate-400 text-sm">
+                      Export analýz do PDF/CSV pro sdílení a archivaci (brzy).
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-900/20 border border-dashed border-slate-700/30 rounded-lg p-4 text-left opacity-90">
+                    <div className="flex items-start justify-between">
+                      <div className="w-10 h-10 bg-gradient-to-br from-slate-700/10 to-slate-600/10 rounded-lg flex items-center justify-center mb-3">
+                        <svg
+                          className="w-6 h-6 text-slate-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 8l4 4m0 0l-4 4m4-4H3"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M7 16l-4-4m0 0l4-4M3 12h18"
+                          />
+                        </svg>
+                      </div>
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-slate-700/40 to-slate-700/20 text-slate-200">
+                        Plánováno
+                      </span>
+                    </div>
+                    <h3 className="text-white font-semibold mb-1">
+                      Porovnání lokací
+                    </h3>
+                    <p className="text-slate-400 text-sm">
+                      Analyzujte a porovnávejte více lokalit najednou (brzy).
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-900/20 border border-dashed border-slate-700/30 rounded-lg p-4 text-left opacity-90">
+                    <div className="flex items-start justify-between">
+                      <div className="w-10 h-10 bg-gradient-to-br from-slate-700/10 to-slate-600/10 rounded-lg flex items-center justify-center mb-3">
+                        <svg
+                          className="w-6 h-6 text-slate-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-slate-700/40 to-slate-700/20 text-slate-200">
+                        Plánováno
+                      </span>
+                    </div>
+                    <h3 className="text-white font-semibold mb-1">
+                      Odhad tržeb
+                    </h3>
+                    <p className="text-slate-400 text-sm">
+                      Získejte odhadované tržby pro vaši lokalitu na základě
+                      zvolených parametrů (brzy).
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Form - mobile first */}
-              <div className="relative mb-8 lg:hidden">
+              {/* Form - desktop only */}
+              <div className="relative hidden lg:block">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-20"></div>
                 <div className="relative">
                   {isLoading ? (
-                    <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl p-6 min-h-[600px] flex flex-col items-center justify-center">
+                    <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl p-8 min-h-[600px] flex flex-col items-center justify-center">
                       <div className="mb-8">
                         <Image
                           src="/spotonaut_character.svg"
                           alt="Spotonaut"
-                          width={120}
-                          height={120}
-                          className="w-32 h-32 animate-pulse"
+                          width={140}
+                          height={140}
+                          className="w-36 h-36 animate-pulse"
                         />
                       </div>
                       <div className="w-full max-w-md space-y-6">
@@ -850,84 +705,6 @@ export default function ChatInterface() {
                           currentStep={progressStep}
                           streamingText={streamingText}
                         />
-                      </div>
-                    </div>
-                  ) : messages.length > 0 ? (
-                    <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl p-6">
-                      <div className="space-y-3">
-                        {messages.map((message) => (
-                          <div
-                            key={message.id}
-                            className={`p-3 rounded-lg ${
-                              message.role === "user"
-                                ? "bg-blue-500/20 text-blue-100"
-                                : "bg-slate-800 text-slate-200"
-                            }`}
-                          >
-                            <div
-                              className="text-sm"
-                              dangerouslySetInnerHTML={{
-                                __html: message.content
-                                  .replace(/```[\s\S]*?```/g, "")
-                                  .replace(
-                                    /\*\*(.*?)\*\*/g,
-                                    "<strong>$1</strong>",
-                                  )
-                                  .replace(/\n/g, "<br>"),
-                              }}
-                            />
-
-                            {/* Collapsible Sources Section */}
-                            {message.sources && message.sources.length > 0 && (
-                              <div className="mt-2">
-                                <button
-                                  onClick={() =>
-                                    setExpandedSources((prev) => ({
-                                      ...prev,
-                                      [message.id]: !prev[message.id],
-                                    }))
-                                  }
-                                  aria-controls={`sources-content-${message.id}`}
-                                  aria-expanded={!!expandedSources[message.id]}
-                                  className="inline-flex items-center gap-2 text-sm px-2 py-1 bg-slate-800/30 border border-slate-700 rounded-md text-slate-200 hover:bg-slate-800/60 transition-colors"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="w-4 h-4 text-slate-300"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                    aria-hidden
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                  <span>
-                                    {expandedSources[message.id]
-                                      ? "Skrýt zdroje"
-                                      : "Zobrazit zdroje"}
-                                  </span>
-                                </button>
-                                {expandedSources[message.id] && (
-                                  <div
-                                    id={`sources-content-${message.id}`}
-                                    className="mt-2 pl-4 text-sm text-slate-400"
-                                  >
-                                    <div className="flex flex-wrap gap-2">
-                                      {message.sources.map((source, index) => (
-                                        <div key={index}>
-                                          {renderSourceLink(source)}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ))}
                       </div>
                     </div>
                   ) : (
@@ -940,342 +717,16 @@ export default function ChatInterface() {
                   )}
                 </div>
               </div>
-
-              <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start">
-                <div className="space-y-8 lg:pt-8">
-                  {/* Heading - desktop only */}
-                  <div className="space-y-4 hidden lg:block">
-                    <h1 className="text-4xl lg:text-5xl font-bold text-white leading-tight">
-                      Zjisti, kde{" "}
-                      <RotatingText
-                        words={["otevřít", "vydělat", "začít", "růst"]}
-                        className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600"
-                        typingSpeed={80}
-                        deletingSpeed={40}
-                        delayBetweenWords={2500}
-                      />
-                    </h1>
-                    <p className="text-lg text-slate-400 leading-relaxed">
-                      Spotonaut využívá pokročilou AI analýzu k vyhodnocení
-                      potenciálu vaší lokality.{" "}
-                      <b className="text-white">Zaregistrujte se zdarma</b> a
-                      využijte tak možnost zhodnotit výsledná data s naším{" "}
-                      <b className="text-white">AI asistentem!</b>
-                    </p>
-                  </div>
-
-                  {/* Features Grid */}
-                  <div className="grid sm:grid-cols-2 gap-3 lg:max-h-100 lg:overflow-y-auto lg:pr-4">
-                    <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
-                      <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center mb-3">
-                        <svg
-                          className="w-6 h-6 text-blue-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 10h8"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 13h5"
-                          />
-                        </svg>
-                      </div>
-                      <h3 className="text-white font-semibold mb-1">
-                        AI Asistent
-                      </h3>
-                      <p className="text-slate-400 text-sm">
-                        Pokročilé zhodnocení výsledků pomocí chatbota.
-                      </p>
-                    </div>
-
-                    <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
-                      <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center mb-3">
-                        <svg
-                          className="w-6 h-6 text-purple-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
-                      </div>
-                      <h3 className="text-white font-semibold mb-1">
-                        Lokalita
-                      </h3>
-                      <p className="text-slate-400 text-sm">
-                        Integrace reálných mapových dat.
-                      </p>
-                    </div>
-
-                    <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-left">
-                      <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center mb-3">
-                        <svg
-                          className="w-6 h-6 text-green-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M13 10V3L4 14h7v7l9-11h-7z"
-                          />
-                        </svg>
-                      </div>
-                      <h3 className="text-white font-semibold mb-1">
-                        Rychlost
-                      </h3>
-                      <p className="text-slate-400 text-sm">
-                        Výsledky do pár minut.
-                      </p>
-                    </div>
-
-                    {/* Planned / Coming soon features */}
-                    <div className="bg-slate-900/20 border border-dashed border-slate-700/30 rounded-lg p-4 text-left opacity-90">
-                      <div className="flex items-start justify-between">
-                        <div className="w-10 h-10 bg-gradient-to-br from-slate-700/10 to-slate-600/10 rounded-lg flex items-center justify-center mb-3">
-                          <svg
-                            className="w-6 h-6 text-slate-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 8v4l3 3"
-                            />
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 20a8 8 0 100-16 8 8 0 000 16z"
-                            />
-                          </svg>
-                        </div>
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-slate-700/40 to-slate-700/20 text-slate-200">
-                          Plánováno
-                        </span>
-                      </div>
-                      <h3 className="text-white font-semibold mb-1">
-                        Export reportů
-                      </h3>
-                      <p className="text-slate-400 text-sm">
-                        Export analýz do PDF/CSV pro sdílení a archivaci (brzy).
-                      </p>
-                    </div>
-
-                    <div className="bg-slate-900/20 border border-dashed border-slate-700/30 rounded-lg p-4 text-left opacity-90">
-                      <div className="flex items-start justify-between">
-                        <div className="w-10 h-10 bg-gradient-to-br from-slate-700/10 to-slate-600/10 rounded-lg flex items-center justify-center mb-3">
-                          <svg
-                            className="w-6 h-6 text-slate-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M17 8l4 4m0 0l-4 4m4-4H3"
-                            />
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M7 16l-4-4m0 0l4-4M3 12h18"
-                            />
-                          </svg>
-                        </div>
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-slate-700/40 to-slate-700/20 text-slate-200">
-                          Plánováno
-                        </span>
-                      </div>
-                      <h3 className="text-white font-semibold mb-1">
-                        Porovnání lokací
-                      </h3>
-                      <p className="text-slate-400 text-sm">
-                        Analyzujte a porovnávejte více lokalit najednou (brzy).
-                      </p>
-                    </div>
-
-                    <div className="bg-slate-900/20 border border-dashed border-slate-700/30 rounded-lg p-4 text-left opacity-90">
-                      <div className="flex items-start justify-between">
-                        <div className="w-10 h-10 bg-gradient-to-br from-slate-700/10 to-slate-600/10 rounded-lg flex items-center justify-center mb-3">
-                          <svg
-                            className="w-6 h-6 text-slate-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                        </div>
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gradient-to-r from-slate-700/40 to-slate-700/20 text-slate-200">
-                          Plánováno
-                        </span>
-                      </div>
-                      <h3 className="text-white font-semibold mb-1">
-                        Odhad tržeb
-                      </h3>
-                      <p className="text-slate-400 text-sm">
-                        Získejte odhadované tržby pro vaši lokalitu na základě
-                        zvolených parametrů (brzy).
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Form - desktop only */}
-                <div className="relative hidden lg:block">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-20"></div>
-                  <div className="relative">
-                    {isLoading ? (
-                      <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl p-8 min-h-[600px] flex flex-col items-center justify-center">
-                        <div className="mb-8">
-                          <Image
-                            src="/spotonaut_character.svg"
-                            alt="Spotonaut"
-                            width={140}
-                            height={140}
-                            className="w-36 h-36 animate-pulse"
-                          />
-                        </div>
-                        <div className="w-full max-w-md space-y-6">
-                          <AnalysisProgress
-                            currentStep={progressStep}
-                            streamingText={streamingText}
-                          />
-                        </div>
-                      </div>
-                    ) : messages.length > 0 ? (
-                      <div className="bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl p-6">
-                        <div className="space-y-3 max-h-96 overflow-y-auto">
-                          {messages.map((message) => (
-                            <div
-                              key={message.id}
-                              className={`p-3 rounded-lg ${
-                                message.role === "user"
-                                  ? "bg-blue-500/20 text-blue-100"
-                                  : "bg-slate-800 text-slate-200"
-                              }`}
-                            >
-                              <div
-                                className="text-sm"
-                                dangerouslySetInnerHTML={{
-                                  __html: message.content
-                                    .replace(/```[\s\S]*?```/g, "")
-                                    .replace(
-                                      /\*\*(.*?)\*\*/g,
-                                      "<strong>$1</strong>",
-                                    )
-                                    .replace(/\n/g, "<br>"),
-                                }}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <AnalysisForm
-                        onSubmit={handleAnalysisSubmit}
-                        onCancel={handleAnalysisCancel}
-                        isLoading={isLoading}
-                        showCancelButton={hasCompletedAnalysis}
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
             </div>
-          ) : null}
-        </main>
-      )}
+          </div>
+        ) : null}
+      </main>
+
       {/* Auth Modal */}
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         mode={authModalMode}
-      />
-      {/* Request More Prompts Modal */}
-      <RequestMorePromptsModal
-        isOpen={showRequestModal}
-        onClose={() => setShowRequestModal(false)}
-      />
-      {/* Confirmation Dialog */}
-      {showConfirmDialog && (
-        <ConfirmationDialog
-          isOpen={showConfirmDialog}
-          setShowConfirmDialog={setShowConfirmDialog}
-          confirmNewAnalysis={confirmNewAnalysis}
-        />
-      )}
-
-      {/* Feedback Modal */}
-      <FeedbackModal
-        isOpen={showFeedbackModal}
-        onClose={() => {
-          dismissFeedback();
-          // If there was a pending new analysis, proceed with it
-          if (pendingNewAnalysis) {
-            setPendingNewAnalysis(false);
-            if (hasCompletedAnalysis) {
-              setShowConfirmDialog(true);
-            } else {
-              navigateHome();
-            }
-          }
-        }}
-        onSubmit={async (rating, comment, feedbackType) => {
-          try {
-            await submitFeedback(rating, comment, feedbackType);
-            // If there was a pending new analysis, proceed with it after successful submission
-            if (pendingNewAnalysis) {
-              setPendingNewAnalysis(false);
-              if (hasCompletedAnalysis) {
-                setShowConfirmDialog(true);
-              } else {
-                navigateHome();
-              }
-            }
-          } catch (error) {
-            // Error handling is done in submitFeedback
-            throw error;
-          }
-        }}
       />
 
       {/* Toast Notification */}

@@ -68,7 +68,7 @@ export default function AnalysisForm({
 
   // Daily hours map (managed by OperatingDays component)
   const [dailyHours, setDailyHours] = useState<Record<string, number> | null>(
-    null
+    null,
   );
   const loadingTexts = [
     "Analyzuji lokalitu...",
@@ -120,14 +120,14 @@ export default function AnalysisForm({
     try {
       // Use our API route to avoid CORS issues
       const response = await fetch(
-        `/api/location-search?q=${encodeURIComponent(query)}`
+        `/api/location-search?q=${encodeURIComponent(query)}`,
       );
 
       if (!response.ok) {
         console.error(
           "Location search API error:",
           response.status,
-          response.statusText
+          response.statusText,
         );
         setSuggestions([]);
         setIsLoadingSuggestions(false);
@@ -244,11 +244,11 @@ export default function AnalysisForm({
           p === "České Budějovice" ||
           p === "Pardubice" ||
           (p.match(
-            /^[A-ZŠČŘŽÝÁÍÉÚŮ][a-zščřžýáíéúů]+(?: [A-ZŠČŘŽÝÁÍÉÚŮ][a-zščřžýáíéúů]+)*$/
+            /^[A-ZŠČŘŽÝÁÍÉÚŮ][a-zščřžýáíéúů]+(?: [A-ZŠČŘŽÝÁÍÉÚŮ][a-zščřžýáíéúů]+)*$/,
           ) &&
             !p.includes("Česko") &&
             !p.includes("Čechy") &&
-            !p.match(/^\d/)) // Not a postal code
+            !p.match(/^\d/)), // Not a postal code
       ) || "";
 
     if (street && city) {
@@ -305,7 +305,7 @@ export default function AnalysisForm({
 
   const updateField = <K extends keyof AnalysisFormData>(
     field: K,
-    value: AnalysisFormData[K]
+    value: AnalysisFormData[K],
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error for this field when user starts typing
@@ -322,7 +322,7 @@ export default function AnalysisForm({
       // clear operatingHours validation if present
       setErrors((prev) => ({ ...prev, operatingHours: undefined }));
     },
-    []
+    [],
   );
 
   return (
@@ -521,7 +521,7 @@ export default function AnalysisForm({
             className="group relative cursor-pointer flex-1 px-5 py-2.5 text-sm font-medium text-white rounded-full overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 border border-blue-600/20 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="relative z-10">
-              {isLoading ? loadingTexts[loadingTextIndex] : "Analyzovat"}
+              {isLoading ? loadingTexts[loadingTextIndex] : "Spustit analýzu"}
             </span>
             <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-600 bg-gradient-to-r from-transparent via-blue-400/30 to-transparent opacity-40" />
           </button>

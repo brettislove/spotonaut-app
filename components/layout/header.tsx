@@ -1,17 +1,24 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import AuthModal from "@/components/auth-modal";
+import NavigationWarningDialog from "@/components/navigation-warning-dialog";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 
 export default function Header() {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const { hasCompletedAnalysis, resetAnalysis } = useAnalysis();
+  const router = useRouter();
+  const {
+    hasCompletedAnalysis,
+    isAnalyzing,
+    resetAnalysis,
+    setShowAnalysisForm,
+  } = useAnalysis();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -19,6 +26,10 @@ export default function Header() {
     "login",
   );
   const [showProfileSettings, setShowProfileSettings] = useState(false);
+  const [showNavigationWarning, setShowNavigationWarning] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(
+    null,
+  );
   const [, startTransition] = useTransition();
 
   // Close mobile menu on route change
@@ -55,6 +66,73 @@ export default function Header() {
     };
   }, [isMobileMenuOpen]);
 
+  // Navigation warning: beforeunload for tab close/refresh
+  useEffect(() => {
+    if (!isAnalyzing) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "Probíhá analýza. Opravdu chcete odejít?";
+      return e.returnValue;
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isAnalyzing]);
+
+  // Navigation warning: browser back button (popstate)
+  useEffect(() => {
+    if (!isAnalyzing) return;
+
+    // Push a dummy state to detect back button
+    window.history.pushState({ preventBack: true }, "");
+
+    const handlePopState = () => {
+      if (isAnalyzing) {
+        // Re-push the state to prevent navigation
+        window.history.pushState({ preventBack: true }, "");
+        // Show warning dialog
+        setPendingNavigation("back");
+        setShowNavigationWarning(true);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isAnalyzing]);
+
+  // Handle navigation with warning check
+  const handleNavigationClick = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+      if (isAnalyzing) {
+        e.preventDefault();
+        setPendingNavigation(href);
+        setShowNavigationWarning(true);
+      }
+    },
+    [isAnalyzing],
+  );
+
+  // Handle staying on page
+  const handleStayOnPage = useCallback(() => {
+    setShowNavigationWarning(false);
+    setPendingNavigation(null);
+  }, []);
+
+  // Handle leaving page
+  const handleLeavePage = useCallback(() => {
+    setShowNavigationWarning(false);
+    if (pendingNavigation === "back") {
+      // Go back in history
+      window.history.go(-2); // Go back 2 because we pushed a dummy state
+    } else if (pendingNavigation) {
+      router.push(pendingNavigation);
+    }
+    setPendingNavigation(null);
+  }, [pendingNavigation, router]);
+
   const navigationLinks = [
     { href: "/how-it-works", label: "Jak to funguje" },
     // { href: "/pricing", label: "Pricing" },
@@ -85,12 +163,26 @@ export default function Header() {
   };
 
   const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    // If we're on homepage and have completed analysis, reset state
+    // Check if analysis is in progress
+    if (isAnalyzing) {
+      e.preventDefault();
+      setPendingNavigation("/");
+      setShowNavigationWarning(true);
+      return;
+    }
+    // If we're on /analysis page, navigate home and show the form
+    if (pathname === "/analysis") {
+      e.preventDefault();
+      sessionStorage.setItem("skipAnalysisRestore", "true");
+      setShowAnalysisForm(true); // Just show form, keep analysis data intact
+      router.push("/");
+      return;
+    }
+    // If we're on homepage with completed analysis, just ensure form is visible
     if (pathname === "/" && hasCompletedAnalysis) {
       e.preventDefault();
-      // Set flag to skip restoration on reload
-      sessionStorage.setItem("skipAnalysisRestore", "true");
-      resetAnalysis();
+      setShowAnalysisForm(true);
+      return;
     }
     // Otherwise, let Next.js Link handle navigation normally
   };
@@ -135,6 +227,7 @@ export default function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  onClick={(e) => handleNavigationClick(e, link.href)}
                   className={`text-md font-semibold transition-colors ${
                     pathname === link.href
                       ? "text-white"
@@ -148,6 +241,28 @@ export default function Header() {
 
             {/* Desktop Auth Section */}
             <div className="hidden md:flex items-center gap-3">
+              {/* Analysis Badge - shown when analysis is completed */}
+              {hasCompletedAnalysis && (
+                <Link
+                  href="/analysis"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
+                >
+                  <svg
+                    className="w-5 h-5 text-purple-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                  <span>Moje analýza</span>
+                </Link>
+              )}
               {session ? (
                 <div className="relative user-menu-container">
                   <button
@@ -370,6 +485,7 @@ export default function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  onClick={(e) => handleNavigationClick(e, link.href)}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                     pathname === link.href
                       ? "bg-slate-800 text-white"
@@ -440,6 +556,34 @@ export default function Header() {
                   {link.label}
                 </Link>
               ))}
+
+              {/* Analysis Link - shown when analysis is completed */}
+              {hasCompletedAnalysis && (
+                <Link
+                  href="/analysis"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all mt-2 border-t border-slate-800 pt-4 ${
+                    pathname === "/analysis"
+                      ? "bg-purple-500/20 text-purple-300"
+                      : "text-purple-400 hover:bg-purple-500/10 hover:text-purple-300"
+                  }`}
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                  Moje analýza
+                </Link>
+              )}
             </nav>
           </div>
 
@@ -553,6 +697,13 @@ export default function Header() {
           user={session?.user}
         />
       )}
+
+      {/* Navigation Warning Dialog */}
+      <NavigationWarningDialog
+        isOpen={showNavigationWarning}
+        onStay={handleStayOnPage}
+        onLeave={handleLeavePage}
+      />
     </>
   );
 }
