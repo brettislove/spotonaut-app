@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css";
 import AuthProvider from "@/components/auth-provider";
 import { AnalysisProvider } from "@/lib/contexts/analysis-context";
 import Header from "@/components/layout/header";
 import PageTracker from "@/components/page-tracker";
+import { HeroHeader } from "@/components/header";
+import FooterSection from "@/components/footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,6 +17,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
@@ -70,7 +78,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
         <link rel="icon" href="/favicon.png" />
         <link rel="icon" sizes="48x48" href="/favicon.png" type="image/png" />
@@ -169,15 +177,17 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}
       >
         <AuthProvider>
           <AnalysisProvider>
             <Suspense fallback={null}>
               <PageTracker />
             </Suspense>
-            <Header />
+            {/* <Header /> */}
+            <HeroHeader />
             {children}
+            <FooterSection />
           </AnalysisProvider>
         </AuthProvider>
       </body>
