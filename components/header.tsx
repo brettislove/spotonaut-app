@@ -1,17 +1,15 @@
 "use client";
 import Link from "next/link";
-import { Logo } from "@/components/logo";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import AuthModal from "./auth-modal";
 import LoginPage from "./login";
 import SignUpPage from "./sign-up";
 
 const menuItems = [
-  { name: "Jak to funguje", href: "#link" },
+  { name: "Jak to funguje", href: "/how-it-works" },
   { name: "Blog", href: "#link" },
   { name: "Ceník", href: "#link" },
   { name: "Kontakt", href: "#link" },
