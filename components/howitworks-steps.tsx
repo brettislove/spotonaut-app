@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Settings2, Sparkles, Zap } from "lucide-react";
 import { ReactNode } from "react";
-import { TextEffect } from "./ui/text-effect";
 import { AnimatedGroup } from "./ui/animated-group";
 
 export default function HowItWorksSteps() {

@@ -7,7 +7,6 @@ import {
   GooglePaLM,
 } from "@/components/logos";
 import { cn } from "@/lib/utils";
-import { LogoIcon } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";

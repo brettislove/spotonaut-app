@@ -6,35 +6,12 @@ import FieldHelp from "./ui/field-help";
 import BusinessTypeSelect from "./ui/business-type-select";
 import OperatingDays from "./operating-days";
 import type { BusinessType } from "@/lib/constants/business-types";
-
-interface AnalysisFormData {
-  location: string;
-  businessType: BusinessType;
-  operatingHours: number;
-  timeframe: "day" | "week" | "month" | "year";
-  coordinates?: {
-    lat: number;
-    lon: number;
-  };
-}
-
-interface AnalysisFormProps {
-  onSubmit: (data: AnalysisFormData) => void;
-  onCancel: () => void;
-  isLoading?: boolean;
-  showCancelButton?: boolean;
-}
-
-interface LocationSuggestion {
-  display_name: string;
-  lat: string;
-  lon: string;
-  place_id: number;
-  osm_type?: string;
-  osm_id?: number;
-  type?: string;
-  importance?: number;
-}
+import type {
+  AnalysisFormData,
+  AnalysisFormProps,
+  LocationSuggestion,
+  LocationData,
+} from "@/lib/types/analysis";
 
 export default function AnalysisForm({
   onSubmit,
@@ -54,10 +31,9 @@ export default function AnalysisForm({
   >({});
 
   const [locationInput, setLocationInput] = useState("");
-  const [fullLocationData, setFullLocationData] = useState<{
-    displayName: string;
-    coordinates: { lat: number; lon: number };
-  } | null>(null);
+  const [fullLocationData, setFullLocationData] = useState<LocationData | null>(
+    null,
+  );
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);

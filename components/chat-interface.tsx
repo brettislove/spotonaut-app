@@ -22,16 +22,7 @@ export interface Message {
   sources?: Array<{ title: string; uri: string }>;
 }
 
-interface AnalysisFormData {
-  location: string;
-  businessType: BusinessType;
-  operatingHours: number;
-  timeframe: "day" | "week" | "month" | "year";
-  coordinates?: {
-    lat: number;
-    lon: number;
-  };
-}
+import type { AnalysisFormData } from "@/lib/types/analysis";
 
 export default function ChatInterface() {
   const { data: session } = useSession();

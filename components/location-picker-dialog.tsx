@@ -3,22 +3,30 @@
 import { useEffect, useRef, useState } from "react";
 import type L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { handleLocationPickerSelect } from "@/utils/location-input";
 
 interface LocationPickerDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onLocationSelect: (location: {
-    address: string;
-    lat: number;
-    lon: number;
+  setLocationInput: (value: string) => void;
+  setFullLocationData: (data: {
+    displayName: string;
+    coordinates: { lat: number; lon: number };
   }) => void;
+  setFormField: (value: string) => void;
+  errors: Partial<Record<"location", string>>;
+  setErrors: (errors: Partial<Record<"location", string>>) => void;
   initialCenter?: [number, number];
 }
 
 export default function LocationPickerDialog({
   isOpen,
   onClose,
-  onLocationSelect,
+  setLocationInput,
+  setFullLocationData,
+  setFormField,
+  errors,
+  setErrors,
   initialCenter = [49.1951, 16.6068], // Brno default
 }: LocationPickerDialogProps) {
   const mapRef = useRef<L.Map | null>(null);
@@ -55,7 +63,7 @@ export default function LocationPickerDialog({
               '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
             subdomains: "abcd",
             maxZoom: 20,
-          }
+          },
         ).addTo(map);
 
         mapRef.current = map;
@@ -99,7 +107,7 @@ export default function LocationPickerDialog({
             headers: {
               "User-Agent": "SpotonAutApp/1.0",
             },
-          }
+          },
         );
 
         if (response.ok) {
@@ -108,13 +116,13 @@ export default function LocationPickerDialog({
         } else {
           // Fallback to coordinates if request fails
           setCurrentAddress(
-            `${currentCenter[0].toFixed(6)}, ${currentCenter[1].toFixed(6)}`
+            `${currentCenter[0].toFixed(6)}, ${currentCenter[1].toFixed(6)}`,
           );
         }
       } catch (error) {
         console.error("Error fetching address:", error);
         setCurrentAddress(
-          `${currentCenter[0].toFixed(6)}, ${currentCenter[1].toFixed(6)}`
+          `${currentCenter[0].toFixed(6)}, ${currentCenter[1].toFixed(6)}`,
         );
       } finally {
         setIsLoadingCurrentAddress(false);
@@ -143,7 +151,7 @@ export default function LocationPickerDialog({
     debounceTimerRef.current = setTimeout(async () => {
       try {
         const response = await fetch(
-          `/api/location-search?q=${currentCenter[0]},${currentCenter[1]}`
+          `/api/location-search?q=${currentCenter[0]},${currentCenter[1]}`,
         );
 
         if (response.ok) {
@@ -153,14 +161,14 @@ export default function LocationPickerDialog({
           } else {
             // Fallback to coordinates if no address found
             setCurrentAddress(
-              `${currentCenter[0].toFixed(6)}, ${currentCenter[1].toFixed(6)}`
+              `${currentCenter[0].toFixed(6)}, ${currentCenter[1].toFixed(6)}`,
             );
           }
         }
       } catch (error) {
         console.error("Error fetching address:", error);
         setCurrentAddress(
-          `${currentCenter[0].toFixed(6)}, ${currentCenter[1].toFixed(6)}`
+          `${currentCenter[0].toFixed(6)}, ${currentCenter[1].toFixed(6)}`,
         );
       } finally {
         setIsLoadingCurrentAddress(false);
@@ -184,16 +192,23 @@ export default function LocationPickerDialog({
           headers: {
             "User-Agent": "SpotonAutApp/1.0",
           },
-        }
+        },
       );
 
       if (response.ok) {
         const data = await response.json();
-        onLocationSelect({
-          address: data.display_name,
-          lat: currentCenter[0],
-          lon: currentCenter[1],
-        });
+        handleLocationPickerSelect(
+          {
+            address: data.display_name,
+            lat: currentCenter[0],
+            lon: currentCenter[1],
+          },
+          setLocationInput,
+          setFullLocationData,
+          setFormField,
+          errors,
+          setErrors,
+        );
         onClose();
       }
     } catch (error) {

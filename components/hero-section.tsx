@@ -9,6 +9,7 @@ import { AnimatedGroup } from "@/components/ui/animated-group";
 import { HeroHeader } from "./header";
 import AnalysisForm from "./analysis-form";
 import ButtonHeartbeat from "./button/button-heartbeat";
+import AnalysisFormNew from "./analysis-form-new";
 
 const transitionVariants = {
   item: {
@@ -185,15 +186,16 @@ export default function HeroSection() {
                 ...transitionVariants,
               }}
             >
-              <div className="relative mt-8 overflow-hidden px-2 sm:mr-0 sm:mt-12 md:mt-20">
-                <AnalysisForm
+              <div className="relative mt-8 overflow-auto px-2 sm:mr-0 sm:mt-12 md:mt-20">
+                <AnalysisFormNew />
+                {/* <AnalysisForm
                   onSubmit={(data) => {
                     console.log("Analysis form submitted:", data);
                     // Navigate to analysis page or handle submission
                   }}
                   onCancel={() => {}}
                   showCancelButton={false}
-                />
+                /> */}
               </div>
             </AnimatedGroup>
           </div>
