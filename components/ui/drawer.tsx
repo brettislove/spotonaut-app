@@ -86,6 +86,7 @@ const DrawerContent = React.forwardRef<HTMLDivElement, DrawerContentProps>(
           damping: 30,
           stiffness: 300,
         }}
+        style={{ minHeight: "50px" }}
         {...props}
       >
         {children}
@@ -99,7 +100,7 @@ function DrawerHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="drawer-header"
-      className={cn("flex flex-col space-y-2 p-4", className)}
+      className={cn("flex flex-col py-2 px-4", className)}
       {...props}
     />
   );
