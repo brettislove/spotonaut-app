@@ -197,9 +197,15 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       setAnalysisData(restoredState.analysisData);
       setHasCompletedAnalysis(restoredState.hasCompletedAnalysis);
       setShowMapView(restoredState.showMapView);
-      setShowAnalysisForm(!restoredState.hasCompletedAnalysis);
+      // Only hide the form if we're on the analysis page
+      // On home page, always show the form
+      if (pathname === "/analysis") {
+        setShowAnalysisForm(!restoredState.hasCompletedAnalysis);
+      } else {
+        setShowAnalysisForm(true);
+      }
     });
-  }, [restoredState]);
+  }, [restoredState, pathname]);
 
   // Persist state changes to localStorage
   useEffect(() => {

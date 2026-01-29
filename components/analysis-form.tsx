@@ -20,9 +20,7 @@ interface AnalysisFormData {
 
 interface AnalysisFormProps {
   onSubmit: (data: AnalysisFormData) => void;
-  onCancel: () => void;
   isLoading?: boolean;
-  showCancelButton?: boolean;
 }
 
 interface LocationSuggestion {
@@ -38,9 +36,7 @@ interface LocationSuggestion {
 
 export default function AnalysisForm({
   onSubmit,
-  onCancel,
   isLoading = false,
-  showCancelButton = true,
 }: AnalysisFormProps) {
   const [formData, setFormData] = useState<Partial<AnalysisFormData>>({
     location: "",
@@ -505,16 +501,6 @@ export default function AnalysisForm({
 
         {/* Actions */}
         <div className="flex gap-3 pt-4">
-          {showCancelButton && (
-            <button
-              type="button"
-              onClick={onCancel}
-              disabled={isLoading}
-              className="cursor-pointer flex-1 px-5 py-2.5 text-sm font-medium text-white bg-slate-800 border border-blue-600/20 rounded-lg hover:bg-blue-800/10 focus:ring-2 focus:outline-none focus:ring-blue-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Zrušit
-            </button>
-          )}
           <button
             type="submit"
             disabled={isLoading}

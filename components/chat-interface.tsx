@@ -69,6 +69,11 @@ export default function ChatInterface() {
   const [, setStreamingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Ensure form is shown when component mounts on home page
+  useEffect(() => {
+    setShowAnalysisForm(true);
+  }, [setShowAnalysisForm]);
+
   // Detect mobile on mount and resize
   useEffect(() => {
     const checkMobile = () => {
@@ -374,13 +379,6 @@ export default function ChatInterface() {
     ],
   );
 
-  const handleAnalysisCancel = () => {
-    // Only allow canceling if analysis has been completed
-    if (hasCompletedAnalysis) {
-      setShowAnalysisForm(false);
-    }
-  };
-
   // Homepage: Form-only view
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-950 font-sans relative overflow-hidden">
@@ -463,9 +461,7 @@ export default function ChatInterface() {
                 ) : (
                   <AnalysisForm
                     onSubmit={handleAnalysisSubmit}
-                    onCancel={handleAnalysisCancel}
                     isLoading={isLoading}
-                    showCancelButton={hasCompletedAnalysis}
                   />
                 )}
               </div>
@@ -710,9 +706,7 @@ export default function ChatInterface() {
                   ) : (
                     <AnalysisForm
                       onSubmit={handleAnalysisSubmit}
-                      onCancel={handleAnalysisCancel}
                       isLoading={isLoading}
-                      showCancelButton={hasCompletedAnalysis}
                     />
                   )}
                 </div>
