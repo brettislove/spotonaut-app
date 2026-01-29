@@ -72,13 +72,20 @@ const getShortLocationName = (suggestion: LocationSuggestion): string => {
 // Handle suggestion selection
 const handleSuggestionClick = (
   suggestion: LocationSuggestion,
-  setLocationInput,
-  setFullLocationData,
-  setFormData,
-  setShowSuggestions,
-  setSuggestions,
-  errors,
-  setErrors,
+  setLocationInput: React.Dispatch<React.SetStateAction<string>>,
+  setFullLocationData: React.Dispatch<
+    React.SetStateAction<{
+      displayName: string;
+      coordinates: { lat: number; lon: number };
+    } | null>
+  >,
+  setFormData: React.Dispatch<React.SetStateAction<string>>,
+  setShowSuggestions: React.Dispatch<React.SetStateAction<boolean>>,
+  setSuggestions: React.Dispatch<React.SetStateAction<LocationSuggestion[]>>,
+  errors: Partial<Record<string, string>>,
+  setErrors: React.Dispatch<
+    React.SetStateAction<Partial<Record<string, string>>>
+  >,
 ) => {
   const shortName = getShortLocationName(suggestion);
   setLocationInput(shortName);
@@ -105,11 +112,18 @@ const handleLocationPickerSelect = (
     lat: number;
     lon: number;
   },
-  setLocationInput,
-  setFullLocationData,
-  setFormData,
-  errors,
-  setErrors,
+  setLocationInput: React.Dispatch<React.SetStateAction<string>>,
+  setFullLocationData: React.Dispatch<
+    React.SetStateAction<{
+      displayName: string;
+      coordinates: { lat: number; lon: number };
+    } | null>
+  >,
+  setFormData: React.Dispatch<React.SetStateAction<string>>,
+  errors: Partial<Record<string, string>>,
+  setErrors: React.Dispatch<
+    React.SetStateAction<Partial<Record<string, string>>>
+  >,
 ) => {
   const suggestion: LocationSuggestion = {
     display_name: location.address,
@@ -134,13 +148,20 @@ const handleLocationPickerSelect = (
 };
 
 const handleConfirmLocation = async (
-  setIsLoadingAddress,
-  currentCenter,
-  setLocationInput,
-  setFullLocationData,
-  setFormField,
-  errors,
-  setErrors,
+  setIsLoadingAddress: React.Dispatch<React.SetStateAction<boolean>>,
+  currentCenter: [number, number],
+  setLocationInput: React.Dispatch<React.SetStateAction<string>>,
+  setFullLocationData: React.Dispatch<
+    React.SetStateAction<{
+      displayName: string;
+      coordinates: { lat: number; lon: number };
+    } | null>
+  >,
+  setFormField: React.Dispatch<React.SetStateAction<string>>,
+  errors: Partial<Record<string, string>>,
+  setErrors: React.Dispatch<
+    React.SetStateAction<Partial<Record<string, string>>>
+  >,
 ) => {
   setIsLoadingAddress(true);
   try {
@@ -178,10 +199,10 @@ const handleConfirmLocation = async (
 
 // Dynamically import Leaflet only on client side
 const initMap = async (
-  mapContainerRef,
-  mapRef,
-  currentCenter,
-  setCurrentCenter,
+  mapContainerRef: React.RefObject<HTMLDivElement | null>,
+  mapRef: React.RefObject<L.Map | null>,
+  currentCenter: [number, number],
+  setCurrentCenter: React.Dispatch<React.SetStateAction<[number, number]>>,
 ) => {
   // Wait for Dialog animation to complete and DOM to be ready
   await new Promise((resolve) => setTimeout(resolve, 50));

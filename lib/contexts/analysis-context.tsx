@@ -12,6 +12,7 @@ import React, {
 import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { getOrCreateFingerprint } from "@/lib/fingerprint";
+import type { AnalysisData } from "@/lib/types/analysis";
 
 interface Message {
   id: string;
@@ -19,23 +20,6 @@ interface Message {
   content: string;
   timestamp: Date;
   sources?: Array<{ title: string; uri: string }>;
-}
-
-interface AnalysisData {
-  id?: string;
-  location: string;
-  locationName: string;
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
-  metrics?: {
-    localityScore: number;
-    footfallScore: number;
-    recommendedHours: string;
-  };
-  sources?: Array<{ title: string; uri: string }>;
-  groundedLocationData?: import("@/lib/google-ai/location-analysis").GroundedLocationData;
 }
 
 interface AnalysisContextType {

@@ -7,9 +7,24 @@ import Image from "next/image";
 import { TextEffect } from "@/components/ui/text-effect";
 import { AnimatedGroup } from "@/components/ui/animated-group";
 import { HeroHeader } from "./header";
-import AnalysisForm from "./analysis-form";
 import ButtonHeartbeat from "./button/button-heartbeat";
 import AnalysisFormNew from "./analysis-form-new";
+import React, { useState } from "react";
+import { useSession } from "next-auth/react";
+import { AnalysisFormData } from "@/lib/types/analysis";
+import {
+  checkIfUsedFreeAnalysis,
+  handleFallbackAnalysisResponse,
+  handleResponseErrors,
+  handleStreamingResponse,
+} from "@/utils/analysis";
+import { useRateLimit } from "@/lib/hooks/useRateLimit";
+import { Message } from "./chat-interface";
+import { useAnalysis } from "@/lib/contexts/analysis-context";
+import { tooManyRequestsMessage } from "@/utils/chat";
+import { useChat } from "@/lib/hooks/useChat";
+import { ProgressStep } from "./analysis-progress";
+import { useRouter } from "next/navigation";
 
 const transitionVariants = {
   item: {
@@ -31,10 +46,287 @@ const transitionVariants = {
   },
 };
 
-export default function HeroSection() {
+export default function HeroSection({
+  setLoginModalOpen,
+  setSignupModalOpen,
+}: {
+  setLoginModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setSignupModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  const {
+    messages,
+    setMessages,
+    setAnalysisData,
+    hasCompletedAnalysis,
+    setHasCompletedAnalysis,
+    setIsAnalyzing,
+    setShowMapView,
+    showAnalysisForm,
+    setShowAnalysisForm,
+    fingerprint,
+    clearRestoredState,
+    toastMessage,
+    showToast,
+  } = useAnalysis();
+  const {
+    setInput,
+    isLoading,
+    setIsLoading,
+    showAuthModal,
+    setShowAuthModal,
+    authModalMode,
+    setAuthModalMode,
+  } = useChat();
+  const { checkRateLimit } = useRateLimit();
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  const [progressStep, setProgressStep] = useState<ProgressStep>("geocoding");
+  const [streamingText, setStreamingText] = useState("");
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
+    null,
+  );
+
+  const handleAnalysisSubmit = React.useCallback(
+    async (data: AnalysisFormData) => {
+      // Check if user has already used free analysis and is not authenticated
+      if (!session && checkIfUsedFreeAnalysis(data, setSignupModalOpen)) return;
+
+      // Check rate limit
+      if (!checkRateLimit()) {
+        tooManyRequestsMessage(setMessages);
+        return;
+      }
+
+      setIsLoading(true);
+      setIsAnalyzing(true);
+      setProgressStep("geocoding");
+      setStreamingText("");
+      setStreamingMessageId(null);
+
+      try {
+        const response = await fetch("/api/analysis", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...data,
+            fingerprint,
+            coordinates: data.coordinates,
+          }),
+        });
+
+        if (!response.ok)
+          handleResponseErrors(
+            response,
+            setAuthModalMode,
+            setShowAuthModal,
+            setShowAnalysisForm,
+            setIsLoading,
+          );
+
+        // Check if response is streaming (text/event-stream)
+        const contentType = response.headers.get("content-type");
+        if (contentType?.includes("text/event-stream")) {
+          await handleStreamingResponse(
+            response,
+            setStreamingMessageId,
+            setMessages,
+            setProgressStep,
+            setStreamingText,
+            setAnalysisData,
+            setShowMapView,
+            setHasCompletedAnalysis,
+            setShowAnalysisForm,
+            setIsAnalyzing,
+            router,
+            session,
+          );
+          // // Handle streaming response
+          // const reader = response.body?.getReader();
+          // const decoder = new TextDecoder();
+
+          // if (!reader) {
+          //   throw new Error("No response body");
+          // }
+
+          // // Create streaming message
+          // const messageId = Date.now().toString();
+          // setStreamingMessageId(messageId);
+          // const assistantMessage: Message = {
+          //   id: messageId,
+          //   role: "assistant",
+          //   content: "",
+          //   timestamp: new Date(),
+          // };
+          // setMessages((prev) => [...prev, assistantMessage]);
+
+          // let buffer = "";
+          // let fullAnalysisText = "";
+
+          // while (true) {
+          //   const { done, value } = await reader.read();
+          //   if (done) break;
+
+          //   buffer += decoder.decode(value, { stream: true });
+          //   const lines = buffer.split("\n\n");
+          //   buffer = lines.pop() || "";
+
+          //   for (const line of lines) {
+          //     if (line.startsWith("data: ")) {
+          //       try {
+          //         const data = JSON.parse(line.slice(6));
+
+          //         if (data.type === "progress") {
+          //           setProgressStep(data.step);
+          //         } else if (data.type === "chunk") {
+          //           fullAnalysisText += data.text;
+          //           setStreamingText(fullAnalysisText);
+          //           // Update message content
+          //           setMessages((prev) =>
+          //             prev.map((msg) =>
+          //               msg.id === messageId
+          //                 ? { ...msg, content: fullAnalysisText }
+          //                 : msg,
+          //             ),
+          //           );
+          //         } else if (data.type === "done") {
+          //           // Mark that free analysis has been used (for anonymous users)
+          //           if (!session) {
+          //             localStorage.setItem("hasUsedFreeAnalysis", "true");
+          //           }
+
+          //           // Update final message
+          //           setMessages((prev) =>
+          //             prev.map((msg) =>
+          //               msg.id === messageId
+          //                 ? {
+          //                     ...msg,
+          //                     content: data.analysis,
+          //                     sources: data.sources || [],
+          //                   }
+          //                 : msg,
+          //             ),
+          //           );
+
+          //           // Show map view with analysis data
+          //           if (data.data) {
+          //             setAnalysisData({
+          //               ...data.data,
+          //               sources: data.sources || [],
+          //               groundedLocationData: data.groundedLocationData,
+          //             });
+          //             setShowMapView(true);
+          //             setHasCompletedAnalysis(true);
+          //             setShowAnalysisForm(false);
+          //             // Navigate to analysis page
+          //             router.push("/analysis");
+          //           }
+
+          //           setStreamingText("");
+          //           setStreamingMessageId(null);
+          //           setProgressStep("complete");
+          //           setIsAnalyzing(false);
+          //         } else if (data.type === "error") {
+          //           throw new Error(
+          //             data.error || data.details || "Analysis failed",
+          //           );
+          //         }
+          //       } catch (parseError) {
+          //         console.error("Error parsing SSE data:", parseError);
+          //       }
+          //     }
+          //   }
+          // }
+        } else {
+          // Fallback to non-streaming response (for backward compatibility)
+          const result = await response.json();
+
+          // Mark that free analysis has been used (for anonymous users)
+          if (!session) {
+            localStorage.setItem("hasUsedFreeAnalysis", "true");
+          }
+
+          handleFallbackAnalysisResponse(
+            result,
+            setMessages,
+            setAnalysisData,
+            setShowMapView,
+            setHasCompletedAnalysis,
+            setShowAnalysisForm,
+            setIsAnalyzing,
+            router,
+          );
+
+          // const assistantMessage: Message = {
+          //   id: Date.now().toString(),
+          //   role: "assistant",
+          //   content: result.analysis,
+          //   timestamp: new Date(),
+          // };
+
+          // setMessages((prev) => [...prev, assistantMessage]);
+
+          // // Show map view with analysis data
+          // if (result.data) {
+          //   setAnalysisData({
+          //     ...result.data,
+          //     sources: result.sources || [],
+          //     groundedLocationData: result.groundedLocationData,
+          //   });
+          //   setShowMapView(true);
+          //   setHasCompletedAnalysis(true);
+          //   setShowAnalysisForm(false);
+          //   setIsAnalyzing(false);
+          //   // Navigate to analysis page
+          //   router.push("/analysis");
+          // }
+        }
+      } catch (error) {
+        console.error("Error getting analysis:", error);
+        const errorMessage: Message = {
+          id: Date.now().toString(),
+          role: "assistant",
+          content:
+            error instanceof Error
+              ? error.message
+              : "Omlouváme se, při analýze došlo k chybě. Zkuste to prosím znovu.",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+        setStreamingText("");
+        setStreamingMessageId(null);
+        setProgressStep("geocoding");
+        setIsAnalyzing(false);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [
+      session,
+      fingerprint,
+      checkRateLimit,
+      setMessages,
+      setAuthModalMode,
+      setShowAuthModal,
+      setIsLoading,
+      setSignupModalOpen,
+      setAnalysisData,
+      setIsAnalyzing,
+      setShowMapView,
+      setHasCompletedAnalysis,
+      setShowAnalysisForm,
+      router,
+    ],
+  );
+
   return (
     <>
-      <HeroHeader />
+      <HeroHeader
+        setLoginModalOpen={setLoginModalOpen}
+        setSignupModalOpen={setSignupModalOpen}
+      />
       <main className="overflow-hidden">
         <div
           aria-hidden
@@ -187,7 +479,10 @@ export default function HeroSection() {
               }}
             >
               <div className="relative mt-8 overflow-auto px-2 sm:mr-0 sm:mt-12 md:mt-20">
-                <AnalysisFormNew />
+                <AnalysisFormNew
+                  handleAnalysisSubmit={handleAnalysisSubmit}
+                  progressStep={progressStep}
+                />
                 {/* <AnalysisForm
                   onSubmit={(data) => {
                     console.log("Analysis form submitted:", data);

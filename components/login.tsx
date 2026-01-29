@@ -3,6 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import SpotonautLogo from "./spotonaut-logo";
+import { useState } from "react";
+import { handleGoogleSignIn, handleLogin } from "@/utils/auth";
 
 export default function LoginPage({
   isOpen,
@@ -13,6 +15,17 @@ export default function LoginPage({
   onClose: () => void;
   onSwitchToSignup: () => void;
 }) {
+  const [isLoading, setIsLoading] = useState(false);
+  // TODO: show error messages properly in the UI
+  const [error, setError] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleLogin(email, password, setIsLoading, setError);
+  };
+
   if (!isOpen) return null;
   return (
     <section
@@ -20,9 +33,9 @@ export default function LoginPage({
       onClick={onClose}
     >
       <form
-        action=""
         className="bg-muted m-auto h-fit w-full max-w-sm overflow-hidden rounded-[calc(var(--radius)+.125rem)] border shadow-2xl shadow-zinc-950/20 dark:[--color-muted:var(--color-zinc-900)]"
         onClick={(e) => e.stopPropagation()}
+        onSubmit={handleSubmit}
       >
         <div className="bg-card -m-px rounded-[calc(var(--radius)+.125rem)] border p-8 pb-6">
           <div className="text-center">
@@ -40,7 +53,14 @@ export default function LoginPage({
               <Label htmlFor="email" className="block text-sm">
                 E-mail
               </Label>
-              <Input type="email" required name="email" id="email" />
+              <Input
+                type="email"
+                required
+                name="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
 
             <div className="space-y-0.5">
@@ -63,10 +83,14 @@ export default function LoginPage({
                 name="pwd"
                 id="pwd"
                 className="input sz-md variant-mixed"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
-            <Button className="w-full">Přihlásit se</Button>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Přihlašování..." : "Přihlásit se"}
+            </Button>
           </div>
 
           <div className="my-6 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
@@ -78,7 +102,13 @@ export default function LoginPage({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Button type="button" variant="outline">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                handleGoogleSignIn(setIsLoading, setError);
+              }}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="0.98em"

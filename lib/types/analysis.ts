@@ -3,8 +3,6 @@ import type { BusinessType } from "@/lib/constants/business-types";
 export interface AnalysisFormData {
   location: string;
   businessType: BusinessType;
-  operatingHours: number;
-  timeframe: "day" | "week" | "month" | "year";
   coordinates?: {
     lat: number;
     lon: number;
@@ -32,4 +30,21 @@ export interface LocationSuggestion {
 export interface LocationData {
   displayName: string;
   coordinates: { lat: number; lon: number };
+}
+
+export interface AnalysisData {
+  id?: string;
+  location: string;
+  locationName: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+  metrics?: {
+    localityScore: number;
+    footfallScore: number;
+    recommendedHours: string;
+  };
+  sources?: Array<{ title: string; uri: string }>;
+  groundedLocationData?: import("@/lib/google-ai/location-analysis").GroundedLocationData;
 }

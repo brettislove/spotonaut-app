@@ -3,7 +3,6 @@
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
 import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -17,35 +16,63 @@ import {
 } from "@/components/ui/card";
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupText,
-  InputGroupTextarea,
-} from "@/components/ui/input-group";
 import LocationInput from "./ui/location-input";
 import { FieldHelpNew } from "./ui/field-help-new";
-import type { LocationData } from "@/lib/types/analysis";
+import type { AnalysisFormData, LocationData } from "@/lib/types/analysis";
+import { BusinessTypeSelectNew } from "./ui/business-type-select-new";
+import { ShimmerButton } from "./ui/shimmer-button";
+import OperatingDays from "./operating-days";
+import {
+  ChainOfThought,
+  ChainOfThoughtContent,
+  ChainOfThoughtHeader,
+  ChainOfThoughtSearchResult,
+  ChainOfThoughtSearchResults,
+  ChainOfThoughtStep,
+} from "./ai-elements/chain-of-thought";
+import {
+  Check,
+  CheckCheck,
+  ListCheck,
+  MapPin,
+  MapPinned,
+  SearchIcon,
+  Store,
+} from "lucide-react";
+import {
+  BUSINESS_TYPES_BY_CATEGORY,
+  getBusinessTypeByName,
+} from "@/lib/constants/business-types";
+import { useAnalysis } from "@/lib/contexts/analysis-context";
+import { ProgressStep } from "./analysis-progress";
 
 const formSchema = z.object({
   location: z.string().nonempty("Je nutné zadat cílovou lokalitu."),
   businessType: z.string().nonempty("Je nutné zadat typ podnikání."),
+  operatingHours: z.string().optional(),
 });
 
-export default function AnalysisFormNew() {
+export default function AnalysisFormNew({
+  handleAnalysisSubmit,
+  progressStep = "geocoding",
+}: {
+  handleAnalysisSubmit: (data: AnalysisFormData) => Promise<void>;
+  progressStep?: ProgressStep;
+}) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       location: "",
       businessType: "",
+      operatingHours: "",
     },
   });
 
+  const { isAnalyzing } = useAnalysis();
   const [locationInput, setLocationInput] = React.useState("");
   const [fullLocationData, setFullLocationData] =
     React.useState<LocationData | null>(null);
@@ -53,20 +80,37 @@ export default function AnalysisFormNew() {
     {},
   );
 
+  // Helper function to determine step status based on current progress
+  const getStepStatus = (
+    stepName: ProgressStep,
+  ): "pending" | "active" | "complete" => {
+    const stepOrder: ProgressStep[] = [
+      "geocoding",
+      "maps_grounding",
+      "pro_analysis",
+      "finalizing",
+      "complete",
+    ];
+    const currentIndex = stepOrder.indexOf(progressStep);
+    const stepIndex = stepOrder.indexOf(stepName);
+
+    if (stepIndex < currentIndex) return "complete";
+    if (stepIndex === currentIndex) return "active";
+    return "pending";
+  };
+
   function onSubmit(data: z.infer<typeof formSchema>) {
-    toast("You submitted the following values:", {
-      description: (
-        <pre className="bg-code text-code-foreground mt-2 w-[320px] overflow-x-auto rounded-md p-4">
-          <code>{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-      position: "bottom-right",
-      classNames: {
-        content: "flex flex-col gap-2",
-      },
-      style: {
-        "--border-radius": "calc(var(--radius)  + 4px)",
-      } as React.CSSProperties,
+    // Use full location data if available, otherwise fall back to input
+    const businessType = getBusinessTypeByName(data.businessType);
+    handleAnalysisSubmit({
+      location: data.location,
+      businessType: businessType!,
+      coordinates: fullLocationData
+        ? {
+            lat: fullLocationData.coordinates.lat,
+            lon: fullLocationData.coordinates.lon,
+          }
+        : undefined,
     });
   }
 
@@ -82,71 +126,140 @@ export default function AnalysisFormNew() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form id="analysis-form" onSubmit={form.handleSubmit(onSubmit)}>
-            <FieldGroup>
-              <Controller
-                name="location"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="analysis-form-location">
-                      Cílová lokalita
-                      <FieldHelpNew
-                        title="Cílová lokalita"
-                        description="Zadejte přesnou adresu nebo název místa. Můžete použít vyhledávání nebo vybrat lokaci z mapy. Pro nejlepší výsledky zadejte město a ulici."
+          {!isAnalyzing ? (
+            <form id="analysis-form" onSubmit={form.handleSubmit(onSubmit)}>
+              <FieldGroup>
+                <Controller
+                  name="location"
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="analysis-form-location">
+                        Cílová lokalita
+                        <FieldHelpNew
+                          title="Cílová lokalita"
+                          description="Zadejte přesnou adresu nebo název místa. Můžete použít vyhledávání nebo vybrat lokaci z mapy. Pro nejlepší výsledky zadejte město a ulici."
+                        />
+                      </FieldLabel>
+                      <LocationInput
+                        field={field}
+                        fieldState={fieldState}
+                        locationInput={locationInput}
+                        setLocationInput={setLocationInput}
+                        fullLocationData={fullLocationData}
+                        setFullLocationData={setFullLocationData}
+                        errors={errors}
+                        setErrors={setErrors}
                       />
-                    </FieldLabel>
-                    <LocationInput
-                      field={field}
-                      fieldState={fieldState}
-                      locationInput={locationInput}
-                      setLocationInput={setLocationInput}
-                      fullLocationData={fullLocationData}
-                      setFullLocationData={setFullLocationData}
-                      errors={errors}
-                      setErrors={setErrors}
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-              <Controller
-                name="businessType"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="analysis-form-description">
-                      Popis podnikání
-                    </FieldLabel>
-                    <InputGroup>
-                      <InputGroupTextarea
-                        {...field}
-                        id="analysis-form-description"
-                        placeholder="I'm having an issue with the login button on mobile."
-                        rows={6}
-                        className="min-h-24 resize-none"
-                        aria-invalid={fieldState.invalid}
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+                <Controller
+                  name="businessType"
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="analysis-form-businessType">
+                        Typ podnikání
+                        <FieldHelpNew
+                          title="Typ podnikání"
+                          description="Vyberte typ podnikání, který nejlépe vystihuje vaši provozovnu. Tento výběr pomůže přizpůsobit odhad návštěvnosti a doporučené provozní parametry."
+                        />
+                      </FieldLabel>
+                      <BusinessTypeSelectNew
+                        value={field.value}
+                        onValueChange={field.onChange}
                       />
-                      <InputGroupAddon align="block-end">
-                        <InputGroupText className="tabular-nums">
-                          {field.value.length}/100 characters
-                        </InputGroupText>
-                      </InputGroupAddon>
-                    </InputGroup>
-                    <FieldDescription>
-                      Include steps to reproduce, expected behavior, and what
-                      actually happened.
-                    </FieldDescription>
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+                <Controller
+                  name="operatingHours"
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="analysis-form-operatingHours">
+                        Plánované dny otevření
+                        <FieldHelpNew
+                          title="Plánované dny otevření"
+                          description="Vyberte dny, kdy bude provozovna otevřená a nastavte počet hodin pro každý den. Celkové hodiny za týden se vypočtou z vybraných dnů."
+                        />
+                      </FieldLabel>
+                      <div className="relative">
+                        {/* Keep component in DOM but visually disabled (planned feature) */}
+                        <div className="pointer-events-none opacity-40">
+                          <OperatingDays
+                            disabled={true}
+                            onChange={() => {}}
+                            error={errors.operatingHours}
+                          />
+                        </div>
+
+                        {/* Small overlay label indicating planned feature */}
+                        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                          Dostupné brzy...
+                        </div>
+                      </div>
+                    </Field>
+                  )}
+                />
+              </FieldGroup>
+            </form>
+          ) : (
+            <ChainOfThought defaultOpen>
+              <ChainOfThoughtHeader>
+                <h3 className="text-2xl">
+                  Analyzování lokality: {fullLocationData?.displayName || ""}
+                </h3>
+              </ChainOfThoughtHeader>
+              <ChainOfThoughtContent>
+                <ChainOfThoughtStep
+                  icon={
+                    getStepStatus("geocoding") === "complete" ? Check : MapPin
+                  }
+                  label="Geokódování zadané lokality"
+                  status={getStepStatus("geocoding")}
+                />
+
+                <ChainOfThoughtStep
+                  icon={
+                    getStepStatus("maps_grounding") === "complete"
+                      ? Check
+                      : MapPinned
+                  }
+                  label="Získávání dat z map"
+                  status={getStepStatus("maps_grounding")}
+                />
+
+                <ChainOfThoughtStep
+                  icon={
+                    getStepStatus("pro_analysis") === "complete" ? Check : Store
+                  }
+                  label="Analýza obchodního potenciálu"
+                  status={getStepStatus("pro_analysis")}
+                />
+
+                <ChainOfThoughtStep
+                  label="Sumarizace výsledků"
+                  status={getStepStatus("finalizing")}
+                />
+
+                {getStepStatus("complete") === "complete" && (
+                  <ChainOfThoughtStep
+                    icon={CheckCheck}
+                    label="Hotovo!"
+                    status={getStepStatus("complete")}
+                  />
                 )}
-              />
-            </FieldGroup>
-          </form>
+              </ChainOfThoughtContent>
+            </ChainOfThought>
+          )}
         </CardContent>
         <CardFooter>
           <Field
@@ -157,16 +270,18 @@ export default function AnalysisFormNew() {
               type="button"
               variant="outline"
               onClick={() => form.reset()}
+              hidden={isAnalyzing}
             >
               Vymazat
             </Button>
-            <Button
+            <ShimmerButton
               type="submit"
               form="analysis-form"
-              className="bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800"
+              className="cursor-pointer bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800"
+              hidden={isAnalyzing}
             >
               Spustit analýzu
-            </Button>
+            </ShimmerButton>
           </Field>
         </CardFooter>
       </Card>

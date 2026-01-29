@@ -8,16 +8,20 @@ import {
 } from "@/components/ui/dialog";
 import { LocationData } from "@/lib/types/analysis";
 import { handleConfirmLocation, initMap } from "@/utils/location-input";
-import { useEffect, useRef, useState } from "react";
+import React, { SetStateAction, useEffect, useRef, useState } from "react";
 import type L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 interface LocationPickerDialogNewProps {
   setLocationInput: React.Dispatch<React.SetStateAction<string>>;
-  setFullLocationData: (data: LocationData | null) => void;
+  setFullLocationData: React.Dispatch<
+    React.SetStateAction<LocationData | null>
+  >;
   setFormField: React.Dispatch<React.SetStateAction<string>>;
   errors: Partial<Record<string, string>>;
-  setErrors: (errors: Partial<Record<string, string>>) => void;
+  setErrors: React.Dispatch<
+    React.SetStateAction<Partial<Record<string, string>>>
+  >;
   isDialogOpen: boolean;
   setIsDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -38,7 +42,7 @@ export function LocationPickerDialogNew({
     useState<[number, number]>(initialCenter);
   const [currentAddress, setCurrentAddress] = useState<string>("");
   const mapRef = useRef<L.Map | null>(null);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {

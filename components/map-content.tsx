@@ -3,19 +3,10 @@
 import { useMemo, useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
-import type { LatLngExpression } from "leaflet";
-import type { GroundedLocationData } from "@/lib/google-ai/location-analysis";
 
 // Import Leaflet CSS
 import "leaflet/dist/leaflet.css";
-
-interface MapContentProps {
-  position: LatLngExpression;
-  location: string;
-  groundedLocationData?: GroundedLocationData;
-  filterState?: Record<string, boolean>;
-  onFilterChange?: (key: string) => void;
-}
+import { MapContentProps } from "@/lib/types/map";
 
 // Component to trigger map invalidation
 function MapInvalidator() {
@@ -73,7 +64,7 @@ export default function MapContent({
         iconAnchor: [20, 40],
         popupAnchor: [0, -40],
       }),
-    []
+    [],
   );
 
   const createMarkerIcon = useMemo(
@@ -107,7 +98,7 @@ export default function MapContent({
         iconAnchor: [15, 15],
         popupAnchor: [0, -15],
       }),
-    []
+    [],
   );
 
   const getFilterDisplayName = (key: string) => {
@@ -135,25 +126,25 @@ export default function MapContent({
         return (groundedLocationData?.competitors?.length ?? 0) > 0;
       case "transit":
         return groundedLocationData?.footfallProxies?.some(
-          (proxy) => proxy.type === "transit"
+          (proxy) => proxy.type === "transit",
         );
       case "shopping":
         return groundedLocationData?.footfallProxies?.some(
-          (proxy) => proxy.type === "shopping"
+          (proxy) => proxy.type === "shopping",
         );
       case "office":
         return groundedLocationData?.footfallProxies?.some(
-          (proxy) => proxy.type === "office"
+          (proxy) => proxy.type === "office",
         );
       case "residential":
         return groundedLocationData?.footfallProxies?.some(
-          (proxy) => proxy.type === "residential"
+          (proxy) => proxy.type === "residential",
         );
       case "availableProperties":
         return (groundedLocationData?.availableProperties?.length ?? 0) > 0;
       case "other":
         return groundedLocationData?.footfallProxies?.some(
-          (proxy) => proxy.type === "other"
+          (proxy) => proxy.type === "other",
         );
       default:
         return false;
@@ -179,15 +170,13 @@ export default function MapContent({
     }
   };
 
-  console.log("Rendering MapContent with center at ", position);
-
   return (
     <div className="relative h-full w-full overflow-visible">
       <MapContainer
         center={position}
         zoom={15}
         style={{ height: "100%", width: "100%" }}
-        className="z-0 sm:rounded-t-2xl"
+        className="z-0"
         scrollWheelZoom={true}
       >
         <TileLayer
@@ -208,7 +197,7 @@ export default function MapContent({
         {/* Render competitors */}
         {(groundedLocationData?.competitors ?? [])
           .filter(
-            (competitor) => competitor.coordinates && filterState?.competitors
+            (competitor) => competitor.coordinates && filterState?.competitors,
           )
           .map((competitor, index) => {
             return (
@@ -220,7 +209,7 @@ export default function MapContent({
                 ]}
                 icon={createMarkerIcon(
                   "competitors",
-                  getMarkerColor("competitors")
+                  getMarkerColor("competitors"),
                 )}
               >
                 <Popup>
@@ -285,12 +274,12 @@ export default function MapContent({
                       {proxy.type === "transit"
                         ? "Doprava"
                         : proxy.type === "shopping"
-                        ? "Nákupy"
-                        : proxy.type === "office"
-                        ? "Kancelář"
-                        : proxy.type === "residential"
-                        ? "Bydlení"
-                        : "Ostatní"}
+                          ? "Nákupy"
+                          : proxy.type === "office"
+                            ? "Kancelář"
+                            : proxy.type === "residential"
+                              ? "Bydlení"
+                              : "Ostatní"}
                     </strong>
                     <div className="text-gray-600">{proxy.description}</div>
                     {proxy.distanceMeters && (
@@ -308,7 +297,7 @@ export default function MapContent({
         {(groundedLocationData?.availableProperties ?? [])
           .filter(
             (property) =>
-              property.coordinates && filterState?.availableProperties
+              property.coordinates && filterState?.availableProperties,
           )
           .map((property) => {
             return (
@@ -320,7 +309,7 @@ export default function MapContent({
                 ]}
                 icon={createMarkerIcon(
                   "availableProperties",
-                  getMarkerColor("availableProperties")
+                  getMarkerColor("availableProperties"),
                 )}
               >
                 <Popup>
@@ -466,8 +455,8 @@ export default function MapContent({
                           !hasData
                             ? "opacity-50 cursor-not-allowed text-slate-500"
                             : isVisible
-                            ? "cursor-pointer text-white font-semibold"
-                            : "cursor-pointer text-slate-300"
+                              ? "cursor-pointer text-white font-semibold"
+                              : "cursor-pointer text-slate-300"
                         }`}
                         style={
                           !hasData
@@ -475,18 +464,18 @@ export default function MapContent({
                                 borderColor: "transparent",
                               }
                             : isVisible
-                            ? {
-                                backgroundColor: `${getMarkerColor(key)}40`, // 50% opacity
-                                borderColor: getMarkerColor(key), // 100% opacity
-                              }
-                            : hoveredKey === key
-                            ? {
-                                backgroundColor: `${getMarkerColor(key)}30`, // 30% opacity for hover
-                                borderColor: "transparent",
-                              }
-                            : {
-                                borderColor: "transparent", // invisible border for unselected
-                              }
+                              ? {
+                                  backgroundColor: `${getMarkerColor(key)}40`, // 50% opacity
+                                  borderColor: getMarkerColor(key), // 100% opacity
+                                }
+                              : hoveredKey === key
+                                ? {
+                                    backgroundColor: `${getMarkerColor(key)}30`, // 30% opacity for hover
+                                    borderColor: "transparent",
+                                  }
+                                : {
+                                    borderColor: "transparent", // invisible border for unselected
+                                  }
                         }
                       >
                         <div

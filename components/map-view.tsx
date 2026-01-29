@@ -44,7 +44,7 @@ const MapContent = dynamic<MapContentProps>(
         <div className="text-slate-400">Načítání mapy...</div>
       </div>
     ),
-  }
+  },
 );
 
 export default function MapView({ data }: MapViewProps) {
@@ -76,7 +76,7 @@ export default function MapView({ data }: MapViewProps) {
         }
       }
       return defaultFilters;
-    }
+    },
   );
 
   // Save filter state to localStorage

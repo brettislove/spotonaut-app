@@ -7,16 +7,28 @@ import { useCallback, useRef, useState } from "react";
 import type { LocationData, LocationSuggestion } from "@/lib/types/analysis";
 import { Dialog, DialogTrigger } from "./dialog";
 import { LocationPickerDialogNew } from "../location-picker-dialog-new";
+import { ControllerFieldState, ControllerRenderProps } from "react-hook-form";
 
 interface LocationInputProps {
-  field: any;
-  fieldState: any;
+  field: ControllerRenderProps<
+    {
+      location: string;
+      businessType: string;
+      operatingHours?: string | undefined;
+    },
+    "location"
+  >;
+  fieldState: ControllerFieldState;
   locationInput: string;
   setLocationInput: React.Dispatch<React.SetStateAction<string>>;
   fullLocationData: LocationData | null;
-  setFullLocationData: (data: LocationData | null) => void;
+  setFullLocationData: React.Dispatch<
+    React.SetStateAction<LocationData | null>
+  >;
   errors: Partial<Record<string, string>>;
-  setErrors: (errors: Partial<Record<string, string>>) => void;
+  setErrors: React.Dispatch<
+    React.SetStateAction<Partial<Record<string, string>>>
+  >;
 }
 
 export default function LocationInput({

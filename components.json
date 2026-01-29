@@ -19,6 +19,11 @@
     "hooks": "@/hooks"
   },
   "registries": {
-    "@tailark": "https://tailark.com/r/{name}.json"
+    "@ai-elements": "https://ai-sdk.dev/r/{name}.json",
+    "@tailark": "https://tailark.com/r/{name}.json",
+    "@shadcn-studio": "https://shadcnstudio.com/r/{name}.json",
+    "@ss-components": "https://shadcnstudio.com/r/components/{name}.json",
+    "@ss-blocks": "https://shadcnstudio.com/r/blocks/{name}.json",
+    "@ss-themes": "https://shadcnstudio.com/r/themes/{name}.json"
   }
 }

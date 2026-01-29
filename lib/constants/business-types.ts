@@ -252,7 +252,11 @@ export const BUSINESS_TYPES_BY_CATEGORY = BUSINESS_TYPES.reduce(
     acc[business.category].push(business);
     return acc;
   },
-  {} as Record<string, BusinessType[]>
+  {} as Record<string, BusinessType[]>,
 );
 
 export const CATEGORIES = Object.keys(BUSINESS_TYPES_BY_CATEGORY);
+
+export const getBusinessTypeByName = (name: string): BusinessType | null => {
+  return BUSINESS_TYPES.find((business) => business.type === name) || null;
+};

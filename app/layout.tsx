@@ -8,6 +8,7 @@ import Header from "@/components/layout/header";
 import PageTracker from "@/components/page-tracker";
 import { HeroHeader } from "@/components/header";
 import FooterSection from "@/components/footer";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -185,6 +186,7 @@ export default function RootLayout({
               <PageTracker />
             </Suspense>
             {/* <Header /> */}
+            <Toaster />
             <HeroHeader />
             {children}
             <FooterSection />

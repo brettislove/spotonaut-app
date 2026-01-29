@@ -1,12 +1,22 @@
 "use client";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { LogOut, Menu, Settings, Settings2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import LoginPage from "./login";
-import SignUpPage from "./sign-up";
+import { useSession } from "next-auth/react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { handleSignOut } from "@/utils/auth";
+import { useAnalysis } from "@/lib/contexts/analysis-context";
 
 const menuItems = [
   { name: "Jak to funguje", href: "/how-it-works" },
@@ -15,11 +25,17 @@ const menuItems = [
   { name: "Kontakt", href: "#link" },
 ];
 
-export const HeroHeader = () => {
+export const HeroHeader = ({
+  setLoginModalOpen,
+  setSignupModalOpen,
+}: {
+  setLoginModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setSignupModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) => {
+  const { resetAnalysis } = useAnalysis();
+  const { data: session } = useSession();
   const [menuState, setMenuState] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
-  const [loginModalOpen, setLoginModalOpen] = React.useState(false);
-  const [signupModalOpen, setSignupModalOpen] = React.useState(false);
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -108,52 +124,87 @@ export const HeroHeader = () => {
                 </ul>
               </div>
               <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn("cursor-pointer", isScrolled && "lg:hidden")}
-                  onClick={() => setLoginModalOpen(true)}
-                >
-                  <span>Přihlásit se</span>
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className={cn("cursor-pointer", isScrolled && "lg:hidden")}
-                  onClick={() => setSignupModalOpen(true)}
-                >
-                  <span>Zaregistrovat se</span>
-                </Button>
-                <Button
-                  asChild
-                  size="sm"
-                  className={cn(isScrolled ? "lg:inline-flex" : "hidden")}
-                >
-                  <Link href="#">
-                    <span>Začít</span>
-                  </Link>
-                </Button>
+                {session ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost">
+                        <Avatar className="size-6">
+                          <AvatarImage
+                            src="https://cdn.shadcnstudio.com/ss-assets/avatar/avatar-1.png"
+                            alt="Phillip George"
+                          />
+                          <AvatarFallback className="text-xs">
+                            PG
+                          </AvatarFallback>
+                        </Avatar>
+                        {session.user?.email}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56">
+                      <DropdownMenuLabel className="flex items-center gap-2">
+                        <div className="flex flex-1 flex-col">
+                          <span className="text-popover-foreground">
+                            {session.user?.name}
+                          </span>
+                          <span className="text-muted-foreground text-sm">
+                            {session.user?.email}
+                          </span>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>
+                        <Settings />
+                        <span>Nastavení účtu</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={() => handleSignOut({ resetAnalysis })}
+                      >
+                        <LogOut />
+                        <span>Odhlásit se</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "cursor-pointer",
+                        isScrolled && "lg:hidden",
+                      )}
+                      onClick={() => setLoginModalOpen(true)}
+                    >
+                      <span>Přihlásit se</span>
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className={cn(
+                        "cursor-pointer",
+                        isScrolled && "lg:hidden",
+                      )}
+                      onClick={() => setSignupModalOpen(true)}
+                    >
+                      <span>Zaregistrovat se</span>
+                    </Button>
+                    <Button
+                      asChild
+                      size="sm"
+                      className={cn(isScrolled ? "lg:inline-flex" : "hidden")}
+                    >
+                      <Link href="#">
+                        <span>Začít</span>
+                      </Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
         </div>
       </nav>
-      <LoginPage
-        isOpen={loginModalOpen}
-        onClose={() => setLoginModalOpen(false)}
-        onSwitchToSignup={() => {
-          setLoginModalOpen(false);
-          setSignupModalOpen(true);
-        }}
-      />
-      <SignUpPage
-        isOpen={signupModalOpen}
-        onClose={() => setSignupModalOpen(false)}
-        onSwitchToLogin={() => {
-          setSignupModalOpen(false);
-          setLoginModalOpen(true);
-        }}
-      />
     </header>
   );
 };

@@ -22,8 +22,6 @@ export default function AnalysisForm({
   const [formData, setFormData] = useState<Partial<AnalysisFormData>>({
     location: "",
     businessType: undefined,
-    operatingHours: 40,
-    timeframe: "month",
   });
 
   const [errors, setErrors] = useState<
@@ -255,13 +253,6 @@ export default function AnalysisForm({
       newErrors.businessType = "Typ podnikání je povinný";
     }
 
-    const selectedCount = dailyHours
-      ? Object.values(dailyHours).filter((h) => h > 0).length
-      : Math.max(0, Math.round((formData.operatingHours || 0) / 24));
-    if (selectedCount === 0) {
-      newErrors.operatingHours = "Vyberte alespoň jeden den";
-    }
-
     setErrors(newErrors);
 
     if (
@@ -272,8 +263,6 @@ export default function AnalysisForm({
       onSubmit({
         location: locationToSubmit,
         businessType: formData.businessType,
-        operatingHours: formData.operatingHours!,
-        timeframe: formData.timeframe!,
         coordinates: fullLocationData.coordinates,
       });
     }
@@ -289,17 +278,6 @@ export default function AnalysisForm({
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
-
-  // Stable handler for OperatingDays to avoid changing reference each render
-  const handleOperatingDaysChange = useCallback(
-    (total: number, days: Record<string, number>) => {
-      setFormData((prev) => ({ ...prev, operatingHours: total }));
-      setDailyHours(days as Record<string, number>);
-      // clear operatingHours validation if present
-      setErrors((prev) => ({ ...prev, operatingHours: undefined }));
-    },
-    [],
-  );
 
   return (
     <div className="w-full max-w-2xl mx-auto p-6 bg-slate-950 border border-slate-700/60 rounded-xl shadow-2xl">
@@ -452,29 +430,13 @@ export default function AnalysisForm({
             <div className="space-y-3 relative">
               {/* Keep component in DOM but visually disabled (planned feature) */}
               <div className="pointer-events-none opacity-40">
-                <OperatingDays
-                  disabled={true}
-                  onChange={handleOperatingDaysChange}
-                  error={errors.operatingHours}
-                />
+                <OperatingDays disabled={true} />
               </div>
 
               {/* Small overlay label indicating planned feature */}
               <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                {/* <span className="text-lg text-blue-100 bg-gradient-to-r from-blue-700/20 to-blue-700/10 px-3 py-1 rounded-full border border-blue-700/30"> */}
                 Dostupné brzy...
-                {/* </span> */}
               </div>
-
-              {/* Badge moved next to the label; kept OperatingDays in DOM but non-interactive */}
-
-              {/* Keep validation text hidden while the section is planned */}
-              {/* If you want to show validation in future, remove the comment tags below */}
-              {/* {errors.operatingHours && (
-                <p className="mt-2 text-sm text-red-500">
-                  {errors.operatingHours}
-                </p>
-              )} */}
             </div>
           </div>
         </div>
@@ -507,7 +469,8 @@ export default function AnalysisForm({
       <LocationPickerDialog
         isOpen={isLocationPickerOpen}
         onClose={() => setIsLocationPickerOpen(false)}
-        onLocationSelect={handleLocationPickerSelect}
+        setLocationInput={setLocationInput}
+        setFullLocationData={setFullLocationData}
       />
     </div>
   );

@@ -1,10 +1,12 @@
-import { LogoIcon } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import SpotonautLogo from "./spotonaut-logo";
 import { useState } from "react";
+import { handleSignup } from "@/utils/auth";
+import { toast } from "sonner";
 
 export default function SignUpPage({
   isOpen,
@@ -20,6 +22,66 @@ export default function SignUpPage({
   const [confirmPasswordValid, setConfirmPasswordValid] = useState<
     boolean | null
   >(null);
+  const [passwordError, setPasswordError] = useState("");
+  const [showPromoCode, setShowPromoCode] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoCodeStatus, setPromoCodeStatus] = useState<
+    "idle" | "checking" | "valid" | "invalid"
+  >("idle");
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const validatePassword = (pwd: string) => {
+    if (pwd.length > 0 && pwd.length < 6) {
+      setPasswordError("Heslo musí mít alespoň 6 znaků");
+    } else {
+      setPasswordError("");
+    }
+  };
+
+  const validatePromoCode = async () => {
+    if (!promoCode.trim()) return;
+
+    setPromoCodeStatus("checking");
+
+    // Simulate API call - replace with actual validation logic
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Mock validation - in real app, this would check against your backend
+    const validCodes = ["WELCOME2024", "SPOTONAUT", "DISCOUNT50"];
+    const isValid = validCodes.includes(promoCode.toUpperCase());
+
+    setPromoCodeStatus(isValid ? "valid" : "invalid");
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleSignup(
+      email,
+      password,
+      confirmPassword,
+      agreeToTerms,
+      promoCode,
+      setIsLoading,
+      setError,
+      onSwitchToLogin,
+    ).then(() => {
+      toast.success(
+        "Registrace úspěšná — zkontrolujte svůj e-mail pro potvrzení.",
+        {
+          position: "top-center",
+          style: {
+            backgroundColor: "#14532d",
+            color: "white",
+            border: "2px solid #22c55e",
+          },
+        },
+      );
+    });
+  };
 
   if (!isOpen) return null;
   return (
@@ -28,9 +90,9 @@ export default function SignUpPage({
       onClick={onClose}
     >
       <form
-        action=""
         className="bg-muted m-auto h-fit w-full max-w-sm overflow-hidden rounded-[calc(var(--radius)+.125rem)] border shadow-2xl shadow-zinc-950/20 dark:[--color-muted:var(--color-zinc-900)]"
         onClick={(e) => e.stopPropagation()}
+        onSubmit={handleFormSubmit}
       >
         <div className="bg-card -m-px rounded-[calc(var(--radius)+.125rem)] border p-8 pb-6">
           <div className="text-center">
@@ -48,7 +110,15 @@ export default function SignUpPage({
               <Label htmlFor="email" className="block text-sm">
                 Email
               </Label>
-              <Input type="email" required name="email" id="email" />
+              <Input
+                type="email"
+                required
+                name="email"
+                id="email"
+                placeholder="vas@email.cz"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
 
             <div className="space-y-0.5">
@@ -62,17 +132,28 @@ export default function SignUpPage({
                 required
                 name="pwd"
                 id="pwd"
+                placeholder="Alespoň 6 znaků"
                 value={password}
                 onChange={(e) => {
                   const val = e.target.value;
                   setPassword(val);
+                  // Clear error when user starts typing again
+                  if (passwordError && val.length >= 6) {
+                    setPasswordError("");
+                  }
                   // Re-validate confirm immediately when password changes
                   setConfirmPasswordValid(
                     confirmPassword ? val === confirmPassword : null,
                   );
                 }}
-                className="input sz-md variant-mixed"
+                onBlur={() => validatePassword(password)}
+                className={`input sz-md variant-mixed ${
+                  passwordError ? "border-red-500" : ""
+                }`}
               />
+              {passwordError && (
+                <p className="mt-2 text-sm text-red-400">{passwordError}</p>
+              )}
             </div>
 
             <div className="space-y-0.5">
@@ -84,6 +165,7 @@ export default function SignUpPage({
                 required
                 name="confirmPwd"
                 id="confirmPwd"
+                placeholder="Zadejte heslo znovu"
                 value={confirmPassword}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -93,7 +175,7 @@ export default function SignUpPage({
                 className={`input sz-md variant-mixed ${
                   confirmPasswordValid === false
                     ? "border-red-500"
-                    : confirmPasswordValid === true
+                    : confirmPasswordValid === true && password.length > 0
                       ? "border-green-500"
                       : ""
                 }`}
@@ -101,12 +183,111 @@ export default function SignUpPage({
               {confirmPasswordValid === false && (
                 <p className="mt-2 text-sm text-red-400">Hesla se neshodují</p>
               )}
-              {confirmPasswordValid === true && (
+              {confirmPasswordValid === true && password.length > 0 && (
                 <p className="mt-2 text-sm text-green-400">Hesla se shodují</p>
               )}
             </div>
 
-            <Button className="w-full">Vytvořit účet</Button>
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="link"
+                className="h-auto p-0 text-sm text-muted-foreground hover:text-foreground"
+                onClick={() => setShowPromoCode(!showPromoCode)}
+              >
+                {showPromoCode ? "Skrýt promo kód" : "Máte promo kód?"}
+              </Button>
+              {showPromoCode && (
+                <div className="space-y-2">
+                  <Label htmlFor="promoCode" className="block text-sm">
+                    Promo kód (volitelné)
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      name="promoCode"
+                      id="promoCode"
+                      placeholder="Zadejte promo kód"
+                      value={promoCode}
+                      onChange={(e) => {
+                        setPromoCode(e.target.value);
+                        // Reset status when user types
+                        if (promoCodeStatus !== "idle") {
+                          setPromoCodeStatus("idle");
+                        }
+                      }}
+                      className={`input sz-md variant-mixed flex-1 ${
+                        promoCodeStatus === "valid"
+                          ? "border-green-500"
+                          : promoCodeStatus === "invalid"
+                            ? "border-red-500"
+                            : ""
+                      }`}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={validatePromoCode}
+                      disabled={
+                        !promoCode.trim() || promoCodeStatus === "checking"
+                      }
+                      className="shrink-0 h-9"
+                    >
+                      {promoCodeStatus === "checking"
+                        ? "Kontroluji..."
+                        : promoCodeStatus === "valid"
+                          ? "✓ Platný"
+                          : promoCodeStatus === "invalid"
+                            ? "✗ Neplatný"
+                            : "Ověřit"}
+                    </Button>
+                  </div>
+                  {promoCodeStatus === "valid" && (
+                    <p className="text-sm text-green-400">
+                      Promo kód je platný!
+                    </p>
+                  )}
+                  {promoCodeStatus === "invalid" && (
+                    <p className="text-sm text-red-400">Neplatný promo kód</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="terms"
+                checked={agreeToTerms}
+                onCheckedChange={(checked) =>
+                  setAgreeToTerms(checked as boolean)
+                }
+                required
+              />
+              <Label
+                htmlFor="terms"
+                className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Souhlasím s
+                <Link
+                  href="/terms"
+                  className="text-sm text-primary leading-none hover:underline"
+                >
+                  podmínkami použití
+                </Link>
+              </Label>
+            </div>
+
+            {error && <p className="text-sm text-red-400">{error}</p>}
+            {success && <p className="text-sm text-green-400">{success}</p>}
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={!agreeToTerms || isLoading}
+            >
+              {isLoading ? "Vytvářím účet..." : "Vytvořit účet"}
+            </Button>
           </div>
 
           <div className="my-6 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
