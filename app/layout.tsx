@@ -4,9 +4,8 @@ import { Suspense } from "react";
 import "./globals.css";
 import AuthProvider from "@/components/auth-provider";
 import { AnalysisProvider } from "@/lib/contexts/analysis-context";
-import Header from "@/components/layout/header";
 import PageTracker from "@/components/page-tracker";
-import { HeroHeader } from "@/components/header";
+import HeaderWrapper from "@/components/layout/header-wrapper";
 import FooterSection from "@/components/footer";
 import { Toaster } from "sonner";
 
@@ -187,7 +186,7 @@ export default function RootLayout({
             </Suspense>
             {/* <Header /> */}
             <Toaster />
-            <HeroHeader />
+            <HeaderWrapper />
             {children}
             <FooterSection />
           </AnalysisProvider>

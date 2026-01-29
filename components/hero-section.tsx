@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { TextEffect } from "@/components/ui/text-effect";
 import { AnimatedGroup } from "@/components/ui/animated-group";
-import { HeroHeader } from "./header";
 import ButtonHeartbeat from "./button/button-heartbeat";
 import AnalysisFormNew from "./analysis-form-new";
 import React, { useState } from "react";
@@ -46,13 +45,7 @@ const transitionVariants = {
   },
 };
 
-export default function HeroSection({
-  setLoginModalOpen,
-  setSignupModalOpen,
-}: {
-  setLoginModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setSignupModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
-}) {
+export default function HeroSection() {
   const {
     messages,
     setMessages,
@@ -90,7 +83,11 @@ export default function HeroSection({
   const handleAnalysisSubmit = React.useCallback(
     async (data: AnalysisFormData) => {
       // Check if user has already used free analysis and is not authenticated
-      if (!session && checkIfUsedFreeAnalysis(data, setSignupModalOpen)) return;
+      if (
+        !session &&
+        checkIfUsedFreeAnalysis(data, setAuthModalMode, setShowAuthModal)
+      )
+        return;
 
       // Check rate limit
       if (!checkRateLimit()) {
@@ -311,7 +308,6 @@ export default function HeroSection({
       setAuthModalMode,
       setShowAuthModal,
       setIsLoading,
-      setSignupModalOpen,
       setAnalysisData,
       setIsAnalyzing,
       setShowMapView,
@@ -323,10 +319,6 @@ export default function HeroSection({
 
   return (
     <>
-      <HeroHeader
-        setLoginModalOpen={setLoginModalOpen}
-        setSignupModalOpen={setSignupModalOpen}
-      />
       <main className="overflow-hidden">
         <div
           aria-hidden
