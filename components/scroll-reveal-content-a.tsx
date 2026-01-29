@@ -49,9 +49,8 @@ const ScrollRevealContentA = ({
   const { scrollYProgress } = useScroll({
     target: ref0,
   });
-  useMotionValueEvent(scrollYProgress, "change", () => {
-    // @ts-ignore
-    setScrollProgress(scrollYProgress.current);
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    setScrollProgress(latest);
   });
 
   return (
