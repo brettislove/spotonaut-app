@@ -15,6 +15,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Field,
   FieldError,
   FieldGroup,
@@ -30,23 +38,10 @@ import {
   ChainOfThought,
   ChainOfThoughtContent,
   ChainOfThoughtHeader,
-  ChainOfThoughtSearchResult,
-  ChainOfThoughtSearchResults,
   ChainOfThoughtStep,
 } from "./ai-elements/chain-of-thought";
-import {
-  Check,
-  CheckCheck,
-  ListCheck,
-  MapPin,
-  MapPinned,
-  SearchIcon,
-  Store,
-} from "lucide-react";
-import {
-  BUSINESS_TYPES_BY_CATEGORY,
-  getBusinessTypeByName,
-} from "@/lib/constants/business-types";
+import { Check, CheckCheck, MapPin, MapPinned, Store } from "lucide-react";
+import { getBusinessTypeByName } from "@/lib/constants/business-types";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import { ProgressStep } from "./analysis-progress";
 
@@ -72,13 +67,21 @@ export default function AnalysisFormNew({
     },
   });
 
-  const { isAnalyzing } = useAnalysis();
+  const {
+    isAnalyzing,
+    hasCompletedAnalysis,
+    resetAnalysis,
+    clearRestoredState,
+  } = useAnalysis();
   const [locationInput, setLocationInput] = React.useState("");
   const [fullLocationData, setFullLocationData] =
     React.useState<LocationData | null>(null);
   const [errors, setErrors] = React.useState<Partial<Record<string, string>>>(
     {},
   );
+  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
+  const [pendingFormData, setPendingFormData] =
+    React.useState<AnalysisFormData | null>(null);
 
   // Helper function to determine step status based on current progress
   const getStepStatus = (
@@ -102,7 +105,7 @@ export default function AnalysisFormNew({
   function onSubmit(data: z.infer<typeof formSchema>) {
     // Use full location data if available, otherwise fall back to input
     const businessType = getBusinessTypeByName(data.businessType);
-    handleAnalysisSubmit({
+    const formData: AnalysisFormData = {
       location: data.location,
       businessType: businessType!,
       coordinates: fullLocationData
@@ -111,7 +114,27 @@ export default function AnalysisFormNew({
             lon: fullLocationData.coordinates.lon,
           }
         : undefined,
-    });
+    };
+
+    // Check if there's already a completed analysis
+    if (hasCompletedAnalysis) {
+      setPendingFormData(formData);
+      setShowConfirmDialog(true);
+      return;
+    }
+
+    // No existing analysis, proceed directly
+    handleAnalysisSubmit(formData);
+  }
+
+  function handleConfirmNewAnalysis() {
+    if (pendingFormData) {
+      resetAnalysis();
+      clearRestoredState();
+      setShowConfirmDialog(false);
+      handleAnalysisSubmit(pendingFormData);
+      setPendingFormData(null);
+    }
   }
 
   return (
@@ -285,6 +308,29 @@ export default function AnalysisFormNew({
           </Field>
         </CardFooter>
       </Card>
+
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Přepsat existující analýzu?</DialogTitle>
+            <DialogDescription>
+              Již máte dokončenou analýzu. Spuštěním nové analýzy bude stávající
+              analýza odstraněna. Chcete pokračovat?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmDialog(false)}
+            >
+              Zrušit
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmNewAnalysis}>
+              Potvrdit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import { MAX_MESSAGE_LENGTH } from "@/lib/constants/chat";
 import { useRateLimit } from "./useRateLimit";
-import { Message } from "@/components/chat-interface";
+import { MessageType } from "@/components/chat-interface";
 
 export function useChat() {
   const { data: session } = useSession();
@@ -41,7 +41,7 @@ export function useChat() {
 
     // Validate message length
     if (input.length > MAX_MESSAGE_LENGTH) {
-      const errorMessage: Message = {
+      const errorMessage: MessageType = {
         id: Date.now().toString(),
         role: "assistant",
         content: `Vaše zpráva je příliš dlouhá (${input.length} znaků). Maximální délka je ${MAX_MESSAGE_LENGTH} znaků. Zkuste svůj dotaz zkrátit.`,
@@ -61,7 +61,7 @@ export function useChat() {
 
     // Check rate limit
     if (!checkRateLimit()) {
-      const rateLimitMessage: Message = {
+      const rateLimitMessage: MessageType = {
         id: Date.now().toString(),
         role: "assistant",
         content: "Příliš mnoho požadavků. Prosím, zkuste to znovu za chvíli.",
@@ -71,7 +71,7 @@ export function useChat() {
       return;
     }
 
-    const userMessage: Message = {
+    const userMessage: MessageType = {
       id: Date.now().toString(),
       role: "user",
       content: input,
@@ -127,7 +127,7 @@ export function useChat() {
         throw new Error(data.error || data.details || "Failed to get response");
       }
 
-      const assistantMessage: Message = {
+      const assistantMessage: MessageType = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: data.message,
@@ -138,7 +138,7 @@ export function useChat() {
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Error sending message:", error);
-      const errorMessage: Message = {
+      const errorMessage: MessageType = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content:

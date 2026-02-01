@@ -628,7 +628,13 @@ Formát JSON:
   const text = proResponse.text || "";
   const metrics = extractMetricsFromText(text);
 
-  return { text, metrics };
+  // Remove the JSON block from the text after extracting metrics
+  const jsonBlock = extractJsonBlock(text);
+  const cleanText = jsonBlock
+    ? text.replace(/```json\s*[\s\S]*?```/i, "").trim()
+    : text;
+
+  return { text: cleanText, metrics };
 }
 
 /**
@@ -692,17 +698,48 @@ Formát JSON:
   }
 
   const metrics = extractMetricsFromText(fullText);
-  yield { type: "done" as const, text: fullText, metrics };
+
+  // Remove the JSON block from the text after extracting metrics
+  const jsonBlock = extractJsonBlock(fullText);
+  const cleanText = jsonBlock
+    ? fullText.replace(/```json\s*[\s\S]*?```/i, "").trim()
+    : fullText;
+
+  yield { type: "done" as const, text: cleanText, metrics };
 }
 
 interface ProChatParams {
-  messages: Array<{ role: "user" | "model"; content: string }>;
+  messages: Array<{ role: string; content: string }>;
   groundedLocation: GroundedLocationData;
+}
+
+function extractSuggestionsFromText(text: string): {
+  cleanText: string;
+  suggestions: string[];
+} {
+  // Try to extract JSON suggestions block from the text
+  const suggestionsMatch = text.match(/```suggestions\s*([\s\S]*?)```/i);
+
+  if (suggestionsMatch && suggestionsMatch[1]) {
+    try {
+      const suggestions = JSON.parse(suggestionsMatch[1].trim());
+      if (Array.isArray(suggestions)) {
+        const cleanText = text
+          .replace(/```suggestions\s*[\s\S]*?```/i, "")
+          .trim();
+        return { cleanText, suggestions };
+      }
+    } catch {
+      // JSON parsing failed, return original text
+    }
+  }
+
+  return { cleanText: text, suggestions: [] };
 }
 
 export async function generateProChatWithGrounding(
   params: ProChatParams,
-): Promise<{ text: string }> {
+): Promise<{ text: string; suggestions: string[] }> {
   const { messages, groundedLocation } = params;
 
   // Build conversation context
@@ -730,6 +767,19 @@ ${JSON.stringify(groundedLocation, null, 2)}
 Tato data považuj za hlavní zdroj pravdy o konkrétní lokalitě. NEVYMÝŠLEJ si konkrétní geografická fakta, která nejsou v těchto datech zřejmá.
 
 Odpověz na aktuální dotaz s ohledem na předchozí konverzaci. Pokud se dotaz týká dříve provedené analýzy, odkazuj na konkrétní data a doporučení z té analýzy. Pokud se dotaz týká konkrétní lokality nebo míst v okolí, použij výhradně data z locationData výše. Pokud data nejsou k dispozici, jasně to uveď.
+
+📝 NÁVRHY NA DALŠÍ OTÁZKY (POVINNÉ - na samém konci odpovědi)
+Na konec své odpovědi MUSÍŠ přidat JSON pole s 2-3 návrhy na další otázky, které by uživatel mohl položit.
+Návrhy by měly být:
+- Relevantní k právě probírané lokalitě/analýze
+- Krátké a konkrétní (max 50 znaků)
+- V češtině
+- Formulované jako otázky nebo požadavky
+
+Formát:
+\`\`\`suggestions
+["Jaká je konkurence v okolí?", "Doporučené provozní hodiny?", "Jak optimalizovat prodeje?"]
+\`\`\`
 `;
 
   const proResponse = await genai.models.generateContent({
@@ -740,9 +790,10 @@ Odpověz na aktuální dotaz s ohledem na předchozí konverzaci. Pokud se dotaz
     },
   });
 
-  const text = proResponse.text || "";
+  const rawText = proResponse.text || "";
+  const { cleanText, suggestions } = extractSuggestionsFromText(rawText);
 
-  return { text };
+  return { text: cleanText, suggestions };
 }
 
 interface OrchestratorParams {

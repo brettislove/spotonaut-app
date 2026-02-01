@@ -18,7 +18,7 @@ import {
   handleStreamingResponse,
 } from "@/utils/analysis";
 import { useRateLimit } from "@/lib/hooks/useRateLimit";
-import { Message } from "./chat-interface";
+import { MessageType } from "./chat-interface";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import { tooManyRequestsMessage } from "@/utils/chat";
 import { useChat } from "@/lib/hooks/useChat";
@@ -83,11 +83,7 @@ export default function HeroSection() {
   const handleAnalysisSubmit = React.useCallback(
     async (data: AnalysisFormData) => {
       // Check if user has already used free analysis and is not authenticated
-      if (
-        !session &&
-        checkIfUsedFreeAnalysis(data, setAuthModalMode, setShowAuthModal)
-      )
-        return;
+      if (!session && checkIfUsedFreeAnalysis(data, setShowAuthModal)) return;
 
       // Check rate limit
       if (!checkRateLimit()) {
@@ -135,7 +131,6 @@ export default function HeroSection() {
             setAnalysisData,
             setShowMapView,
             setHasCompletedAnalysis,
-            setShowAnalysisForm,
             setIsAnalyzing,
             router,
             session,
@@ -282,7 +277,7 @@ export default function HeroSection() {
         }
       } catch (error) {
         console.error("Error getting analysis:", error);
-        const errorMessage: Message = {
+        const errorMessage: MessageType = {
           id: Date.now().toString(),
           role: "assistant",
           content:

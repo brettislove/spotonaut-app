@@ -28,44 +28,12 @@ const MapContent = dynamic<MapContentProps>(
 
 export default function MapViewNew({
   analysisData,
+  filterState,
 }: {
   analysisData: AnalysisData;
+  filterState: Record<string, boolean>;
 }) {
   const [isMounted, setIsMounted] = useState(false);
-  const [filterState, setFilterState] = useState<Record<string, boolean>>(
-    () => {
-      // Default filter state with all filters visible
-      const defaultFilters = {
-        competitors: true,
-        transit: true,
-        shopping: true,
-        office: true,
-        residential: true,
-        other: true,
-        availableProperties: true,
-      };
-
-      // Load from localStorage or use default
-      if (typeof window !== "undefined") {
-        const saved = localStorage.getItem("mapFilters");
-        if (saved) {
-          try {
-            const savedFilters = JSON.parse(saved);
-            // Merge saved filters with defaults to ensure new filters are included
-            return { ...defaultFilters, ...savedFilters };
-          } catch {
-            return defaultFilters;
-          }
-        }
-      }
-      return defaultFilters;
-    },
-  );
-
-  // Save filter state to localStorage
-  useEffect(() => {
-    localStorage.setItem("mapFilters", JSON.stringify(filterState));
-  }, [filterState]);
 
   useEffect(() => {
     // Use timeout to avoid SSR hydration issues
@@ -79,10 +47,6 @@ export default function MapViewNew({
       ? [analysisData.coordinates.lat, analysisData.coordinates.lng]
       : [49.1951, 16.6068];
   }, [analysisData.coordinates]);
-
-  const handleFilterChange = (key: string) => {
-    setFilterState((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
 
   if (!isMounted) {
     return (
@@ -104,7 +68,6 @@ export default function MapViewNew({
       location={analysisData.locationName || analysisData.location}
       groundedLocationData={analysisData.groundedLocationData}
       filterState={filterState}
-      onFilterChange={handleFilterChange}
     />
   );
 }

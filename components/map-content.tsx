@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 
@@ -29,10 +29,7 @@ export default function MapContent({
   location,
   groundedLocationData,
   filterState,
-  onFilterChange,
 }: MapContentProps) {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const customIcon = useMemo(
     () =>
       L.divIcon({
@@ -100,56 +97,6 @@ export default function MapContent({
       }),
     [],
   );
-
-  const getFilterDisplayName = (key: string) => {
-    switch (key) {
-      case "competitors":
-        return "Konkurence";
-      case "transit":
-        return "Doprava";
-      case "shopping":
-        return "Nákupy";
-      case "office":
-        return "Kanceláře";
-      case "residential":
-        return "Bydlení";
-      case "availableProperties":
-        return "Dostupné prostory";
-      default:
-        return "Ostatní";
-    }
-  };
-
-  const hasDataForFilter = (key: string) => {
-    switch (key) {
-      case "competitors":
-        return (groundedLocationData?.competitors?.length ?? 0) > 0;
-      case "transit":
-        return groundedLocationData?.footfallProxies?.some(
-          (proxy) => proxy.type === "transit",
-        );
-      case "shopping":
-        return groundedLocationData?.footfallProxies?.some(
-          (proxy) => proxy.type === "shopping",
-        );
-      case "office":
-        return groundedLocationData?.footfallProxies?.some(
-          (proxy) => proxy.type === "office",
-        );
-      case "residential":
-        return groundedLocationData?.footfallProxies?.some(
-          (proxy) => proxy.type === "residential",
-        );
-      case "availableProperties":
-        return (groundedLocationData?.availableProperties?.length ?? 0) > 0;
-      case "other":
-        return groundedLocationData?.footfallProxies?.some(
-          (proxy) => proxy.type === "other",
-        );
-      default:
-        return false;
-    }
-  };
 
   const getMarkerColor = (type: string) => {
     switch (type) {
@@ -398,115 +345,6 @@ export default function MapContent({
             );
           })}
       </MapContainer>
-
-      {/* Filter Dropdown */}
-      {groundedLocationData && filterState && onFilterChange && (
-        <div className="fixed top-3 right-3 z-[9999] sm:absolute">
-          <div className="relative">
-            {/* Dropdown Trigger */}
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="bg-slate-900/90 backdrop-blur-sm border border-slate-700 rounded-full px-3 py-2 text-slate-300 text-sm font-medium flex items-center gap-2 cursor-pointer hover:bg-slate-800/90 transition-colors"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                />
-              </svg>
-              Body v okolí
-              <svg
-                className={`w-4 h-4 transition-transform ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-
-            {/* Dropdown Content */}
-            {isDropdownOpen && (
-              <div className="absolute top-full right-0 mt-1 bg-slate-900/95 backdrop-blur-lg border border-slate-700 rounded-2xl p-1 min-w-[100px] shadow-2xl z-[9999]">
-                <div className="">
-                  {Object.entries(filterState).map(([key, isVisible]) => {
-                    const hasData = hasDataForFilter(key);
-                    return (
-                      <div
-                        key={key}
-                        onClick={() => hasData && onFilterChange(key)}
-                        onMouseEnter={() => hasData && setHoveredKey(key)}
-                        onMouseLeave={() => setHoveredKey(null)}
-                        className={`flex items-center gap-3 px-2 my-2 rounded-full transition-all duration-200 border-2 ${
-                          !hasData
-                            ? "opacity-50 cursor-not-allowed text-slate-500"
-                            : isVisible
-                              ? "cursor-pointer text-white font-semibold"
-                              : "cursor-pointer text-slate-300"
-                        }`}
-                        style={
-                          !hasData
-                            ? {
-                                borderColor: "transparent",
-                              }
-                            : isVisible
-                              ? {
-                                  backgroundColor: `${getMarkerColor(key)}40`, // 50% opacity
-                                  borderColor: getMarkerColor(key), // 100% opacity
-                                }
-                              : hoveredKey === key
-                                ? {
-                                    backgroundColor: `${getMarkerColor(key)}30`, // 30% opacity for hover
-                                    borderColor: "transparent",
-                                  }
-                                : {
-                                    borderColor: "transparent", // invisible border for unselected
-                                  }
-                        }
-                      >
-                        <div
-                          className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: getMarkerColor(key) }}
-                        />
-                        <span className="text-sm font-medium">
-                          {getFilterDisplayName(key)}
-                        </span>
-                        {!hasData && (
-                          <span className="text-xs text-slate-500 ml-auto">
-                            (žádné)
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Click outside to close */}
-          {isDropdownOpen && (
-            <div
-              className="fixed inset-0 z-[-1]"
-              onClick={() => setIsDropdownOpen(false)}
-            />
-          )}
-        </div>
-      )}
     </div>
   );
 }

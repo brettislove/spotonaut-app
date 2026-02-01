@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
 import { AnimatedGroup } from "./ui/animated-group";
+import GoogleMaps from "./logos/GoogleMaps";
+import Prisma from "./logos/Prisma";
 
 export default function IntegrationsSection() {
   return (
@@ -52,10 +54,15 @@ export default function IntegrationsSection() {
                   <Gemini />
                 </IntegrationCard>
                 <IntegrationCard position="left-middle">
-                  <Replit />
+                  <GoogleMaps />
                 </IntegrationCard>
                 <IntegrationCard position="left-bottom">
-                  <MagicUI />
+                  <Image
+                    src="/Sreality_logo.png"
+                    alt="Sreality"
+                    width={48}
+                    height={48}
+                  />
                 </IntegrationCard>
               </div>
               <div className="mx-auto my-2 flex w-fit justify-center gap-2">
@@ -85,7 +92,7 @@ export default function IntegrationsSection() {
                   <VSCodium />
                 </IntegrationCard>
                 <IntegrationCard position="right-middle">
-                  <MediaWiki />
+                  <Prisma />
                 </IntegrationCard>
                 <IntegrationCard position="right-bottom">
                   <GooglePaLM />

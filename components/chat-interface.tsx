@@ -10,16 +10,16 @@ import RotatingText from "./ui/rotating-text";
 import AnalysisProgress, { type ProgressStep } from "./analysis-progress";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import Image from "next/image";
-import type { BusinessType } from "@/lib/constants/business-types";
 import { useRateLimit } from "@/lib/hooks/useRateLimit";
 import { useChat } from "@/lib/hooks/useChat";
 
-export interface Message {
+export interface MessageType {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
   sources?: Array<{ title: string; uri: string }>;
+  suggestions?: string[];
 }
 
 import type { AnalysisFormData } from "@/lib/types/analysis";
@@ -154,7 +154,7 @@ export default function ChatInterface() {
 
       // Check rate limit
       if (!checkRateLimit()) {
-        const rateLimitMessage: Message = {
+        const rateLimitMessage: MessageType = {
           id: Date.now().toString(),
           role: "assistant",
           content:
@@ -210,7 +210,7 @@ export default function ChatInterface() {
           // Create streaming message
           const messageId = Date.now().toString();
           setStreamingMessageId(messageId);
-          const assistantMessage: Message = {
+          const assistantMessage: MessageType = {
             id: messageId,
             role: "assistant",
             content: "",
@@ -304,7 +304,7 @@ export default function ChatInterface() {
             localStorage.setItem("hasUsedFreeAnalysis", "true");
           }
 
-          const assistantMessage: Message = {
+          const assistantMessage: MessageType = {
             id: Date.now().toString(),
             role: "assistant",
             content: result.analysis,
@@ -330,7 +330,7 @@ export default function ChatInterface() {
         }
       } catch (error) {
         console.error("Error getting analysis:", error);
-        const errorMessage: Message = {
+        const errorMessage: MessageType = {
           id: Date.now().toString(),
           role: "assistant",
           content:

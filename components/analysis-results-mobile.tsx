@@ -5,6 +5,7 @@ import MapView from "./map-view";
 import { GroundingSources } from "./grounding-sources";
 import { FiThumbsUp, FiThumbsDown } from "react-icons/fi";
 import { Session } from "next-auth";
+import { Suggestion, Suggestions } from "./ai-elements/suggestion";
 
 interface Message {
   id: string;
@@ -12,6 +13,7 @@ interface Message {
   content: string;
   timestamp: Date;
   sources?: Array<{ title: string; uri: string }>;
+  suggestions?: string[];
 }
 
 interface AnalysisData {
@@ -38,6 +40,7 @@ interface AnalysisResultsMobileProps {
   onStartChat: () => void;
   onInputChange: (value: string) => void;
   onSendMessage: (e: React.FormEvent) => void;
+  onSuggestionClick?: (suggestion: string) => void;
   onNewAnalysis?: () => void;
 }
 
@@ -50,6 +53,7 @@ export default function AnalysisResultsMobile({
   onStartChat,
   onInputChange,
   onSendMessage,
+  onSuggestionClick,
   onNewAnalysis,
 }: AnalysisResultsMobileProps) {
   const [activeTab, setActiveTab] = useState<"metrics" | "chat">("metrics");
@@ -124,6 +128,7 @@ export default function AnalysisResultsMobile({
               onStartChat={onStartChat}
               onInputChange={onInputChange}
               onSendMessage={onSendMessage}
+              onSuggestionClick={onSuggestionClick}
               messagesEndRef={messagesEndRef}
               formatMessage={formatMessage}
               onInputFocus={() => setIsExpanded(true)}
@@ -531,6 +536,7 @@ function ChatTab({
   onStartChat,
   onInputChange,
   onSendMessage,
+  onSuggestionClick,
   messagesEndRef,
   formatMessage,
   onInputFocus,
@@ -542,6 +548,7 @@ function ChatTab({
   onStartChat: () => void;
   onInputChange: (value: string) => void;
   onSendMessage: (e: React.FormEvent) => void;
+  onSuggestionClick?: (suggestion: string) => void;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
   formatMessage: (content: string) => string;
   onInputFocus?: () => void;
@@ -673,6 +680,30 @@ function ChatTab({
                 )}
               </div>
             ))}
+            {/* Suggestions from the last assistant message */}
+            {(() => {
+              const lastAssistantMessage = [...messages]
+                .reverse()
+                .find((m) => m.role === "assistant");
+              const suggestions = lastAssistantMessage?.suggestions || [];
+              if (suggestions.length > 0 && !isLoading && onSuggestionClick) {
+                return (
+                  <div className="px-2 py-3">
+                    <Suggestions className="flex-wrap">
+                      {suggestions.map((suggestion) => (
+                        <Suggestion
+                          key={suggestion}
+                          suggestion={suggestion}
+                          onClick={onSuggestionClick}
+                          className="text-xs"
+                        />
+                      ))}
+                    </Suggestions>
+                  </div>
+                );
+              }
+              return null;
+            })()}
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3">

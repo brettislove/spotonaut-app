@@ -265,43 +265,7 @@ export default function AnalysisPage() {
         <div className="h-320 -translate-y-87.5 absolute left-0 top-0 w-60 -rotate-45 bg-[radial-gradient(50%_50%_at_50%_50%,hsla(0,0%,85%,.04)_0,hsla(0,0%,45%,.02)_80%,transparent_100%)]" />
       </div>
       <section>
-        <div className="relative pt-12 md:pt-16">
-          <AnimatedGroup
-            variants={{
-              container: {
-                visible: {
-                  transition: {
-                    delayChildren: 1,
-                  },
-                },
-              },
-              item: {
-                hidden: {
-                  opacity: 0,
-                  y: 20,
-                },
-                visible: {
-                  opacity: 1,
-                  y: 0,
-                  transition: {
-                    type: "spring",
-                    bounce: 0.3,
-                    duration: 2,
-                  },
-                },
-              },
-            }}
-            className="mask-b-from-35% mask-b-to-90% absolute inset-0 top-56 -z-20 lg:top-32"
-          >
-            <Image
-              src="/Moon.png"
-              alt="background"
-              className="hidden size-full dark:block"
-              width="3276"
-              height="4095"
-            />
-          </AnimatedGroup>
-
+        <div className="relative pt-12 md:pt-20">
           <div
             aria-hidden
             className="absolute inset-0 -z-10 size-full [background:radial-gradient(125%_125%_at_50%_100%,transparent_0%,var(--color-background)_75%)]"
@@ -312,18 +276,18 @@ export default function AnalysisPage() {
             nemusí být přesné ani úplné.
           </div>
 
-          <div className="flex items-center justify-center h-[calc(100vh-4rem)] p-4 lg:p-8">
+          {/* <div className="flex items-center justify-center h-[calc(100vh-4rem)] p-4 lg:p-8">
             <div className="w-full max-w-6xl h-full flex flex-col lg:flex-row gap-4 lg:gap-6">
-              {/* Map View with Chat Sidebar */}
+              {/* Map View with Chat Sidebar 
               <div className="flex-1 flex flex-col lg:flex-row bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl overflow-hidden">
-                {/* Map Content */}
+                {/* Map Content 
                 <div className="w-full lg:w-1/2 p-4 lg:p-6 overflow-hidden">
                   <MapView data={analysisData} />
                 </div>
 
-                {/* Chat Sidebar - Attached to map */}
+                {/* Chat Sidebar - Attached to map 
                 <div className="w-full lg:w-1/2 border-t lg:border-t-0 lg:border-l border-slate-700 bg-slate-900/80 flex flex-col">
-                  {/* Chat Header with New Analysis Button */}
+                  {/* Chat Header with New Analysis Button 
                   <div className="p-4 border-b border-slate-700 flex items-center justify-between">
                     <div className="flex items-center">
                       <Image
@@ -377,7 +341,7 @@ export default function AnalysisPage() {
                                 __html: message.content
                                   .replace(/```[\s\S]*?```/g, "")
                                   .replace(
-                                    /\*\*(.*?)\*\*/g,
+                                    /\*\*(.*?)\*\,
                                     "<strong>$1</strong>",
                                   )
                                   .replace(/\n/g, "<br>"),
@@ -392,17 +356,17 @@ export default function AnalysisPage() {
                                 __html: message.content
                                   .replace(/```[\s\S]*?```/g, "")
                                   .replace(
-                                    /\*\*(.*?)\*\*/g,
+                                    /\*\*(.*?)\*\*,
                                     "<strong>$1</strong>",
                                   )
                                   .replace(/\n/g, "<br>"),
                               }}
                             />
 
-                            {/* Divider */}
+                            {/* Divider 
                             <div className="border-t border-slate-700/50" />
 
-                            {/* Sources - collapsible section */}
+                            {/* Sources - collapsible section 
                             {message.sources && message.sources.length > 0 && (
                               <div className="mt-2">
                                 <button
@@ -438,7 +402,7 @@ export default function AnalysisPage() {
                                 )}
                               </div>
                             )}
-                            {/* Feedback (thumbs up / thumbs down) */}
+                            {/* Feedback (thumbs up / thumbs down) 
                             <div className="mt-3 flex items-center gap-3">
                               <span className="text-slate-400 text-xs">
                                 Jak hodnotíte tuto odpověď?
@@ -508,9 +472,10 @@ export default function AnalysisPage() {
                     <div ref={messagesEndRef} />
                   </div>
 
-                  {/* Chat Input */}
+                  {/* Chat Input 
                   <div className="p-4 border-t border-slate-700">
-                    <form onSubmit={sendMessage} className="space-y-2">
+                    {/* <form onSubmit={sendMessage} className="space-y-2"> 
+                    <form onSubmit={() => {}} className="space-y-2">
                       <div className="flex gap-2">
                         <input
                           type="text"
@@ -549,25 +514,25 @@ export default function AnalysisPage() {
             </div>
           </div>
 
-          {/* Auth Modal */}
+          {/* Auth Modal 
           <AuthModal
             isOpen={showAuthModal}
             onClose={() => setShowAuthModal(false)}
             mode={authModalMode}
           />
-          {/* Request More Prompts Modal */}
+          {/* Request More Prompts Modal 
           <RequestMorePromptsModal
             isOpen={showRequestModal}
             onClose={() => setShowRequestModal(false)}
           />
-          {/* Confirmation Dialog */}
+          {/* Confirmation Dialog 
           <ConfirmationDialog
             isOpen={showConfirmDialog}
             setShowConfirmDialog={setShowConfirmDialog}
             confirmNewAnalysis={confirmNewAnalysis}
           />
 
-          {/* Feedback Modal */}
+          {/* Feedback Modal 
           <FeedbackModal
             isOpen={showFeedbackModal}
             onClose={() => {
@@ -598,8 +563,8 @@ export default function AnalysisPage() {
             }}
           />
 
-          {/* Toast Notification */}
-          <Toast message={toastMessage} onDismiss={() => showToast("")} />
+          {/* Toast Notification 
+          <Toast message={toastMessage} onDismiss={() => showToast("")} /> */}
           <AnalysisResultsDesktop analysisData={analysisData} />
         </div>
       </section>

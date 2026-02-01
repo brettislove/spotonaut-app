@@ -20,6 +20,7 @@ interface Message {
   content: string;
   timestamp: Date;
   sources?: Array<{ title: string; uri: string }>;
+  suggestions?: string[];
 }
 
 interface AnalysisContextType {

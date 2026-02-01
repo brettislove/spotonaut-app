@@ -1,4 +1,4 @@
-import { Message } from "@/components/chat-interface";
+import { MessageType } from "@/components/chat-interface";
 
 /**
  * Utility to show too many requests message
@@ -6,9 +6,9 @@ import { Message } from "@/components/chat-interface";
  * @returns void
  */
 const tooManyRequestsMessage = (
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+  setMessages: React.Dispatch<React.SetStateAction<MessageType[]>>,
 ) => {
-  const rateLimitMessage: Message = {
+  const rateLimitMessage: MessageType = {
     id: Date.now().toString(),
     role: "assistant",
     content:

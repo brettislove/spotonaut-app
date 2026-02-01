@@ -1,5 +1,5 @@
 import { ProgressStep } from "@/components/analysis-progress";
-import { Message } from "@/components/chat-interface";
+import { MessageType } from "@/components/chat-interface";
 import { GroundedLocationData } from "@/lib/google-ai/location-analysis";
 import { AnalysisData, AnalysisFormData } from "@/lib/types/analysis";
 import { Session } from "next-auth";
@@ -40,13 +40,12 @@ const handleResponseErrors = async (
 const handleStreamingResponse = async (
   response: Response,
   setStreamingMessageId: React.Dispatch<React.SetStateAction<string | null>>,
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+  setMessages: React.Dispatch<React.SetStateAction<MessageType[]>>,
   setProgressStep: React.Dispatch<React.SetStateAction<ProgressStep>>,
   setStreamingText: React.Dispatch<React.SetStateAction<string>>,
   setAnalysisData: React.Dispatch<React.SetStateAction<AnalysisData | null>>,
   setShowMapView: React.Dispatch<React.SetStateAction<boolean>>,
   setHasCompletedAnalysis: React.Dispatch<React.SetStateAction<boolean>>,
-  setShowAnalysisForm: React.Dispatch<React.SetStateAction<boolean>>,
   setIsAnalyzing: React.Dispatch<React.SetStateAction<boolean>>,
   router: AppRouterInstance,
   session: Session | null,
@@ -62,7 +61,7 @@ const handleStreamingResponse = async (
   // Create streaming message
   const messageId = Date.now().toString();
   setStreamingMessageId(messageId);
-  const assistantMessage: Message = {
+  const assistantMessage: MessageType = {
     id: messageId,
     role: "assistant",
     content: "",
@@ -127,7 +126,6 @@ const handleStreamingResponse = async (
               });
               setShowMapView(true);
               setHasCompletedAnalysis(true);
-              setShowAnalysisForm(false);
               // Navigate to analysis page
               router.push("/analysis");
             }
@@ -154,7 +152,7 @@ const handleFallbackAnalysisResponse = (
     sources?: Array<{ title: string; uri: string }>;
     groundedLocationData?: GroundedLocationData;
   },
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+  setMessages: React.Dispatch<React.SetStateAction<MessageType[]>>,
   setAnalysisData: React.Dispatch<React.SetStateAction<AnalysisData | null>>,
   setShowMapView: React.Dispatch<React.SetStateAction<boolean>>,
   setHasCompletedAnalysis: React.Dispatch<React.SetStateAction<boolean>>,
@@ -162,7 +160,7 @@ const handleFallbackAnalysisResponse = (
   setIsAnalyzing: React.Dispatch<React.SetStateAction<boolean>>,
   router: AppRouterInstance,
 ) => {
-  const assistantMessage: Message = {
+  const assistantMessage: MessageType = {
     id: Date.now().toString(),
     role: "assistant",
     content: result.analysis,

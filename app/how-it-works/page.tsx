@@ -13,9 +13,9 @@ export default function HowItWorksPage() {
     description:
       "Vyber cílovou lokalitu špendlíkem na mapě nebo zadej adresu. Uveď typ podnikání — tento výběr řídí celou analýzu.",
     image: {
-      url: "/spotonaut_character.svg",
+      url: "/Spotty_formular.png",
       width: 800,
-      height: 600,
+      height: 400,
       alt: "Map selection interface",
     },
   };
@@ -25,9 +25,9 @@ export default function HowItWorksPage() {
     description:
       "Využíváme mapové podklady a veřejná data (doprava, zástavba, konkurence). AI vyhodnotí lokaci a zobrazí klíčová skóre 0–100.",
     image: {
-      url: "/spotonaut_character.svg",
+      url: "/Spotty_vysledky.png",
       width: 800,
-      height: 600,
+      height: 400,
       alt: "AI analysis results",
     },
   };
@@ -37,7 +37,7 @@ export default function HowItWorksPage() {
     description:
       "V chatu dostaneš detailní rozbor a konkrétní doporučení (sortiment, otevírací doba, marketing). Polož další otázky a rozvíjej strategii.",
     image: {
-      url: "/spotonaut_character.svg",
+      url: "/Spotty_chat.png",
       width: 800,
       height: 600,
       alt: "Interactive chat interface",
