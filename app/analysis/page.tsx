@@ -19,6 +19,7 @@ import ConfirmationDialog from "@/components/chat/ConfirmationDialog";
 import { handleFeedback, showAuthModalAction } from "@/utils/chat";
 import { AnimatedGroup } from "@/components/ui/animated-group";
 import AnalysisResultsDesktop from "@/components/analysis-results-desktop";
+import AnalysisResultsMobileNew from "@/components/analysis-results-mobile-new";
 
 export default function AnalysisPage() {
   const { data: session } = useSession();
@@ -271,7 +272,7 @@ export default function AnalysisPage() {
             className="absolute inset-0 -z-10 size-full [background:radial-gradient(125%_125%_at_50%_100%,transparent_0%,var(--color-background)_75%)]"
           />
           {/* Persistent AI disclaimer */}
-          <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 text-xs text-slate-300 px-3 py-1 z-50 max-w-[90%] text-center pointer-events-none">
+          <div className="hidden lg:block fixed bottom-0 left-1/2 transform -translate-x-1/2 text-xs text-slate-300 px-3 py-1 z-50 max-w-[90%] text-center pointer-events-none">
             Výsledky jsou založeny na AI a slouží pouze pro informační účely —
             nemusí být přesné ani úplné.
           </div>
@@ -565,7 +566,11 @@ export default function AnalysisPage() {
 
           {/* Toast Notification 
           <Toast message={toastMessage} onDismiss={() => showToast("")} /> */}
-          <AnalysisResultsDesktop analysisData={analysisData} />
+          {isMobile ? (
+            <AnalysisResultsMobileNew analysisData={analysisData} />
+          ) : (
+            <AnalysisResultsDesktop analysisData={analysisData} />
+          )}
         </div>
       </section>
     </>
