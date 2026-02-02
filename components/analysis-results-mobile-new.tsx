@@ -11,7 +11,7 @@ export default function AnalysisResultsMobileNew({
 }) {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<"metrics" | "chat">("metrics");
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [, setIsExpanded] = useState(false);
 
   // Handle tab change and expand for chat
   const handleTabChange = (tab: "metrics" | "chat") => {

@@ -57,7 +57,7 @@ export default function AnalysisResultsMobile({
   onNewAnalysis,
 }: AnalysisResultsMobileProps) {
   const [activeTab, setActiveTab] = useState<"metrics" | "chat">("metrics");
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [, setIsExpanded] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -376,29 +376,7 @@ function MetricsTab({ data }: { data: AnalysisData }) {
             </svg>
             {data.locationName || data.location}
           </h2>
-          {/* <p className="text-slate-400 text-sm">Analýza lokality</p> */}
         </div>
-        {/* {onNewAnalysis && (
-          <button
-            onClick={onNewAnalysis}
-            className="px-3 py-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-500/50 rounded-lg transition-all flex items-center gap-1.5"
-          >
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Nová
-          </button>
-        )} */}
       </div>
 
       {/* Metrics Cards */}

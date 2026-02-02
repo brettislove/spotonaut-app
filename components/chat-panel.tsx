@@ -72,10 +72,7 @@ export default function ChatPanel({
     .find((m) => m.role === "assistant");
   const currentSuggestions = lastAssistantMessage?.suggestions || [];
 
-  const handleSubmit = async (
-    message: PromptInputMessage,
-    clearInput: () => void,
-  ) => {
+  const handleSubmit = async (message: PromptInputMessage) => {
     setStatus("submitted");
 
     const { text } = message;
@@ -124,7 +121,6 @@ export default function ChatPanel({
       }
       // Claim succeeded: append user's message and clear input
       setMessages((prev) => [...prev, userMessage]);
-      //   clearInput();
       setStatus("streaming");
       // Build the full conversation history including the new message
       const response = await fetch("/api/chat", {
@@ -188,7 +184,7 @@ export default function ChatPanel({
                 />
               ) : (
                 <>
-                  {messages.map(({ id, role, content }, index) => {
+                  {messages.map(({ id, role, content }) => {
                     // Clean the first message by removing JSON code blocks
 
                     return (
@@ -300,7 +296,7 @@ function PromptInputWrapper({
   onSuggestionTextConsumed,
 }: {
   status: "submitted" | "streaming" | "ready" | "error";
-  onSubmit: (message: PromptInputMessage, clearInput: () => void) => void;
+  onSubmit: (message: PromptInputMessage) => void;
   suggestionText?: string;
   onSuggestionTextConsumed?: () => void;
 }) {
@@ -315,13 +311,13 @@ function PromptInputWrapper({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suggestionText]);
 
-  const handleSubmitWithClear = (message: PromptInputMessage) => {
-    onSubmit(message, controller.textInput.clear);
+  const handleSubmit = (message: PromptInputMessage) => {
+    onSubmit(message);
   };
 
   return (
     <div className="size-full">
-      <PromptInput globalDrop multiple onSubmit={handleSubmitWithClear}>
+      <PromptInput globalDrop multiple onSubmit={handleSubmit}>
         <PromptInputBody>
           <PromptInputTextarea
             onChange={(e) => controller.textInput.setInput(e.target.value)}

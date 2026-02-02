@@ -24,31 +24,13 @@ function useDrawer() {
 
 interface DrawerProps {
   open: boolean;
-  modal?: boolean;
-  dismissible?: boolean;
-  snapPoints: string[];
   activeSnapPoint: string;
   setActiveSnapPoint: (point: string) => void;
-  direction?: "bottom" | "top" | "left" | "right";
-  fadeFromIndex?: number;
   children: React.ReactNode;
 }
 
 const Drawer = React.forwardRef<HTMLDivElement, DrawerProps>(
-  (
-    {
-      open,
-      modal = true,
-      dismissible = true,
-      snapPoints,
-      activeSnapPoint,
-      setActiveSnapPoint,
-      direction = "bottom",
-      fadeFromIndex = 0,
-      children,
-    },
-    ref,
-  ) => {
+  ({ open, activeSnapPoint, setActiveSnapPoint, children }, ref) => {
     if (!open) return null;
 
     return (
