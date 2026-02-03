@@ -5,12 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import SpotonautLogo from "@/components/spotonaut-logo";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token");
@@ -224,5 +224,33 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen flex items-center justify-center bg-background px-4">
+          <div className="bg-muted m-auto h-fit w-full max-w-sm overflow-hidden rounded-md border shadow-md shadow-zinc-950/5 dark:[--color-muted:var(--color-zinc-900)]">
+            <div className="bg-card -m-px rounded-[calc(var(--radius)+.125rem)] border p-8 pb-6">
+              <div className="text-center">
+                <Link
+                  href="/"
+                  aria-label="go home"
+                  className="mx-auto block w-fit"
+                >
+                  <SpotonautLogo />
+                </Link>
+                <h1 className="mb-1 mt-4 text-xl font-semibold">Nové heslo</h1>
+                <p className="text-sm">Načítání...</p>
+              </div>
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
