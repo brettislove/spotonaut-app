@@ -110,8 +110,6 @@ function AnimatedGroup({
   className,
   variants,
   preset,
-  as = "div",
-  asChild = "div",
   viewport,
 }: AnimatedGroupProps) {
   const selectedVariants = {
@@ -121,17 +119,8 @@ function AnimatedGroup({
   const containerVariants = variants?.container || selectedVariants.container;
   const itemVariants = variants?.item || selectedVariants.item;
 
-  const MotionComponent = React.useMemo(
-    () => motion.create(as as keyof JSX.IntrinsicElements),
-    [as],
-  );
-  const MotionChild = React.useMemo(
-    () => motion.create(asChild as keyof JSX.IntrinsicElements),
-    [asChild],
-  );
-
   return (
-    <MotionComponent
+    <motion.div
       initial="hidden"
       whileInView="visible"
       viewport={viewport}
@@ -139,11 +128,11 @@ function AnimatedGroup({
       className={className}
     >
       {React.Children.map(children, (child, index) => (
-        <MotionChild key={index} variants={itemVariants}>
+        <motion.div key={index} variants={itemVariants}>
           {child}
-        </MotionChild>
+        </motion.div>
       ))}
-    </MotionComponent>
+    </motion.div>
   );
 }
 
