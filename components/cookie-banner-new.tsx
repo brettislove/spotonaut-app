@@ -48,9 +48,9 @@ export default function CookieBannerNew() {
 
   return (
     <div className="fixed bottom-4 left-0 right-0 z-50 px-4">
-      <div className="max-w-6xl mx-auto">
-        <Card className="bg-card/95 backdrop-blur-lg border-border shadow-2xl">
-          <CardHeader className="pb-3">
+      <div className="max-w-4xl mx-auto">
+        <Card className="bg-card/95 backdrop-blur-lg border-border shadow-2xl gap-2">
+          <CardHeader>
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <Cookie className="w-5 h-5 text-primary" />
@@ -61,7 +61,7 @@ export default function CookieBannerNew() {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-3 pb-4">
+          <CardContent className="space-y-3">
             <CardDescription className="text-sm leading-relaxed">
               Používáme cookies k zajištění základní funkčnosti webu a zlepšení
               vaší uživatelské zkušenosti. Sbíráme anonymní analytická data
@@ -79,7 +79,7 @@ export default function CookieBannerNew() {
             </Link>
           </CardContent>
 
-          <CardFooter className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+          <CardFooter className="flex flex-col sm:flex-row gap-3 border-t">
             <Button
               variant="outline"
               onClick={rejectCookies}
@@ -90,7 +90,7 @@ export default function CookieBannerNew() {
             <Button
               variant="default"
               onClick={acceptCookies}
-              className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90"
+              className="w-full sm:w-auto "
             >
               Přijmout vše
             </Button>
