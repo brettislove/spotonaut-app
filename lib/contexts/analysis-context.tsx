@@ -37,6 +37,7 @@ interface AnalysisContextType {
   showLoginModal: boolean;
   showSignupModal: boolean;
   showForgotPasswordModal: boolean;
+  showAccountSettingsModal: boolean;
 
   // Actions
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
@@ -48,6 +49,7 @@ interface AnalysisContextType {
   setShowLoginModal: React.Dispatch<React.SetStateAction<boolean>>;
   setShowSignupModal: React.Dispatch<React.SetStateAction<boolean>>;
   setShowForgotPasswordModal: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowAccountSettingsModal: React.Dispatch<React.SetStateAction<boolean>>;
   resetAnalysis: () => void;
   navigateHome: () => void;
   clearRestoredState: () => void;
@@ -98,6 +100,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [showAccountSettingsModal, setShowAccountSettingsModal] =
+    useState(false);
 
   // Generate fingerprint on mount
   useEffect(() => {
@@ -354,6 +358,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     showLoginModal,
     showSignupModal,
     showForgotPasswordModal,
+    showAccountSettingsModal,
     setMessages,
     setAnalysisData,
     setHasCompletedAnalysis,
@@ -363,6 +368,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     setShowLoginModal,
     setShowSignupModal,
     setShowForgotPasswordModal,
+    setShowAccountSettingsModal,
     resetAnalysis,
     navigateHome,
     clearRestoredState,

@@ -6,8 +6,11 @@ import LoginPage from "@/components/login";
 import SignUpPage from "@/components/sign-up";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import ForgotPasswordPage from "../forgot-password";
+import { AccountSettingsModal } from "@/components/account-settings-modal";
+import { useSession } from "next-auth/react";
 
 export default function HeaderWrapper() {
+  const { data: session } = useSession();
   const {
     showLoginModal,
     setShowLoginModal,
@@ -15,6 +18,8 @@ export default function HeaderWrapper() {
     setShowSignupModal,
     showForgotPasswordModal,
     setShowForgotPasswordModal,
+    showAccountSettingsModal,
+    setShowAccountSettingsModal,
   } = useAnalysis();
 
   return (
@@ -22,6 +27,7 @@ export default function HeaderWrapper() {
       <HeroHeader
         setLoginModalOpen={setShowLoginModal}
         setSignupModalOpen={setShowSignupModal}
+        setAccountSettingsModalOpen={setShowAccountSettingsModal}
       />
       <LoginPage
         isOpen={showLoginModal}
@@ -50,6 +56,11 @@ export default function HeaderWrapper() {
           setShowForgotPasswordModal(false);
           setShowLoginModal(true);
         }}
+      />
+      <AccountSettingsModal
+        isOpen={showAccountSettingsModal}
+        onClose={() => setShowAccountSettingsModal(false)}
+        user={session?.user}
       />
     </>
   );

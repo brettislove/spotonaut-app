@@ -28,9 +28,11 @@ const menuItems = [
 export const HeroHeader = ({
   setLoginModalOpen,
   setSignupModalOpen,
+  setAccountSettingsModalOpen,
 }: {
   setLoginModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setSignupModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setAccountSettingsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const { resetAnalysis } = useAnalysis();
   const { data: session } = useSession();
@@ -152,7 +154,9 @@ export const HeroHeader = ({
                         </div>
                       </DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setAccountSettingsModalOpen(true)}
+                      >
                         <Settings />
                         <span>Nastavení účtu</span>
                       </DropdownMenuItem>
