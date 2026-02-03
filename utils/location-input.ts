@@ -82,10 +82,6 @@ const handleSuggestionClick = (
   setFormData: React.Dispatch<React.SetStateAction<string>>,
   setShowSuggestions: React.Dispatch<React.SetStateAction<boolean>>,
   setSuggestions: React.Dispatch<React.SetStateAction<LocationSuggestion[]>>,
-  errors: Partial<Record<string, string>>,
-  setErrors: React.Dispatch<
-    React.SetStateAction<Partial<Record<string, string>>>
-  >,
 ) => {
   const shortName = getShortLocationName(suggestion);
   setLocationInput(shortName);
@@ -99,10 +95,6 @@ const handleSuggestionClick = (
   setFormData(suggestion.display_name);
   setShowSuggestions(false);
   setSuggestions([]);
-  // Clear error when valid location is selected
-  if (errors.location) {
-    setErrors((prev) => ({ ...prev, location: undefined }));
-  }
 };
 
 // Handle location picker selection
@@ -120,10 +112,6 @@ const handleLocationPickerSelect = (
     } | null>
   >,
   setFormData: React.Dispatch<React.SetStateAction<string>>,
-  errors: Partial<Record<string, string>>,
-  setErrors: React.Dispatch<
-    React.SetStateAction<Partial<Record<string, string>>>
-  >,
 ) => {
   const suggestion: LocationSuggestion = {
     display_name: location.address,
@@ -141,10 +129,6 @@ const handleLocationPickerSelect = (
     },
   });
   setFormData(location.address);
-  // Clear error when valid location is selected
-  if (errors.location) {
-    setErrors((prev) => ({ ...prev, location: undefined }));
-  }
 };
 
 const handleConfirmLocation = async (
@@ -158,10 +142,6 @@ const handleConfirmLocation = async (
     } | null>
   >,
   setFormField: React.Dispatch<React.SetStateAction<string>>,
-  errors: Partial<Record<string, string>>,
-  setErrors: React.Dispatch<
-    React.SetStateAction<Partial<Record<string, string>>>
-  >,
 ) => {
   setIsLoadingAddress(true);
   try {
@@ -186,8 +166,6 @@ const handleConfirmLocation = async (
         setLocationInput,
         setFullLocationData,
         setFormField,
-        errors,
-        setErrors,
       );
     }
   } catch (error) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { handleLocationPickerSelect } from "@/utils/location-input";
@@ -8,14 +8,14 @@ import { handleLocationPickerSelect } from "@/utils/location-input";
 interface LocationPickerDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  setLocationInput: (value: string) => void;
-  setFullLocationData: (data: {
-    displayName: string;
-    coordinates: { lat: number; lon: number };
-  }) => void;
-  setFormField: (value: string) => void;
-  errors: Partial<Record<"location", string>>;
-  setErrors: (errors: Partial<Record<"location", string>>) => void;
+  setLocationInput: React.Dispatch<React.SetStateAction<string>>;
+  setFullLocationData: React.Dispatch<
+    React.SetStateAction<{
+      displayName: string;
+      coordinates: { lat: number; lon: number };
+    } | null>
+  >;
+  setFormField: React.Dispatch<React.SetStateAction<string>>;
   initialCenter?: [number, number];
 }
 
@@ -25,8 +25,6 @@ export default function LocationPickerDialog({
   setLocationInput,
   setFullLocationData,
   setFormField,
-  errors,
-  setErrors,
   initialCenter = [49.1951, 16.6068], // Brno default
 }: LocationPickerDialogProps) {
   const mapRef = useRef<L.Map | null>(null);
@@ -206,8 +204,6 @@ export default function LocationPickerDialog({
           setLocationInput,
           setFullLocationData,
           setFormField,
-          errors,
-          setErrors,
         );
         onClose();
       }

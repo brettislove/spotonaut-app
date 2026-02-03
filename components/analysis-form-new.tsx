@@ -69,9 +69,6 @@ export default function AnalysisFormNew({
   const [locationInput, setLocationInput] = React.useState("");
   const [fullLocationData, setFullLocationData] =
     React.useState<LocationData | null>(null);
-  const [errors, setErrors] = React.useState<Partial<Record<string, string>>>(
-    {},
-  );
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
   const [pendingFormData, setPendingFormData] =
     React.useState<AnalysisFormData | null>(null);
@@ -164,8 +161,6 @@ export default function AnalysisFormNew({
                         setLocationInput={setLocationInput}
                         fullLocationData={fullLocationData}
                         setFullLocationData={setFullLocationData}
-                        errors={errors}
-                        setErrors={setErrors}
                       />
                       {fieldState.invalid && (
                         <FieldError errors={[fieldState.error]} />
@@ -210,11 +205,7 @@ export default function AnalysisFormNew({
                       <div className="relative">
                         {/* Keep component in DOM but visually disabled (planned feature) */}
                         <div className="pointer-events-none opacity-40">
-                          <OperatingDays
-                            disabled={true}
-                            onChange={() => {}}
-                            error={errors.operatingHours}
-                          />
+                          <OperatingDays disabled={true} onChange={() => {}} />
                         </div>
 
                         {/* Small overlay label indicating planned feature */}

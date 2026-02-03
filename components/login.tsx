@@ -16,7 +16,6 @@ export default function LoginPage({
   onSwitchToSignup: () => void;
 }) {
   const [isLoading, setIsLoading] = useState(false);
-  // TODO: show error messages properly in the UI
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -59,7 +58,14 @@ export default function LoginPage({
                 name="email"
                 id="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  // Clear error when user starts typing
+                  if (error) setError("");
+                }}
+                className={
+                  error ? "border-red-500 focus-visible:ring-red-500/20" : ""
+                }
               />
             </div>
 
@@ -82,11 +88,23 @@ export default function LoginPage({
                 required
                 name="pwd"
                 id="pwd"
-                className="input sz-md variant-mixed"
+                className={
+                  error ? "border-red-500 focus-visible:ring-red-500/20" : ""
+                }
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  // Clear error when user starts typing
+                  if (error) setError("");
+                }}
               />
             </div>
+
+            {error && (
+              <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3">
+                <p className="text-sm text-red-400">{error}</p>
+              </div>
+            )}
 
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Přihlašování..." : "Přihlásit se"}

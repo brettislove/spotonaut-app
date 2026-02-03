@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { LocationData } from "@/lib/types/analysis";
 import { handleConfirmLocation, initMap } from "@/utils/location-input";
-import React, { SetStateAction, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -18,10 +18,6 @@ interface LocationPickerDialogNewProps {
     React.SetStateAction<LocationData | null>
   >;
   setFormField: React.Dispatch<React.SetStateAction<string>>;
-  errors: Partial<Record<string, string>>;
-  setErrors: React.Dispatch<
-    React.SetStateAction<Partial<Record<string, string>>>
-  >;
   isDialogOpen: boolean;
   setIsDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -30,8 +26,6 @@ export function LocationPickerDialogNew({
   setLocationInput,
   setFullLocationData,
   setFormField,
-  errors,
-  setErrors,
   isDialogOpen,
   setIsDialogOpen,
 }: LocationPickerDialogNewProps) {
@@ -209,8 +203,6 @@ export function LocationPickerDialogNew({
               setLocationInput,
               setFullLocationData,
               setFormField,
-              errors,
-              setErrors,
             ).then(() => setIsDialogOpen(false))
           }
           className="bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800"

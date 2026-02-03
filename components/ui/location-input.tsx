@@ -25,10 +25,6 @@ interface LocationInputProps {
   setFullLocationData: React.Dispatch<
     React.SetStateAction<LocationData | null>
   >;
-  errors: Partial<Record<string, string>>;
-  setErrors: React.Dispatch<
-    React.SetStateAction<Partial<Record<string, string>>>
-  >;
 }
 
 export default function LocationInput({
@@ -37,8 +33,6 @@ export default function LocationInput({
   locationInput,
   setLocationInput,
   setFullLocationData,
-  errors,
-  setErrors,
 }: LocationInputProps) {
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
@@ -109,11 +103,7 @@ export default function LocationInput({
         }
         className={`block w-full p-2.5 pr-32 border bg-slate-800 border-slate-600 placeholder-slate-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm
         focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]
-        aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive ${
-          errors.location
-            ? "border-red-500 focus:ring-red-500 focus:border-red-500"
-            : ""
-        }`}
+        aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive  }`}
       />
       <Dialog
         open={isLocationPickerOpen}
@@ -153,8 +143,6 @@ export default function LocationInput({
           setLocationInput={setLocationInput}
           setFullLocationData={setFullLocationData}
           setFormField={field.onChange}
-          errors={errors}
-          setErrors={setErrors}
           isDialogOpen={isLocationPickerOpen}
           setIsDialogOpen={setIsLocationPickerOpen}
         />
@@ -178,8 +166,6 @@ export default function LocationInput({
                         field.onChange,
                         setShowSuggestions,
                         setSuggestions,
-                        errors,
-                        setErrors,
                       )
                     }
                     className="flex flex-col items-start cursor-pointer w-full px-4 py-2 text-left hover:bg-blue-700/40 transition-colors"
