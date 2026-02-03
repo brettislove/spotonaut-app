@@ -4,7 +4,7 @@ import ChatPanel from "../chat/chat-panel";
 import { AnalysisData } from "@/lib/types/analysis";
 import MetricsPanel from "../metrics-panel";
 
-export default function AnalysisResultsMobileNew({
+export default function AnalysisResultsMobile({
   analysisData,
 }: {
   analysisData: AnalysisData;
@@ -23,7 +23,7 @@ export default function AnalysisResultsMobileNew({
   };
 
   return (
-    <div className="fixed inset-0 top-16 flex flex-col overflow-hidden">
+    <div className="fixed inset-0 top-18 flex flex-col overflow-hidden">
       {/* Fixed Map Area - only render for Metrics tab */}
       {activeTab === "metrics" && null}
 
@@ -34,12 +34,12 @@ export default function AnalysisResultsMobileNew({
           {activeTab === "metrics" ? (
             <MetricsPanel
               analysisData={analysisData}
-              className="h-[calc(100vh-10rem)] border-none"
+              className="h-[calc(100vh-11rem)] border-none"
             />
           ) : (
             <ChatPanel
               analysisData={analysisData}
-              className="h-[calc(100vh-10rem)] bg-background border-none"
+              className="h-[calc(100vh-10rem)] -translate-y-2 bg-background border-none"
             />
           )}
         </div>

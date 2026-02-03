@@ -32,7 +32,6 @@ export default function SignUpPage({
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const validatePassword = (pwd: string) => {
     if (pwd.length > 0 && pwd.length < 6) {
@@ -279,7 +278,6 @@ export default function SignUpPage({
             </div>
 
             {error && <p className="text-sm text-red-400">{error}</p>}
-            {success && <p className="text-sm text-green-400">{success}</p>}
 
             <Button
               type="submit"

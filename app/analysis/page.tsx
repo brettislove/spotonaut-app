@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import AnalysisResultsDesktop from "@/components/analysis-results/analysis-results-desktop";
-import AnalysisResultsMobileNew from "@/components/analysis-results/analysis-results-mobile-new";
+import AnalysisResultsMobile from "@/components/analysis-results/analysis-results-mobile";
 
 export default function AnalysisPage() {
   const router = useRouter();
@@ -78,7 +78,7 @@ export default function AnalysisPage() {
           </div>
 
           {isMobile ? (
-            <AnalysisResultsMobileNew analysisData={analysisData} />
+            <AnalysisResultsMobile analysisData={analysisData} />
           ) : (
             <AnalysisResultsDesktop analysisData={analysisData} />
           )}
