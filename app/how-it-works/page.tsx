@@ -1,6 +1,6 @@
 import IntegrationsSection from "@/components/integrations-section";
 import FAQSection from "@/components/faqs";
-import ScrollRevealContentA from "@/components/scroll-reveal-content-a";
+import ScrollRevealContent from "@/components/scroll-reveal-content";
 import { AnimatedGroup } from "@/components/ui/animated-group";
 
 export default function HowItWorksPage() {
@@ -84,7 +84,7 @@ export default function HowItWorksPage() {
               </p>
             </div>
           </div>
-          <ScrollRevealContentA
+          <ScrollRevealContent
             contentA={mockContentA}
             contentB={mockContentB}
             contentC={mockContentC}

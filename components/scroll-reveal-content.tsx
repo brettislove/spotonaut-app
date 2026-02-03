@@ -34,7 +34,7 @@ interface Props extends React.ComponentProps<"div"> {
   descriptionClass?: string;
 }
 
-const ScrollRevealContentA = ({
+const ScrollRevealContent = ({
   contentA,
   contentB,
   contentC,
@@ -58,7 +58,7 @@ const ScrollRevealContentA = ({
           <div
             className={cn(
               centralColumnStyle,
-              "sticky top-0 flex flex-col w-full items-start justify-center h-[100vh]",
+              "sticky top-8 flex flex-col w-full items-start justify-center h-[100vh]",
             )}
           >
             <div className="flex flex-row gap-16 md:gap-24 lg:gap-32 xl:gap-40 2xl:gap-48 w-full h-full">
@@ -132,7 +132,7 @@ const ScrollRevealContentA = ({
   );
 };
 
-export default ScrollRevealContentA;
+export default ScrollRevealContent;
 
 const getBarPercentageHeight = (
   scrollProgress: number,
