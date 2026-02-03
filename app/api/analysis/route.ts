@@ -14,7 +14,7 @@ import {
   type BusinessAnalysisMetrics,
   type GroundedLocationData,
 } from "@/lib/google-ai/location-analysis";
-import type { ProgressStep } from "@/components/analysis-progress";
+import type { ProgressStep } from "@/lib/types/analysis";
 import {
   anonymizeIP,
   extractIPFromHeaders,

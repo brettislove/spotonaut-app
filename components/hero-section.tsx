@@ -19,11 +19,11 @@ import {
   handleStreamingResponse,
 } from "@/utils/analysis";
 import { useRateLimit } from "@/lib/hooks/useRateLimit";
-import { MessageType } from "./chat-interface";
+import type { MessageType } from "@/lib/types/chat";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import { tooManyRequestsMessage } from "@/utils/chat";
 import { useChat } from "@/lib/hooks/useChat";
-import { ProgressStep } from "./analysis-progress";
+import type { ProgressStep } from "@/lib/types/analysis";
 import { useRouter } from "next/navigation";
 
 const transitionVariants: { item: Variants } = {

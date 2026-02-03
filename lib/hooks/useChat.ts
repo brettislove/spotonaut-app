@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import { MAX_MESSAGE_LENGTH } from "@/lib/constants/chat";
 import { useRateLimit } from "./useRateLimit";
-import { MessageType } from "@/components/chat-interface";
+import type { MessageType } from "../types/chat";
 
 export function useChat() {
   const { data: session } = useSession();

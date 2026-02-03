@@ -6,7 +6,6 @@ import {
   RefreshCcwIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
-  Zap,
 } from "lucide-react";
 import {
   Conversation,
@@ -52,16 +51,7 @@ import { ConfirmDialog } from "../ui/confirm-dialog";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import RequestMorePromptsModalNew from "../request-more-prompts-modal-new";
-
-// Message interface for chat messages
-interface MessageType {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  sources?: Array<{ title: string; uri: string }>;
-  suggestions?: string[];
-}
+import type { MessageType } from "@/lib/types/chat";
 
 export default function ChatPanel({
   analysisData,

@@ -1,5 +1,5 @@
-import { ProgressStep } from "@/components/analysis-progress";
-import { MessageType } from "@/components/chat-interface";
+import type { ProgressStep } from "@/lib/types/analysis";
+import type { MessageType } from "@/lib/types/chat";
 import { GroundedLocationData } from "@/lib/google-ai/location-analysis";
 import { AnalysisData, AnalysisFormData } from "@/lib/types/analysis";
 import { Session } from "next-auth";

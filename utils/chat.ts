@@ -1,4 +1,4 @@
-import { MessageType } from "@/components/chat-interface";
+import type { MessageType } from "@/lib/types/chat";
 
 /**
  * Utility to show too many requests message
