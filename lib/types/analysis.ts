@@ -48,3 +48,10 @@ export interface AnalysisData {
   sources?: Array<{ title: string; uri: string }>;
   groundedLocationData?: import("@/lib/google-ai/location-analysis").GroundedLocationData;
 }
+
+export type ProgressStep =
+  | "geocoding"
+  | "maps_grounding"
+  | "pro_analysis"
+  | "finalizing"
+  | "complete";

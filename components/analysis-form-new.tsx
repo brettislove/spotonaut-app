@@ -36,7 +36,7 @@ import {
 import { Check, CheckCheck, MapPin, MapPinned, Store } from "lucide-react";
 import { getBusinessTypeByName } from "@/lib/constants/business-types";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
-import { ProgressStep } from "./analysis-progress";
+import { ProgressStep } from "@/lib/types/analysis";
 
 const formSchema = z.object({
   location: z.string().nonempty("Je nutné zadat cílovou lokalitu."),

@@ -13,7 +13,7 @@ const defaultTitleClass =
 const defaultDescriptionClass =
   "text-base md:text-lg font-medium mb-2 text-foreground max-w-[400px] leading-[130%]";
 const imageClass =
-  "absolute top-0 right-0 ml-auto w-auto h-full object-cover rounded-2xl transition-opacity duration-300";
+  "absolute top-1/2 -translate-y-1/2 right-0 ml-auto w-auto max-w-[800px] h-3/4 object-cover rounded-2xl transition-opacity duration-300";
 
 export interface ItemContent {
   title: string;

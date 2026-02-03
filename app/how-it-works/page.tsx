@@ -1,7 +1,3 @@
-import Link from "next/link";
-import Image from "next/image";
-import { MapPin, Sparkles, MessageSquare } from "lucide-react";
-import HowItWorksSteps from "@/components/howitworks-steps";
 import IntegrationsSection from "@/components/integrations-section";
 import FAQSection from "@/components/faqs";
 import ScrollRevealContentA from "@/components/scroll-reveal-content-a";

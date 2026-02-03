@@ -46,12 +46,22 @@ import {
 import { useEffect, useState } from "react";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import { useRateLimit } from "@/lib/hooks/useRateLimit";
-import { MessageType } from "../chat-interface";
 import { AnalysisData } from "@/lib/types/analysis";
 import { Button } from "../ui/button";
 import { ConfirmDialog } from "../ui/confirm-dialog";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import RequestMorePromptsModalNew from "../request-more-prompts-modal-new";
+
+// Message interface for chat messages
+interface MessageType {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+  sources?: Array<{ title: string; uri: string }>;
+  suggestions?: string[];
+}
 
 export default function ChatPanel({
   analysisData,
@@ -76,6 +86,7 @@ export default function ChatPanel({
   const [showNewAnalysisConfirmDialog, setShowNewAnalysisConfirmDialog] =
     useState(false);
   const [showChatAccessModal, setShowChatAccessModal] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
   const [status, setStatus] = useState<
     "submitted" | "streaming" | "ready" | "error"
   >("ready");
@@ -141,6 +152,9 @@ export default function ChatPanel({
         if (claimRes.status === 403 && claimData.limitExceeded) {
           if (claimData.requestPending) {
             toast.info("Žádost o další prompty je v procesu schválení.");
+          } else {
+            // Show request modal
+            setShowRequestModal(true);
           }
           // Show request modal
           setStatus("ready");
@@ -348,6 +362,11 @@ export default function ChatPanel({
         }}
         confirmText="Přihlásit se"
         variant="default"
+      />
+
+      <RequestMorePromptsModalNew
+        isOpen={showRequestModal}
+        onClose={() => setShowRequestModal(false)}
       />
     </>
   );
