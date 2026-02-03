@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ function useHasMounted() {
 export default function AnalysisMiniBar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session } = useSession();
   const { hasCompletedAnalysis, analysisData, isAnalyzing } = useAnalysis();
   const isMounted = useHasMounted();
 
@@ -66,6 +68,7 @@ export default function AnalysisMiniBar() {
 
   // Don't render if conditions not met
   const shouldShow =
+    session &&
     hasCompletedAnalysis &&
     !isAnalyzing &&
     analysisData &&

@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import SpotonautLogo from "./spotonaut-logo";
+import { useState } from "react";
 
 export default function ForgotPasswordPage({
   isOpen,
@@ -13,9 +14,43 @@ export default function ForgotPasswordPage({
   onClose: () => void;
   onSwitchToLogin: () => void;
 }) {
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Implement password reset logic here
+    setError("");
+    setSuccess(false);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/auth/reset-password/request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Nepodařilo se odeslat email");
+        setIsLoading(false);
+        return;
+      }
+
+      // Show success message
+      setSuccess(true);
+      setEmail("");
+    } catch (err) {
+      console.error("Password reset request error:", err);
+      setError("Nepodařilo se odeslat požadavek");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -41,6 +76,21 @@ export default function ForgotPasswordPage({
           </div>
 
           <div className="mt-6 space-y-6">
+            {error && (
+              <div className="p-3 rounded-md bg-red-500/10 border border-red-500/20">
+                <p className="text-sm text-red-400">{error}</p>
+              </div>
+            )}
+
+            {success && (
+              <div className="p-3 rounded-md bg-green-500/10 border border-green-500/20">
+                <p className="text-sm text-green-400">
+                  Zkontrolujte svůj email! Pokud účet existuje, byl odeslán
+                  odkaz pro obnovení hesla.
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email" className="block text-sm">
                 Email
@@ -51,10 +101,15 @@ export default function ForgotPasswordPage({
                 name="email"
                 id="email"
                 placeholder="vas@email.cz"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
               />
             </div>
 
-            <Button className="w-full">Odeslat odkaz</Button>
+            <Button className="w-full" disabled={isLoading}>
+              {isLoading ? "Odesílání..." : "Odeslat odkaz"}
+            </Button>
           </div>
 
           <div className="mt-6 text-center">
