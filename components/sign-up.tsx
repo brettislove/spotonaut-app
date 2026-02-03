@@ -90,7 +90,7 @@ export default function SignUpPage({
       onClick={onClose}
     >
       <form
-        className="bg-muted m-auto h-fit w-full max-w-sm overflow-hidden rounded-[calc(var(--radius)+.125rem)] border shadow-2xl shadow-zinc-950/20 dark:[--color-muted:var(--color-zinc-900)]"
+        className="bg-muted m-auto h-fit w-full max-w-sm overflow-hidden rounded-md border shadow-2xl shadow-zinc-950/20 dark:[--color-muted:var(--color-zinc-900)]"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleFormSubmit}
       >
@@ -298,7 +298,7 @@ export default function SignUpPage({
             <hr className="border-dashed" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1">
             <Button type="button" variant="outline">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -324,26 +324,6 @@ export default function SignUpPage({
                 ></path>
               </svg>
               <span>Google</span>
-            </Button>
-            <Button type="button" variant="outline">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="1em"
-                height="1em"
-                viewBox="0 0 256 256"
-              >
-                <path fill="#f1511b" d="M121.666 121.666H0V0h121.666z"></path>
-                <path fill="#80cc28" d="M256 121.666H134.335V0H256z"></path>
-                <path
-                  fill="#00adef"
-                  d="M121.663 256.002H0V134.336h121.663z"
-                ></path>
-                <path
-                  fill="#fbbc09"
-                  d="M256 256.002H134.335V134.336H256z"
-                ></path>
-              </svg>
-              <span>Microsoft</span>
             </Button>
           </div>
         </div>

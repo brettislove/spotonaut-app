@@ -193,10 +193,9 @@ export const HeroHeader = ({
                       asChild
                       size="sm"
                       className={cn(isScrolled ? "lg:inline-flex" : "hidden")}
+                      onClick={() => setLoginModalOpen(true)}
                     >
-                      <Link href="#">
-                        <span>Začít</span>
-                      </Link>
+                      <span>Začít</span>
                     </Button>
                   </>
                 )}
