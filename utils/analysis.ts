@@ -7,13 +7,13 @@ import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.share
 
 const checkIfUsedFreeAnalysis = (
   data: AnalysisFormData,
-  setSignupModalOpen: React.Dispatch<React.SetStateAction<boolean>>,
+  setShowLoginModal: React.Dispatch<React.SetStateAction<boolean>>,
 ): boolean => {
   const hasUsedFree = localStorage.getItem("hasUsedFreeAnalysis");
   if (hasUsedFree === "true") {
     // Store the analysis data before showing auth modal
     localStorage.setItem("pendingAnalysis", JSON.stringify(data));
-    setSignupModalOpen(true);
+    setShowLoginModal(true);
     return true;
   }
   return false;
@@ -21,15 +21,13 @@ const checkIfUsedFreeAnalysis = (
 
 const handleResponseErrors = async (
   response: Response,
-  setAuthModalMode: React.Dispatch<React.SetStateAction<"login" | "signup">>,
-  setShowAuthModal: React.Dispatch<React.SetStateAction<boolean>>,
+  setShowSignupModal: React.Dispatch<React.SetStateAction<boolean>>,
   setShowAnalysisForm: React.Dispatch<React.SetStateAction<boolean>>,
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
   const errorData = await response.json().catch(() => ({}));
   if (response.status === 403 && errorData.requiresAuth) {
-    setAuthModalMode("signup");
-    setShowAuthModal(true);
+    setShowSignupModal(true);
     setShowAnalysisForm(true);
     setIsLoading(false);
     return;
@@ -39,10 +37,8 @@ const handleResponseErrors = async (
 
 const handleStreamingResponse = async (
   response: Response,
-  setStreamingMessageId: React.Dispatch<React.SetStateAction<string | null>>,
   setMessages: React.Dispatch<React.SetStateAction<MessageType[]>>,
   setProgressStep: React.Dispatch<React.SetStateAction<ProgressStep>>,
-  setStreamingText: React.Dispatch<React.SetStateAction<string>>,
   setAnalysisData: React.Dispatch<React.SetStateAction<AnalysisData | null>>,
   setShowMapView: React.Dispatch<React.SetStateAction<boolean>>,
   setHasCompletedAnalysis: React.Dispatch<React.SetStateAction<boolean>>,
@@ -60,7 +56,6 @@ const handleStreamingResponse = async (
 
   // Create streaming message
   const messageId = Date.now().toString();
-  setStreamingMessageId(messageId);
   const assistantMessage: MessageType = {
     id: messageId,
     role: "assistant",
@@ -89,7 +84,6 @@ const handleStreamingResponse = async (
             setProgressStep(data.step);
           } else if (data.type === "chunk") {
             fullAnalysisText += data.text;
-            setStreamingText(fullAnalysisText);
             // Update message content
             setMessages((prev) =>
               prev.map((msg) =>
@@ -130,8 +124,6 @@ const handleStreamingResponse = async (
               router.push("/analysis");
             }
 
-            setStreamingText("");
-            setStreamingMessageId(null);
             setProgressStep("complete");
             setIsAnalyzing(false);
           } else if (data.type === "error") {

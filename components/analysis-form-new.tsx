@@ -14,14 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Field,
   FieldError,
@@ -205,7 +198,7 @@ export default function AnalysisFormNew({
                 <Controller
                   name="operatingHours"
                   control={form.control}
-                  render={({ field, fieldState }) => (
+                  render={({ fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
                       <FieldLabel htmlFor="analysis-form-operatingHours">
                         Plánované dny otevření
@@ -237,9 +230,7 @@ export default function AnalysisFormNew({
           ) : (
             <ChainOfThought defaultOpen>
               <ChainOfThoughtHeader>
-                <h3 className="text-2xl">
-                  Analyzování lokality: {fullLocationData?.displayName || ""}
-                </h3>
+                <h3 className="text-2xl">Probíhá analýza vaší lokality...</h3>
               </ChainOfThoughtHeader>
               <ChainOfThoughtContent>
                 <ChainOfThoughtStep
@@ -309,28 +300,13 @@ export default function AnalysisFormNew({
         </CardFooter>
       </Card>
 
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Přepsat existující analýzu?</DialogTitle>
-            <DialogDescription>
-              Již máte dokončenou analýzu. Spuštěním nové analýzy bude stávající
-              analýza odstraněna. Chcete pokračovat?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowConfirmDialog(false)}
-            >
-              Zrušit
-            </Button>
-            <Button variant="destructive" onClick={handleConfirmNewAnalysis}>
-              Potvrdit
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        title="Přepsat existující analýzu?"
+        description="Již máte dokončenou analýzu. Spuštěním nové analýzy bude stávající analýza odstraněna. Chcete pokračovat?"
+        onConfirm={handleConfirmNewAnalysis}
+      />
     </>
   );
 }

@@ -38,8 +38,6 @@ const ScrollRevealContentA = ({
   contentA,
   contentB,
   contentC,
-  titleClass = defaultTitleClass,
-  descriptionClass = defaultDescriptionClass,
   className,
   ...props
 }: Props) => {

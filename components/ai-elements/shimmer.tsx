@@ -18,6 +18,25 @@ export interface TextShimmerProps {
   spread?: number;
 }
 
+// map common intrinsic elements to their motion counterparts (created at module scope)
+const MotionMap: Partial<Record<keyof JSX.IntrinsicElements, ElementType>> = {
+  p: motion.p,
+  span: motion.span,
+  div: motion.div,
+  h1: motion.h1,
+  h2: motion.h2,
+  h3: motion.h3,
+  h4: motion.h4,
+  h5: motion.h5,
+  h6: motion.h6,
+  a: motion.a,
+  button: motion.button,
+  li: motion.li,
+  small: motion.small,
+  strong: motion.strong,
+  label: motion.label,
+};
+
 const ShimmerComponent = ({
   children,
   as: Component = "p",
@@ -25,9 +44,12 @@ const ShimmerComponent = ({
   duration = 2,
   spread = 2,
 }: TextShimmerProps) => {
-  const MotionComponent = motion.create(
-    Component as keyof JSX.IntrinsicElements,
-  );
+  // select a pre-created motion intrinsic component when possible; fall back to motion.span
+  const MotionComponent: ElementType =
+    typeof Component === "string" &&
+    MotionMap[Component as keyof JSX.IntrinsicElements]
+      ? MotionMap[Component as keyof JSX.IntrinsicElements]!
+      : motion.span;
 
   const dynamicSpread = useMemo(
     () => (children?.length ?? 0) * spread,

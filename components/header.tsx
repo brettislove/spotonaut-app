@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { LogOut, Menu, Settings, Settings2, X } from "lucide-react";
+import { LogOut, Menu, Settings, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
 import { cn } from "@/lib/utils";

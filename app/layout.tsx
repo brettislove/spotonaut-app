@@ -7,6 +7,8 @@ import { AnalysisProvider } from "@/lib/contexts/analysis-context";
 import PageTracker from "@/components/page-tracker";
 import HeaderWrapper from "@/components/layout/header-wrapper";
 import FooterSection from "@/components/footer";
+import AnalysisMiniBar from "@/components/analysis-mini-bar";
+import CookieBannerNew from "@/components/cookie-banner-new";
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -188,6 +190,8 @@ export default function RootLayout({
             <Toaster />
             <HeaderWrapper />
             {children}
+            <AnalysisMiniBar />
+            <CookieBannerNew />
             <FooterSection />
           </AnalysisProvider>
         </AuthProvider>

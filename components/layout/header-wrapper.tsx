@@ -4,31 +4,36 @@ import React from "react";
 import { HeroHeader } from "@/components/header";
 import LoginPage from "@/components/login";
 import SignUpPage from "@/components/sign-up";
+import { useAnalysis } from "@/lib/contexts/analysis-context";
 
 export default function HeaderWrapper() {
-  const [loginModalOpen, setLoginModalOpen] = React.useState(false);
-  const [signupModalOpen, setSignupModalOpen] = React.useState(false);
+  const {
+    showLoginModal,
+    setShowLoginModal,
+    showSignupModal,
+    setShowSignupModal,
+  } = useAnalysis();
 
   return (
     <>
       <HeroHeader
-        setLoginModalOpen={setLoginModalOpen}
-        setSignupModalOpen={setSignupModalOpen}
+        setLoginModalOpen={setShowLoginModal}
+        setSignupModalOpen={setShowSignupModal}
       />
       <LoginPage
-        isOpen={loginModalOpen}
-        onClose={() => setLoginModalOpen(false)}
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
         onSwitchToSignup={() => {
-          setLoginModalOpen(false);
-          setSignupModalOpen(true);
+          setShowLoginModal(false);
+          setShowSignupModal(true);
         }}
       />
       <SignUpPage
-        isOpen={signupModalOpen}
-        onClose={() => setSignupModalOpen(false)}
+        isOpen={showSignupModal}
+        onClose={() => setShowSignupModal(false)}
         onSwitchToLogin={() => {
-          setSignupModalOpen(false);
-          setLoginModalOpen(true);
+          setShowSignupModal(false);
+          setShowLoginModal(true);
         }}
       />
     </>

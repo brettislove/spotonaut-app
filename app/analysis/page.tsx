@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
-import AnalysisResultsDesktop from "@/components/analysis-results-desktop";
-import AnalysisResultsMobileNew from "@/components/analysis-results-mobile-new";
+import AnalysisResultsDesktop from "@/components/analysis-results/analysis-results-desktop";
+import AnalysisResultsMobileNew from "@/components/analysis-results/analysis-results-mobile-new";
 
 export default function AnalysisPage() {
   const router = useRouter();
