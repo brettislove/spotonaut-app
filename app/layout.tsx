@@ -8,6 +8,7 @@ import PageTracker from "@/components/page-tracker";
 import HeaderWrapper from "@/components/layout/header-wrapper";
 import FooterSection from "@/components/footer";
 import AnalysisMiniBar from "@/components/analysis-mini-bar";
+import AnalysisDialogs from "@/components/analysis-dialogs";
 import CookieBannerNew from "@/components/cookie-banner-new";
 import { Toaster } from "sonner";
 
@@ -191,6 +192,7 @@ export default function RootLayout({
             <HeaderWrapper />
             {children}
             <AnalysisMiniBar />
+            <AnalysisDialogs />
             <CookieBannerNew />
             <FooterSection />
           </AnalysisProvider>

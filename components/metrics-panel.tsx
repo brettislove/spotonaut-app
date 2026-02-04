@@ -1,8 +1,6 @@
 import {
   Building,
   ChevronDown,
-  ChevronDownIcon,
-  ChevronUp,
   ChevronUpIcon,
   CircleEllipsis,
   Clock,
@@ -10,8 +8,6 @@ import {
   ListFilter,
   MapPinHouse,
   MapPinned,
-  Maximize2,
-  Minimize2,
   ShoppingCart,
   TrainFront,
   Trophy,
@@ -37,7 +33,6 @@ import {
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
 import MapViewNew from "./map-view-new";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "./ui/drawer";
 import { AnalysisData } from "@/lib/types/analysis";
 import { useState } from "react";
 import {
@@ -46,8 +41,6 @@ import {
   CollapsibleTrigger,
 } from "./ui/collapsible";
 
-const snapPoints = ["8%", "35%", "80%"];
-
 export default function MetricsPanel({
   analysisData,
   className,
@@ -55,7 +48,6 @@ export default function MetricsPanel({
   analysisData: AnalysisData;
   className?: string;
 }) {
-  const [activeSnapPoint, setActiveSnapPoint] = useState<number>(1);
   const [filters, setFilters] = useState({
     competitors: true,
     transit: true,
@@ -65,14 +57,6 @@ export default function MetricsPanel({
     other: true,
     availableProperties: true,
   });
-
-  const toggleDrawer = () => {
-    setActiveSnapPoint(activeSnapPoint === 0 ? 1 : 0);
-  };
-
-  const toggleMaximize = () => {
-    setActiveSnapPoint(activeSnapPoint === 2 ? 1 : 2);
-  };
 
   return (
     <Card

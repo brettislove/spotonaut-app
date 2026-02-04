@@ -93,6 +93,8 @@ model Analysis {
   coordinates           Json? // { lat: number, lng: number }
   metrics               Json // { localityScore, footfallScore, recommendedHours }
   groundingSources      Json? // [{ placeId, title, uri }] from Google Maps grounding
+  groundedLocationData  Json? // Full grounded location data (competitors, footfallProxies, etc.)
+  chatMessages          Json? // Chat history messages for saved analysis
   usedMapsGrounding     Boolean  @default(false)
   businessType          String? // Type of business being analyzed
   operatingHours        Int? // Hours per day
@@ -101,6 +103,7 @@ model Analysis {
   errorMessage          String? // Error message if failed
   processingTimeMs      Int? // Total processing time in milliseconds
   apiResponseTimeMs     Int? // Google AI API response time in milliseconds
+  isSavedAnalysis       Boolean  @default(false) // Whether this is a user-saved analysis
   createdAt             DateTime @default(now())
 
   user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -111,6 +114,7 @@ model Analysis {
   @@index([createdAt, userId])
   @@index([businessType])
   @@index([completedSuccessfully])
+  @@index([userId, isSavedAnalysis])
   @@map("analyses")
 }
 

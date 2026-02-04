@@ -8,6 +8,7 @@ import React, {
   useCallback,
   ReactNode,
   startTransition,
+  useRef,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -38,6 +39,11 @@ interface AnalysisContextType {
   showSignupModal: boolean;
   showForgotPasswordModal: boolean;
   showAccountSettingsModal: boolean;
+  isSavedToDatabase: boolean;
+  isLoadingFromDatabase: boolean;
+  showMigrationDialog: boolean;
+  showOverwriteDialog: boolean;
+  hasExistingDatabaseAnalysis: boolean;
 
   // Actions
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
@@ -50,6 +56,8 @@ interface AnalysisContextType {
   setShowSignupModal: React.Dispatch<React.SetStateAction<boolean>>;
   setShowForgotPasswordModal: React.Dispatch<React.SetStateAction<boolean>>;
   setShowAccountSettingsModal: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMigrationDialog: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowOverwriteDialog: React.Dispatch<React.SetStateAction<boolean>>;
   resetAnalysis: () => void;
   navigateHome: () => void;
   clearRestoredState: () => void;
@@ -61,6 +69,11 @@ interface AnalysisContextType {
     feedbackType: string,
   ) => Promise<boolean>;
   showToast: (message: string) => void;
+  saveToDatabase: () => Promise<boolean>;
+  loadFromDatabase: () => Promise<boolean>;
+  migrateLocalStorageToDatabase: () => Promise<boolean>;
+  checkExistingDatabaseAnalysis: () => Promise<boolean>;
+  confirmOverwriteAndSave: () => Promise<boolean>;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(
@@ -82,11 +95,16 @@ interface PersistedState {
 export function AnalysisProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const [fingerprint, setFingerprint] = useState<string | null>(null);
   const [restoredState, setRestoredState] = useState<PersistedState | null>(
     null,
   );
+
+  // Track previous session for login detection
+  const prevSessionRef = useRef<typeof session>(null);
+  const hasCheckedDatabaseOnLogin = useRef(false);
+  const isLoadingFromDatabaseRef = useRef(false);
 
   // State
   const [messages, setMessages] = useState<Message[]>([]);
@@ -102,6 +120,15 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [showAccountSettingsModal, setShowAccountSettingsModal] =
     useState(false);
+
+  // New state for database saving
+  const [isSavedToDatabase, setIsSavedToDatabase] = useState(false);
+  const [isLoadingFromDatabase, setIsLoadingFromDatabase] = useState(false);
+  const [showMigrationDialog, setShowMigrationDialog] = useState(false);
+  const [showOverwriteDialog, setShowOverwriteDialog] = useState(false);
+  const [hasExistingDatabaseAnalysis, setHasExistingDatabaseAnalysis] =
+    useState(false);
+  const pendingSaveData = useRef<PersistedState | null>(null);
 
   // Generate fingerprint on mount
   useEffect(() => {
@@ -199,9 +226,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     });
   }, [restoredState]);
 
-  // Persist state changes to localStorage
+  // Persist state changes to localStorage (only for non-authenticated users)
   useEffect(() => {
-    if (!fingerprint && !session?.user?.email) return;
+    // Skip localStorage persistence for authenticated users - they use database
+    if (session?.user?.email) return;
+    if (!fingerprint) return;
     if (!hasCompletedAnalysis) return; // Only persist completed analyses
 
     const storageKey = getStorageKey();
@@ -232,6 +261,293 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     session?.user?.email,
   ]);
 
+  // Check if user has existing analysis in database
+  const checkExistingDatabaseAnalysis =
+    useCallback(async (): Promise<boolean> => {
+      if (!session?.user?.email) return false;
+
+      try {
+        const response = await fetch("/api/analysis/saved", {
+          method: "HEAD",
+        });
+
+        if (response.ok) {
+          const hasAnalysis =
+            response.headers.get("X-Has-Saved-Analysis") === "true";
+          setHasExistingDatabaseAnalysis(hasAnalysis);
+          return hasAnalysis;
+        }
+        return false;
+      } catch (error) {
+        console.error("Failed to check existing analysis:", error);
+        return false;
+      }
+    }, [session?.user?.email]);
+
+  // Save analysis to database (for authenticated users)
+  const saveToDatabase = useCallback(async (): Promise<boolean> => {
+    if (!session?.user?.email) return false;
+    if (!hasCompletedAnalysis || !analysisData) return false;
+
+    try {
+      const dataToSave = {
+        locationName: analysisData.locationName || analysisData.location,
+        location: analysisData.location,
+        coordinates: analysisData.coordinates,
+        metrics: analysisData.metrics,
+        groundingSources: analysisData.sources,
+        groundedLocationData: analysisData.groundedLocationData,
+        chatMessages: messages.map((msg) => ({
+          ...msg,
+          timestamp: msg.timestamp.toISOString(),
+        })),
+        usedMapsGrounding: !!analysisData.groundedLocationData,
+      };
+
+      const response = await fetch("/api/analysis/saved", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dataToSave),
+      });
+
+      if (response.ok) {
+        setIsSavedToDatabase(true);
+        setHasExistingDatabaseAnalysis(true);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to save analysis to database:", error);
+      return false;
+    }
+  }, [session?.user?.email, hasCompletedAnalysis, analysisData, messages]);
+
+  // Load analysis from database (for authenticated users)
+  const loadFromDatabase = useCallback(async (): Promise<boolean> => {
+    if (!session?.user?.email) return false;
+
+    setIsLoadingFromDatabase(true);
+    isLoadingFromDatabaseRef.current = true;
+    try {
+      const response = await fetch("/api/analysis/saved");
+
+      if (response.ok) {
+        const data = await response.json();
+
+        if (data.analysis) {
+          const { analysis } = data;
+
+          // Restore messages with Date objects
+          const restoredMessages = (analysis.chatMessages || []).map(
+            (msg: {
+              id: string;
+              role: "user" | "assistant";
+              content: string;
+              timestamp: string;
+              sources?: Array<{ title: string; uri: string }>;
+              suggestions?: string[];
+            }) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+            }),
+          );
+
+          startTransition(() => {
+            setMessages(restoredMessages);
+            setAnalysisData({
+              id: analysis.id,
+              location: analysis.location,
+              locationName: analysis.locationName,
+              coordinates: analysis.coordinates,
+              metrics: analysis.metrics,
+              sources: analysis.groundingSources,
+              groundedLocationData: analysis.groundedLocationData,
+            });
+            setHasCompletedAnalysis(true);
+            setShowMapView(false);
+            setShowAnalysisForm(false);
+            setIsSavedToDatabase(true);
+            setHasExistingDatabaseAnalysis(true);
+          });
+
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error("Failed to load analysis from database:", error);
+      return false;
+    } finally {
+      setIsLoadingFromDatabase(false);
+      // Keep the ref true briefly to prevent auto-save from triggering
+      setTimeout(() => {
+        isLoadingFromDatabaseRef.current = false;
+      }, 1000);
+    }
+  }, [session?.user?.email]);
+
+  // Migrate localStorage data to database after login/signup
+  const migrateLocalStorageToDatabase =
+    useCallback(async (): Promise<boolean> => {
+      if (!session?.user?.email || !fingerprint) return false;
+
+      const fingerprintKey = `analysis_${fingerprint}`;
+      const stored = localStorage.getItem(fingerprintKey);
+
+      if (!stored) return false;
+
+      try {
+        const parsed: PersistedState = JSON.parse(stored);
+
+        if (!parsed.hasCompletedAnalysis || !parsed.analysisData) return false;
+
+        const dataToSave = {
+          locationName:
+            parsed.analysisData.locationName || parsed.analysisData.location,
+          location: parsed.analysisData.location,
+          coordinates: parsed.analysisData.coordinates,
+          metrics: parsed.analysisData.metrics,
+          groundingSources: parsed.analysisData.sources,
+          groundedLocationData: parsed.analysisData.groundedLocationData,
+          chatMessages: parsed.messages,
+          usedMapsGrounding: !!parsed.analysisData.groundedLocationData,
+        };
+
+        const response = await fetch("/api/analysis/saved", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(dataToSave),
+        });
+
+        if (response.ok) {
+          // Clean up localStorage after successful migration
+          localStorage.removeItem(fingerprintKey);
+          setIsSavedToDatabase(true);
+          setHasExistingDatabaseAnalysis(true);
+          setToastMessage("Analýza byla úspěšně uložena do vašeho účtu! 🎉");
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Failed to migrate analysis to database:", error);
+        return false;
+      }
+    }, [session?.user?.email, fingerprint]);
+
+  // Confirm overwrite and save (called from dialog)
+  const confirmOverwriteAndSave = useCallback(async (): Promise<boolean> => {
+    setShowOverwriteDialog(false);
+
+    if (pendingSaveData.current) {
+      // We have pending migration data
+      const result = await migrateLocalStorageToDatabase();
+      pendingSaveData.current = null;
+      return result;
+    } else {
+      // Regular save
+      return await saveToDatabase();
+    }
+  }, [migrateLocalStorageToDatabase, saveToDatabase]);
+
+  // Auto-save to database when analysis completes (for authenticated users)
+  useEffect(() => {
+    if (!session?.user?.email) return;
+    if (!hasCompletedAnalysis || !analysisData) return;
+    if (isSavedToDatabase) return; // Already saved
+    if (isAnalyzing) return; // Still analyzing
+    if (isLoadingFromDatabaseRef.current) return; // Don't auto-save when loading from DB
+
+    // Check if there's an existing analysis and show overwrite dialog
+    const autoSave = async () => {
+      const hasExisting = await checkExistingDatabaseAnalysis();
+      if (hasExisting) {
+        setShowOverwriteDialog(true);
+      } else {
+        await saveToDatabase();
+      }
+    };
+
+    // Small delay to ensure analysis is fully complete
+    const timeoutId = setTimeout(autoSave, 500);
+    return () => clearTimeout(timeoutId);
+  }, [
+    session?.user?.email,
+    hasCompletedAnalysis,
+    analysisData,
+    isSavedToDatabase,
+    isAnalyzing,
+    checkExistingDatabaseAnalysis,
+    saveToDatabase,
+  ]);
+
+  // Handle login/signup: check for LocalStorage data to migrate or load from DB
+  useEffect(() => {
+    // Only run when session changes from unauthenticated to authenticated
+    if (sessionStatus !== "authenticated") return;
+    if (!session?.user?.email) return;
+    if (prevSessionRef.current?.user?.email === session.user.email) return;
+    if (hasCheckedDatabaseOnLogin.current) return;
+
+    hasCheckedDatabaseOnLogin.current = true;
+    prevSessionRef.current = session;
+
+    const handleLoginMigration = async () => {
+      // Check if there's LocalStorage data from fingerprint to migrate
+      if (fingerprint) {
+        const fingerprintKey = `analysis_${fingerprint}`;
+        const localData = localStorage.getItem(fingerprintKey);
+
+        if (localData) {
+          try {
+            const parsed: PersistedState = JSON.parse(localData);
+            if (parsed.hasCompletedAnalysis && parsed.analysisData) {
+              // Check if user already has a saved analysis in DB
+              const hasExisting = await checkExistingDatabaseAnalysis();
+
+              if (hasExisting) {
+                // Store pending data and show migration dialog
+                pendingSaveData.current = parsed;
+                setShowMigrationDialog(true);
+              } else {
+                // No existing analysis, migrate directly
+                await migrateLocalStorageToDatabase();
+              }
+              return;
+            }
+          } catch {
+            // Invalid localStorage data, ignore
+          }
+        }
+      }
+
+      // No local data to migrate, load from database
+      await loadFromDatabase();
+    };
+
+    handleLoginMigration();
+  }, [
+    session,
+    sessionStatus,
+    fingerprint,
+    checkExistingDatabaseAnalysis,
+    migrateLocalStorageToDatabase,
+    loadFromDatabase,
+  ]);
+
+  // Reset the login check flag when user logs out
+  useEffect(() => {
+    if (sessionStatus === "unauthenticated") {
+      hasCheckedDatabaseOnLogin.current = false;
+      prevSessionRef.current = null;
+      setIsSavedToDatabase(false);
+      setHasExistingDatabaseAnalysis(false);
+    }
+  }, [sessionStatus]);
+
   // Reset analysis state
   const resetAnalysis = useCallback(() => {
     setMessages([]);
@@ -239,8 +555,9 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     setHasCompletedAnalysis(false);
     setShowMapView(false);
     setShowAnalysisForm(true);
+    setIsSavedToDatabase(false);
 
-    // Clear from localStorage
+    // Clear from localStorage (for non-authenticated users)
     const storageKey = getStorageKey();
     if (storageKey) {
       try {
@@ -359,6 +676,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     showSignupModal,
     showForgotPasswordModal,
     showAccountSettingsModal,
+    isSavedToDatabase,
+    isLoadingFromDatabase,
+    showMigrationDialog,
+    showOverwriteDialog,
+    hasExistingDatabaseAnalysis,
     setMessages,
     setAnalysisData,
     setHasCompletedAnalysis,
@@ -369,6 +691,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     setShowSignupModal,
     setShowForgotPasswordModal,
     setShowAccountSettingsModal,
+    setShowMigrationDialog,
+    setShowOverwriteDialog,
     resetAnalysis,
     navigateHome,
     clearRestoredState,
@@ -376,6 +700,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     dismissFeedback,
     submitFeedback,
     showToast,
+    saveToDatabase,
+    loadFromDatabase,
+    migrateLocalStorageToDatabase,
+    checkExistingDatabaseAnalysis,
+    confirmOverwriteAndSave,
   };
 
   return (
