@@ -74,6 +74,7 @@ interface AnalysisContextType {
   migrateLocalStorageToDatabase: () => Promise<boolean>;
   checkExistingDatabaseAnalysis: () => Promise<boolean>;
   confirmOverwriteAndSave: () => Promise<boolean>;
+  markOverwriteConfirmed: () => void;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(
@@ -105,6 +106,9 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const prevSessionRef = useRef<typeof session>(null);
   const hasCheckedDatabaseOnLogin = useRef(false);
   const isLoadingFromDatabaseRef = useRef(false);
+  const isNewlyCompletedAnalysis = useRef(false);
+  const prevIsAnalyzingRef = useRef(false);
+  const hasUserConfirmedOverwrite = useRef(false);
 
   // State
   const [messages, setMessages] = useState<Message[]>([]);
@@ -223,6 +227,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       setHasCompletedAnalysis(restoredState.hasCompletedAnalysis);
       setShowMapView(restoredState.showMapView);
       setShowAnalysisForm(!restoredState.hasCompletedAnalysis);
+      // Mark as not newly completed since it was restored
+      isNewlyCompletedAnalysis.current = false;
     });
   }, [restoredState]);
 
@@ -260,6 +266,15 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     fingerprint,
     session?.user?.email,
   ]);
+
+  // Track when analysis transitions from analyzing to completed (newly completed)
+  useEffect(() => {
+    // If was analyzing and now completed -> mark as newly completed
+    if (prevIsAnalyzingRef.current && !isAnalyzing && hasCompletedAnalysis) {
+      isNewlyCompletedAnalysis.current = true;
+    }
+    prevIsAnalyzingRef.current = isAnalyzing;
+  }, [isAnalyzing, hasCompletedAnalysis]);
 
   // Check if user has existing analysis in database
   const checkExistingDatabaseAnalysis =
@@ -315,6 +330,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         setIsSavedToDatabase(true);
         setHasExistingDatabaseAnalysis(true);
+        isNewlyCompletedAnalysis.current = false; // Reset flag after successful save
         return true;
       }
       return false;
@@ -370,6 +386,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
             setShowAnalysisForm(false);
             setIsSavedToDatabase(true);
             setHasExistingDatabaseAnalysis(true);
+            // Mark as not newly completed since it was loaded from DB
+            isNewlyCompletedAnalysis.current = false;
           });
 
           return true;
@@ -446,10 +464,13 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       // We have pending migration data
       const result = await migrateLocalStorageToDatabase();
       pendingSaveData.current = null;
+      isNewlyCompletedAnalysis.current = false; // Reset flag after migration
       return result;
     } else {
       // Regular save
-      return await saveToDatabase();
+      const result = await saveToDatabase();
+      // Flag is already reset in saveToDatabase
+      return result;
     }
   }, [migrateLocalStorageToDatabase, saveToDatabase]);
 
@@ -460,14 +481,20 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     if (isSavedToDatabase) return; // Already saved
     if (isAnalyzing) return; // Still analyzing
     if (isLoadingFromDatabaseRef.current) return; // Don't auto-save when loading from DB
+    if (!isNewlyCompletedAnalysis.current) return; // Only auto-save newly completed analyses, not restored ones
 
     // Check if there's an existing analysis and show overwrite dialog
     const autoSave = async () => {
       const hasExisting = await checkExistingDatabaseAnalysis();
-      if (hasExisting) {
+      if (hasExisting && !hasUserConfirmedOverwrite.current) {
+        // Only show dialog if user hasn't already confirmed before starting analysis
         setShowOverwriteDialog(true);
+        // Don't reset flag yet - will be reset after dialog confirmation
       } else {
+        // Either no existing analysis, or user already confirmed overwrite
         await saveToDatabase();
+        hasUserConfirmedOverwrite.current = false; // Reset for next time
+        // Flag is reset in saveToDatabase
       }
     };
 
@@ -556,6 +583,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     setShowMapView(false);
     setShowAnalysisForm(true);
     setIsSavedToDatabase(false);
+    isNewlyCompletedAnalysis.current = false;
 
     // Clear from localStorage (for non-authenticated users)
     const storageKey = getStorageKey();
@@ -580,6 +608,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     resetAnalysis();
     router.push("/");
   }, [resetAnalysis, router]);
+
+  // Mark that user has confirmed overwrite (called from form before starting analysis)
+  const markOverwriteConfirmed = useCallback(() => {
+    hasUserConfirmedOverwrite.current = true;
+  }, []);
 
   // Track pathname changes (for potential future use)
   useEffect(() => {
@@ -705,6 +738,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     migrateLocalStorageToDatabase,
     checkExistingDatabaseAnalysis,
     confirmOverwriteAndSave,
+    markOverwriteConfirmed,
   };
 
   return (

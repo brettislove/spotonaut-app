@@ -65,6 +65,7 @@ export default function AnalysisFormNew({
     hasCompletedAnalysis,
     resetAnalysis,
     clearRestoredState,
+    markOverwriteConfirmed,
   } = useAnalysis();
   const [locationInput, setLocationInput] = React.useState("");
   const [fullLocationData, setFullLocationData] =
@@ -119,6 +120,7 @@ export default function AnalysisFormNew({
 
   function handleConfirmNewAnalysis() {
     if (pendingFormData) {
+      markOverwriteConfirmed(); // Mark that user already confirmed overwrite
       resetAnalysis();
       clearRestoredState();
       setShowConfirmDialog(false);
