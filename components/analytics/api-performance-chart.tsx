@@ -74,13 +74,14 @@ export default function ApiPerformanceChart({
               color: "#f1f5f9",
             }}
             labelStyle={{ color: "#cbd5e1" }}
-            formatter={(value: number | undefined, name?: string) => {
+            // @ts-expect-error - Recharts generic types are complex for composed charts
+            formatter={(value: number | string | undefined, name?: string) => {
               if (!value) return ["0", name || ""];
               if (name === "Error Rate") {
-                return [`${value.toFixed(2)}%`, name];
+                return [`${Number(value).toFixed(2)}%`, name];
               }
               if (name === "Avg Response Time") {
-                return [`${value.toFixed(0)} ms`, name];
+                return [`${Number(value).toFixed(0)} ms`, name];
               }
               return [value, name || ""];
             }}
@@ -130,8 +131,8 @@ export default function ApiPerformanceChart({
                   (data[data.length - 1]?.avgResponseTime || 0) > 2000
                     ? "text-red-400"
                     : (data[data.length - 1]?.avgResponseTime || 0) > 1000
-                    ? "text-yellow-400"
-                    : "text-green-400"
+                      ? "text-yellow-400"
+                      : "text-green-400"
                 }`}
               >
                 {data[data.length - 1]?.avgResponseTime.toFixed(0)} ms
@@ -144,8 +145,8 @@ export default function ApiPerformanceChart({
                   (data[data.length - 1]?.errorRate || 0) > 5
                     ? "text-red-400"
                     : (data[data.length - 1]?.errorRate || 0) > 2
-                    ? "text-yellow-400"
-                    : "text-green-400"
+                      ? "text-yellow-400"
+                      : "text-green-400"
                 }`}
               >
                 {data[data.length - 1]?.errorRate.toFixed(2)}%
