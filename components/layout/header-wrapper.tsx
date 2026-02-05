@@ -8,8 +8,10 @@ import { useAnalysis } from "@/lib/contexts/analysis-context";
 import ForgotPasswordPage from "../forgot-password";
 import { AccountSettingsModal } from "@/components/account-settings-modal";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 
 export default function HeaderWrapper() {
+  const pathname = usePathname();
   const { data: session } = useSession();
   const {
     showLoginModal,
@@ -21,6 +23,11 @@ export default function HeaderWrapper() {
     showAccountSettingsModal,
     setShowAccountSettingsModal,
   } = useAnalysis();
+
+  // Hide header in /app directory
+  if (pathname?.startsWith("/app")) {
+    return null;
+  }
 
   return (
     <>

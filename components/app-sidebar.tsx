@@ -1,28 +1,19 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   IconCamera,
-  IconChartBar,
-  IconDashboard,
-  IconDatabase,
   IconFileAi,
   IconFileDescription,
-  IconFileWord,
-  IconFolder,
   IconHelp,
-  IconInnerShadowTop,
-  IconListDetails,
-  IconReport,
   IconSearch,
   IconSettings,
-  IconUsers,
-} from "@tabler/icons-react"
+} from "@tabler/icons-react";
 
-import { NavDocuments } from "@/components/nav-documents"
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavHistory } from "@/components/nav-history";
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -31,40 +22,43 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
+import SpotonautLogo from "./spotonaut-logo";
+import NavCreditMeter from "./nav-credit-meter";
+import { CircleQuestionMark, HandCoins, Settings } from "lucide-react";
 
 const data = {
   user: {
-    name: "shadcn",
     email: "m@example.com",
+    tier: "Sonda",
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
-    {
-      title: "Dashboard",
-      url: "#",
-      icon: IconDashboard,
-    },
-    {
-      title: "Lifecycle",
-      url: "#",
-      icon: IconListDetails,
-    },
-    {
-      title: "Analytics",
-      url: "#",
-      icon: IconChartBar,
-    },
-    {
-      title: "Projects",
-      url: "#",
-      icon: IconFolder,
-    },
-    {
-      title: "Team",
-      url: "#",
-      icon: IconUsers,
-    },
+    // {
+    //   title: "Dashboard",
+    //   url: "#",
+    //   icon: IconDashboard,
+    // },
+    // {
+    //   title: "Lifecycle",
+    //   url: "#",
+    //   icon: IconListDetails,
+    // },
+    // {
+    //   title: "Analytics",
+    //   url: "#",
+    //   icon: IconChartBar,
+    // },
+    // {
+    //   title: "Projects",
+    //   url: "#",
+    //   icon: IconFolder,
+    // },
+    // {
+    //   title: "Team",
+    //   url: "#",
+    //   icon: IconUsers,
+    // },
   ],
   navClouds: [
     {
@@ -116,39 +110,36 @@ const data = {
   ],
   navSecondary: [
     {
-      title: "Settings",
+      title: "Nastavení",
       url: "#",
-      icon: IconSettings,
+      icon: Settings,
     },
     {
-      title: "Get Help",
+      title: "Plány a ceník",
       url: "#",
-      icon: IconHelp,
+      icon: HandCoins,
     },
     {
-      title: "Search",
+      title: "Jak to funguje?",
       url: "#",
-      icon: IconSearch,
+      icon: CircleQuestionMark,
     },
   ],
-  documents: [
+  analyses: [
     {
-      name: "Data Library",
+      name: "Kavárna, Česká",
       url: "#",
-      icon: IconDatabase,
     },
     {
-      name: "Reports",
+      name: "Fitness centrum, Mendlovo náměstí",
       url: "#",
-      icon: IconReport,
     },
     {
-      name: "Word Assistant",
+      name: "Automaty na kávu, Bělohorská",
       url: "#",
-      icon: IconFileWord,
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -160,22 +151,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
-              </a>
+              <SpotonautLogo />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
+        <NavHistory items={data.analyses} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
+        <NavCreditMeter />
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

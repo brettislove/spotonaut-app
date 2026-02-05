@@ -307,7 +307,7 @@ export default function HeroSection() {
                     variant="ghost"
                     className="group h-10.5 rounded-xl px-5"
                   >
-                    <Link href="#link">
+                    <Link href="/how-it-works">
                       <span className="text-nowrap">Jak to funguje?</span>
                       <ArrowRight className="transition-transform duration-200 group-hover:translate-x-0.5" />
                     </Link>
@@ -330,20 +330,16 @@ export default function HeroSection() {
               }}
             >
               <div className="relative mt-8 overflow-auto px-2 sm:mr-0 sm:mt-12 md:mt-20">
-                <div ref={formRef} className="scroll-mt-[100px]">
+                <div
+                  ref={formRef}
+                  id="analysis-form"
+                  className="scroll-mt-[100px]"
+                >
                   <AnalysisFormNew
                     handleAnalysisSubmit={handleAnalysisSubmit}
                     progressStep={progressStep}
                   />
                 </div>
-                {/* <AnalysisForm
-                  onSubmit={(data) => {
-                    console.log("Analysis form submitted:", data);
-                    // Navigate to analysis page or handle submission
-                  }}
-                  onCancel={() => {}}
-                  showCancelButton={false}
-                /> */}
               </div>
             </AnimatedGroup>
           </div>

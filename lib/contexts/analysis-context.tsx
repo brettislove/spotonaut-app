@@ -74,7 +74,6 @@ interface AnalysisContextType {
   migrateLocalStorageToDatabase: () => Promise<boolean>;
   checkExistingDatabaseAnalysis: () => Promise<boolean>;
   confirmOverwriteAndSave: () => Promise<boolean>;
-  markOverwriteConfirmed: () => void;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(
@@ -609,11 +608,6 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     router.push("/");
   }, [resetAnalysis, router]);
 
-  // Mark that user has confirmed overwrite (called from form before starting analysis)
-  const markOverwriteConfirmed = useCallback(() => {
-    hasUserConfirmedOverwrite.current = true;
-  }, []);
-
   // Track pathname changes (for potential future use)
   useEffect(() => {
     // Pathname effect - currently just monitoring
@@ -738,7 +732,6 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     migrateLocalStorageToDatabase,
     checkExistingDatabaseAnalysis,
     confirmOverwriteAndSave,
-    markOverwriteConfirmed,
   };
 
   return (
