@@ -9,7 +9,7 @@ import { AnimatedGroup } from "@/components/ui/animated-group";
 import { Variants } from "framer-motion";
 import ButtonHeartbeat from "./button/button-heartbeat";
 import AnalysisFormNew from "./analysis-form-new";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { AnalysisFormData } from "@/lib/types/analysis";
 import {
@@ -64,6 +64,7 @@ export default function HeroSection() {
   const router = useRouter();
 
   const [progressStep, setProgressStep] = useState<ProgressStep>("geocoding");
+  const formRef = useRef<HTMLDivElement>(null);
 
   const handleAnalysisSubmit = React.useCallback(
     async (data: AnalysisFormData) => {
@@ -292,6 +293,11 @@ export default function HeroSection() {
                       size="lg"
                       className="rounded-xl px-5 text-base"
                       InnerText="Vyzkoušet zdarma"
+                      onClick={() =>
+                        formRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                        })
+                      }
                     />
                   </div>
                   <Button
@@ -324,10 +330,12 @@ export default function HeroSection() {
               }}
             >
               <div className="relative mt-8 overflow-auto px-2 sm:mr-0 sm:mt-12 md:mt-20">
-                <AnalysisFormNew
-                  handleAnalysisSubmit={handleAnalysisSubmit}
-                  progressStep={progressStep}
-                />
+                <div ref={formRef} className="scroll-mt-[100px]">
+                  <AnalysisFormNew
+                    handleAnalysisSubmit={handleAnalysisSubmit}
+                    progressStep={progressStep}
+                  />
+                </div>
                 {/* <AnalysisForm
                   onSubmit={(data) => {
                     console.log("Analysis form submitted:", data);
