@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  IconDots,
-  IconFolder,
-  IconShare3,
-  IconTrash,
-  type Icon,
-} from "@tabler/icons-react";
+import { IconDots, IconShare3, IconTrash } from "@tabler/icons-react";
 
 import {
   DropdownMenu,
@@ -25,30 +19,24 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Pencil } from "lucide-react";
+import { Analysis } from "@/lib/types/analysis";
 
-export function NavHistory({
-  items,
-}: {
-  items: {
-    name: string;
-    url: string;
-  }[];
-}) {
+export function NavHistory({ analyses }: { analyses: Analysis[] }) {
   const { isMobile } = useSidebar();
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>Analýzy</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => (
-          <SidebarMenuItem key={item.name}>
+        {analyses.map((analysis) => (
+          <SidebarMenuItem key={analysis.id}>
             <SidebarMenuButton asChild>
-              <a href={item.url}>
-                <span>{item.name}</span>
+              <a href={`/analysis?id=${analysis.id}`}>
+                <span>{analysis.locationName}</span>
               </a>
             </SidebarMenuButton>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger asChild className="cursor-pointer">
                 <SidebarMenuAction
                   showOnHover
                   className="data-[state=open]:bg-accent rounded-sm"

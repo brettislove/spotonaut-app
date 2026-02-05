@@ -49,6 +49,20 @@ export interface AnalysisData {
   groundedLocationData?: import("@/lib/google-ai/location-analysis").GroundedLocationData;
 }
 
+export interface Analysis {
+  id: string;
+  locationName: string;
+  location: string;
+  coordinates: { lat: number; lng: number } | null;
+  metrics: {
+    localityScore?: number;
+    footfallScore?: number;
+    recommendedHours?: number;
+  };
+  businessType: string | null;
+  createdAt: string;
+}
+
 export type ProgressStep =
   | "geocoding"
   | "maps_grounding"

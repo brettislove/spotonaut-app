@@ -1,13 +1,10 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState } from "react";
 import {
   IconCamera,
   IconFileAi,
   IconFileDescription,
-  IconHelp,
-  IconSearch,
-  IconSettings,
 } from "@tabler/icons-react";
 
 import { NavHistory } from "@/components/nav-history";
@@ -26,6 +23,7 @@ import {
 import SpotonautLogo from "./spotonaut-logo";
 import NavCreditMeter from "./nav-credit-meter";
 import { CircleQuestionMark, HandCoins, Settings } from "lucide-react";
+import { Analysis } from "@/lib/types/analysis";
 
 const data = {
   user: {
@@ -116,7 +114,7 @@ const data = {
     },
     {
       title: "Plány a ceník",
-      url: "#",
+      url: "/app/billing",
       icon: HandCoins,
     },
     {
@@ -125,23 +123,30 @@ const data = {
       icon: CircleQuestionMark,
     },
   ],
-  analyses: [
-    {
-      name: "Kavárna, Česká",
-      url: "#",
-    },
-    {
-      name: "Fitness centrum, Mendlovo náměstí",
-      url: "#",
-    },
-    {
-      name: "Automaty na kávu, Bělohorská",
-      url: "#",
-    },
-  ],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [analyses, setAnalyses] = useState<Analysis[]>([]);
+  const [, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchRecentAnalyses() {
+      try {
+        const response = await fetch("/api/analyses/recent");
+        if (response.ok) {
+          const data = await response.json();
+          setAnalyses(data);
+        }
+      } catch (error) {
+        console.error("Error fetching recent analyses:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchRecentAnalyses();
+  }, []);
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -158,7 +163,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavHistory items={data.analyses} />
+        <NavHistory analyses={analyses} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

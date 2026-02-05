@@ -1,8 +1,7 @@
 "use client";
 
-import { IconMail, type Icon } from "@tabler/icons-react";
+import { type Icon } from "@tabler/icons-react";
 
-import { Button } from "@/components/ui/button";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -23,12 +22,12 @@ export function NavMain({
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupContent className="flex flex-col gap-2">
+      <SidebarGroupContent className="flex flex-col gap-2 px-2">
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
               tooltip="Nová analýza"
-              className="bg-primary text-primary-foreground hover:cursor-pointer hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
+              className="px-4 bg-primary text-primary-foreground hover:cursor-pointer hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
             >
               <Plus />
               <span>Nová analýza</span>
