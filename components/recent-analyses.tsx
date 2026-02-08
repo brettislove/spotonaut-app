@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import dynamic from "next/dynamic";
 import { Button } from "./ui/button";
 import type { Analysis } from "@/lib/types/analysis";
+import { getScoreGradient } from "@/lib/utils";
 
 const MapThumbnail = dynamic(() => import("./map-thumbnail"), {
   ssr: false,
@@ -46,13 +47,6 @@ function getRelativeTime(date: string): string {
   });
 }
 
-function getPotentialScore(metrics: Analysis["metrics"]): number {
-  const localityScore = metrics.localityScore || 0;
-  const footfallScore = metrics.footfallScore || 0;
-  // Calculate average potential score
-  return Math.round((localityScore + footfallScore) / 2);
-}
-
 function AnalysisCardSkeleton() {
   return (
     <Card className="@container/card cursor-pointer transition-all hover:shadow-md">
@@ -79,7 +73,6 @@ function AnalysisCardSkeleton() {
 
 function AnalysisCard({ analysis }: { analysis: Analysis }) {
   const router = useRouter();
-  const potentialScore = getPotentialScore(analysis.metrics);
   const relativeTime = getRelativeTime(analysis.createdAt);
 
   const handleClick = () => {
@@ -114,9 +107,12 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
             </div>
           </div>
         </CardDescription>
-        <Badge variant="outline" className="gap-1">
+        <Badge
+          variant="outline"
+          className={`gap-1 ${getScoreGradient(analysis.metrics.localityScore)}`}
+        >
           <IconTrendingUp className="h-3 w-3" />
-          Potenciál: {potentialScore}/100
+          Potenciál: {analysis.metrics.localityScore}/100
         </Badge>
         <CardTitle className="text-base font-semibold line-clamp-1">
           {analysis.locationName}
@@ -152,6 +148,28 @@ export function RecentAnalyses() {
     }
 
     fetchRecentAnalyses();
+  }, []);
+
+  // Listen for rename events from the sidebar
+  useEffect(() => {
+    const handleRename = (e: Event) => {
+      const { id, locationName } = (e as CustomEvent).detail;
+      setAnalyses((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, locationName } : a)),
+      );
+    };
+    window.addEventListener("analysis-renamed", handleRename);
+    return () => window.removeEventListener("analysis-renamed", handleRename);
+  }, []);
+
+  // Listen for delete events from the sidebar
+  useEffect(() => {
+    const handleDelete = (e: Event) => {
+      const { id } = (e as CustomEvent).detail;
+      setAnalyses((prev) => prev.filter((a) => a.id !== id));
+    };
+    window.addEventListener("analysis-deleted", handleDelete);
+    return () => window.removeEventListener("analysis-deleted", handleDelete);
   }, []);
 
   if (loading) {

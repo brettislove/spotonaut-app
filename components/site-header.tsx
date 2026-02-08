@@ -21,7 +21,7 @@ export function SiteHeader({ pageName }: { pageName: string }) {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="/app">Spotonaut</BreadcrumbLink>
+              <BreadcrumbLink href="/app">Domů</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block" />
             <BreadcrumbItem>

@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  IconCreditCard,
-  IconDotsVertical,
-  IconLogout,
-  IconNotification,
-  IconUserCircle,
-} from "@tabler/icons-react";
+import { IconUserCircle } from "@tabler/icons-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -22,19 +16,15 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar";
+import { useSession } from "next-auth/react";
+import { handleSignOut } from "@/utils/auth";
+import { useAnalysis } from "@/lib/contexts/analysis-context";
+import { LogOut } from "lucide-react";
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    email: string;
-    tier: string;
-    avatar: string;
-  };
-}) {
-  const { isMobile } = useSidebar();
+export function NavUser() {
+  const { data: session } = useSession();
+  const { resetAnalysis } = useAnalysis();
 
   return (
     <SidebarMenu>
@@ -43,37 +33,46 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="cursor-pointer data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarImage src={user.avatar} alt={user.email} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarImage
+                  src="https://cdn.shadcnstudio.com/ss-assets/avatar/avatar-1.png"
+                  alt="Phillip George"
+                />
+                <AvatarFallback className="text-xs">PG</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.email}</span>
+                <span className="truncate font-medium">
+                  {session?.user?.email}
+                </span>
                 <span className="text-muted-foreground truncate text-xs">
-                  Úroveň: {user.tier}
+                  Úroveň: Sonda
                 </span>
               </div>
-              <IconDotsVertical className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
+            side={"bottom"}
             align="end"
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.email} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarImage
+                    src="https://cdn.shadcnstudio.com/ss-assets/avatar/avatar-1.png"
+                    alt="Phillip George"
+                  />
+                  <AvatarFallback className="text-xs">PG</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.email}</span>
+                  <span className="truncate font-medium">
+                    {session?.user?.email}
+                  </span>
                   <span className="text-muted-foreground truncate text-xs">
-                    Úroveň: {user.tier}
+                    Úroveň: Sonda
                   </span>
                 </div>
               </div>
@@ -94,8 +93,11 @@ export function NavUser({
               </DropdownMenuItem> */}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive">
-              <IconLogout />
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => handleSignOut({ resetAnalysis })}
+            >
+              <LogOut />
               Odhlásit se
             </DropdownMenuItem>
           </DropdownMenuContent>

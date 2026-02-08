@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   IconCamera,
   IconFileAi,
@@ -22,7 +23,12 @@ import {
 } from "@/components/ui/sidebar";
 import SpotonautLogo from "./spotonaut-logo";
 import NavCreditMeter from "./nav-credit-meter";
-import { CircleQuestionMark, HandCoins, Settings } from "lucide-react";
+import {
+  CircleQuestionMark,
+  HandCoins,
+  LayoutDashboard,
+  Settings,
+} from "lucide-react";
 import { Analysis } from "@/lib/types/analysis";
 
 const data = {
@@ -32,31 +38,11 @@ const data = {
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
-    // {
-    //   title: "Dashboard",
-    //   url: "#",
-    //   icon: IconDashboard,
-    // },
-    // {
-    //   title: "Lifecycle",
-    //   url: "#",
-    //   icon: IconListDetails,
-    // },
-    // {
-    //   title: "Analytics",
-    //   url: "#",
-    //   icon: IconChartBar,
-    // },
-    // {
-    //   title: "Projects",
-    //   url: "#",
-    //   icon: IconFolder,
-    // },
-    // {
-    //   title: "Team",
-    //   url: "#",
-    //   icon: IconUsers,
-    // },
+    {
+      title: "Domů",
+      url: "/app",
+      icon: LayoutDashboard,
+    },
   ],
   navClouds: [
     {
@@ -128,6 +114,10 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [, setIsLoading] = useState(true);
+  const pathname = usePathname();
+
+  // Extract active analysis ID from pathname like /app/analysis/[id]
+  const activeAnalysisId = pathname?.match(/\/app\/analysis\/([^/]+)/)?.[1];
 
   useEffect(() => {
     async function fetchRecentAnalyses() {
@@ -147,6 +137,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     fetchRecentAnalyses();
   }, []);
 
+  const handleRename = (id: string, newName: string) => {
+    setAnalyses((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, locationName: newName } : a)),
+    );
+  };
+
+  const handleDelete = (id: string) => {
+    setAnalyses((prev) => prev.filter((a) => a.id !== id));
+  };
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -163,12 +163,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavHistory analyses={analyses} />
+        <NavHistory
+          analyses={analyses}
+          activeAnalysisId={activeAnalysisId}
+          onRename={handleRename}
+          onDelete={handleDelete}
+        />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavCreditMeter />
-        <NavUser user={data.user} />
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
   );
