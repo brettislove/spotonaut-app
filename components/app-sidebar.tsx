@@ -119,7 +119,7 @@ const data = {
     },
     {
       title: "Jak to funguje?",
-      url: "#",
+      url: "/app/how-it-works",
       icon: CircleQuestionMark,
     },
   ],

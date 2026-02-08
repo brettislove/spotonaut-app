@@ -83,7 +83,7 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
   const relativeTime = getRelativeTime(analysis.createdAt);
 
   const handleClick = () => {
-    router.push(`/analysis?id=${analysis.id}`);
+    router.push(`/app/analysis/${analysis.id}`);
   };
 
   return (

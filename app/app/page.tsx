@@ -61,9 +61,9 @@ export default function Page() {
                   <h1 className="text-2xl font-bold tracking-tight">
                     Vítejte zpět!
                   </h1>
-                  <p className="text-muted-foreground">
+                  {/* <p className="text-muted-foreground">
                     Přehled vašich analýz a dat
-                  </p>
+                  </p> */}
                 </div>
               </div>
               <div className="space-y-2">
