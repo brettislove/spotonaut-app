@@ -34,12 +34,12 @@ export default function AnalysisResultsMobile({
           {activeTab === "metrics" ? (
             <MetricsPanel
               analysisData={analysisData}
-              className="h-[calc(100vh-11rem)] border-none"
+              className="h-full pb-[68px] border-none"
             />
           ) : (
             <ChatPanel
               analysisData={analysisData}
-              className="h-[calc(100vh-10rem)] -translate-y-2 bg-background border-none"
+              className="h-full pb-[68px] -translate-y-2 bg-background border-none"
             />
           )}
         </div>
