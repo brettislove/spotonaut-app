@@ -2,7 +2,7 @@
 
 import { IconUserCircle } from "@tabler/icons-react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,7 @@ import { useSession } from "next-auth/react";
 import { handleSignOut } from "@/utils/auth";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import { LogOut } from "lucide-react";
+import Avatar from "boring-avatars";
 
 export function NavUser() {
   const { data: session } = useSession();
@@ -35,13 +36,9 @@ export function NavUser() {
               size="lg"
               className="cursor-pointer data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarImage
-                  src="https://cdn.shadcnstudio.com/ss-assets/avatar/avatar-1.png"
-                  alt="Phillip George"
-                />
-                <AvatarFallback className="text-xs">PG</AvatarFallback>
-              </Avatar>
+              <div className="w-6 h-6 flex-shrink-0">
+                <Avatar name={session?.user?.email || "User"} size={24} />
+              </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">
                   {session?.user?.email}
@@ -60,13 +57,9 @@ export function NavUser() {
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage
-                    src="https://cdn.shadcnstudio.com/ss-assets/avatar/avatar-1.png"
-                    alt="Phillip George"
-                  />
-                  <AvatarFallback className="text-xs">PG</AvatarFallback>
-                </Avatar>
+                <div className="w-6 h-6 flex-shrink-0">
+                  <Avatar name={session?.user?.email || "User"} size={24} />
+                </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">
                     {session?.user?.email}
@@ -83,14 +76,6 @@ export function NavUser() {
                 <IconUserCircle />
                 Účet
               </DropdownMenuItem>
-              {/* <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
-              </DropdownMenuItem> */}
-              {/* <DropdownMenuItem>
-                <IconNotification />
-                Notifications
-              </DropdownMenuItem> */}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem

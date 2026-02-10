@@ -1,4 +1,7 @@
 import { AppSidebar } from "@/components/app-sidebar";
+import CreditsExplained from "@/components/credits-explained";
+import Pricing from "@/components/pricing";
+import PricingComparator from "@/components/pricing-comparator";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
@@ -18,15 +21,9 @@ export default function Page() {
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              {/* Dashboard Header */}
-              <div className="px-4 lg:px-6">
-                <div className="flex flex-col gap-2">
-                  <h1 className="text-2xl font-bold tracking-tight">
-                    Plány a ceník
-                  </h1>
-                  <p className="text-muted-foreground">Bude brzy dostupné!</p>
-                </div>
-              </div>
+              <Pricing />
+              <CreditsExplained />
+              <PricingComparator />
             </div>
           </div>
         </div>

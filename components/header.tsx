@@ -14,7 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+// import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import Avatar from "boring-avatars";
 import { handleSignOut } from "@/utils/auth";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 
@@ -130,15 +131,10 @@ export const HeroHeader = ({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost">
-                        <Avatar className="size-6">
-                          <AvatarImage
-                            src="https://cdn.shadcnstudio.com/ss-assets/avatar/avatar-1.png"
-                            alt="Phillip George"
-                          />
-                          <AvatarFallback className="text-xs">
-                            PG
-                          </AvatarFallback>
-                        </Avatar>
+                        <Avatar
+                          name={session?.user?.email || "User"}
+                          size={32}
+                        />
                         {session.user?.email}
                       </Button>
                     </DropdownMenuTrigger>
