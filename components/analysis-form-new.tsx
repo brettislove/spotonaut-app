@@ -280,7 +280,7 @@ export default function AnalysisFormNew({
             <ShimmerButton
               type="submit"
               form="analysis-form"
-              className="cursor-pointer bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800"
+              className="cursor-pointer bg-secondary text-black"
               hidden={isAnalyzing}
             >
               Spustit analýzu

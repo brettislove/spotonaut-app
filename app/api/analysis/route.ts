@@ -448,6 +448,7 @@ export async function POST(request: NextRequest) {
                   sources,
                   usedMapsGrounding,
                   groundedLocationData: groundedLocation,
+                  businessType: data.businessType.type,
                 })}\n\n`,
               ),
             );

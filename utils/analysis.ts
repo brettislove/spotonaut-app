@@ -128,6 +128,7 @@ const handleStreamingResponse = async (
                   ...data.data,
                   sources: data.sources || [],
                   groundedLocationData: data.groundedLocationData,
+                  businessType: data.businessType,
                 });
                 setShowMapView(true);
                 setHasCompletedAnalysis(true);
@@ -181,6 +182,7 @@ const handleFallbackAnalysisResponse = (
       ...result.data,
       sources: result.sources || [],
       groundedLocationData: result.groundedLocationData,
+      businessType: result.data.businessType,
     });
     setShowMapView(true);
     setHasCompletedAnalysis(true);

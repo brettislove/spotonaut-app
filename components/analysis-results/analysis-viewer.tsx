@@ -81,6 +81,7 @@ export default function AnalysisViewer({ analysisId }: AnalysisViewerProps) {
             | undefined,
           metrics: analysis.metrics as AnalysisData["metrics"],
           groundedLocationData: analysis.groundedLocationData,
+          businessType: analysis.businessType,
         };
 
         // Set the context values

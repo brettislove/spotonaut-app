@@ -57,6 +57,7 @@ export interface AnalysisData {
   };
   sources?: Array<{ title: string; uri: string }>;
   groundedLocationData?: import("@/lib/google-ai/location-analysis").GroundedLocationData;
+  businessType?: string | null;
 }
 
 export interface Analysis {
