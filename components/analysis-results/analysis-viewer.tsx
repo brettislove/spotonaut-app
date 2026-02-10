@@ -7,15 +7,7 @@ import AnalysisResultsDesktop from "@/components/analysis-results/analysis-resul
 import AnalysisResultsMobile from "@/components/analysis-results/analysis-results-mobile";
 import { Loader2 } from "lucide-react";
 import type { AnalysisData } from "@/lib/types/analysis";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  sources?: Array<{ title: string; uri: string }>;
-  suggestions?: string[];
-}
+import type { MessageType } from "@/lib/types/chat";
 
 interface AnalysisViewerProps {
   analysisId: string;
@@ -47,10 +39,18 @@ export default function AnalysisViewer({ analysisId }: AnalysisViewerProps) {
 
   // Fetch analysis data
   useEffect(() => {
+    // Immediately clear stale data from previous analysis
+    setAnalysisData(null);
+    setMessages([]);
+    setHasCompletedAnalysis(false);
+    setError(null);
+
     async function fetchAnalysis() {
       try {
         setIsLoading(true);
-        const response = await fetch(`/api/analysis/${analysisId}`);
+        const response = await fetch(`/api/analysis/${analysisId}`, {
+          cache: "no-store",
+        });
 
         if (!response.ok) {
           if (response.status === 401) {
@@ -80,7 +80,6 @@ export default function AnalysisViewer({ analysisId }: AnalysisViewerProps) {
             | { lat: number; lng: number }
             | undefined,
           metrics: analysis.metrics as AnalysisData["metrics"],
-          sources: analysis.groundingSources as AnalysisData["sources"],
           groundedLocationData: analysis.groundedLocationData,
         };
 
@@ -90,13 +89,12 @@ export default function AnalysisViewer({ analysisId }: AnalysisViewerProps) {
 
         // Restore chat messages if available
         if (analysis.chatMessages && Array.isArray(analysis.chatMessages)) {
-          const restoredMessages: Message[] = analysis.chatMessages.map(
+          const restoredMessages: MessageType[] = analysis.chatMessages.map(
             (msg: {
               id: string;
               role: "user" | "assistant";
               content: string;
               timestamp: string;
-              sources?: Array<{ title: string; uri: string }>;
               suggestions?: string[];
             }) => ({
               ...msg,
@@ -139,7 +137,7 @@ export default function AnalysisViewer({ analysisId }: AnalysisViewerProps) {
         <div className="flex flex-col items-center gap-4 text-center">
           <p className="text-lg font-medium text-destructive">{error}</p>
           <button
-            onClick={() => router.push("/app/app")}
+            onClick={() => router.push("/app")}
             className="text-primary hover:underline"
           >
             Zpět na hlavní stránku

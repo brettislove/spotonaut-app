@@ -131,9 +131,7 @@ export default function AnalysisFormNew({
     <>
       <Card className="w-full max-w-xl mx-auto bg-gradient-to-br from-primary-900/60 via-slate-900/70 to-secondar-900/60 backdrop-blur-sm border border-slate-700/60 shadow-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">
-            Vstupní formulář
-          </CardTitle>
+          <CardTitle className="text-2xl text-center">Data k analýze</CardTitle>
           <CardDescription className="text-center mt-2">
             Vyplňte základní informace o vašem podnikání potřebné pro analýzu.
           </CardDescription>

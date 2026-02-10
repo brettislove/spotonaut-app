@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { IconDots, IconShare3, IconTrash } from "@tabler/icons-react";
 
 import {
@@ -144,9 +145,9 @@ export function NavHistory({
                 asChild
                 isActive={analysis.id === activeAnalysisId}
               >
-                <a href={`/app/analysis/${analysis.id}`}>
+                <Link href={`/app/analysis/${analysis.id}`}>
                   <span>{analysis.locationName}</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild className="cursor-pointer">

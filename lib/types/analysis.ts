@@ -1,5 +1,15 @@
 import type { BusinessType } from "@/lib/constants/business-types";
 
+export interface AnalysisRequest {
+  location: string;
+  businessType: BusinessType;
+  fingerprint?: string;
+  coordinates?: {
+    lat: number;
+    lon: number;
+  };
+}
+
 export interface AnalysisFormData {
   location: string;
   businessType: BusinessType;

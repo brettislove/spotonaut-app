@@ -12,7 +12,7 @@ export default async function AnalysisDetailPage({ params }: PageProps) {
   const { id } = await params;
 
   return (
-    <AnalysisProvider>
+    <AnalysisProvider key={id} skipRestore>
       <SidebarProvider
         style={
           {

@@ -113,19 +113,33 @@ const handleStreamingResponse = async (
 
             // Show map view with analysis data
             if (data.data) {
-              setAnalysisData({
-                ...data.data,
-                sources: data.sources || [],
-                groundedLocationData: data.groundedLocationData,
-              });
-              setShowMapView(true);
-              setHasCompletedAnalysis(true);
-              // Navigate to analysis page
-              router.push("/analysis");
+              // For authenticated users, don't set analysis data in root context -
+              // the /app/analysis/[id] page will fetch it from DB independently.
+              // This prevents stale data in the root AnalysisProvider.
+              if (session && data.analysisId) {
+                // Only set minimal state needed for transition
+                setIsAnalyzing(false);
+                setProgressStep("complete");
+                // Navigate to the analysis detail page
+                router.push(`/app/analysis/${data.analysisId}`);
+              } else {
+                // Anonymous user: set data in root context (used by /analysis page)
+                setAnalysisData({
+                  ...data.data,
+                  sources: data.sources || [],
+                  groundedLocationData: data.groundedLocationData,
+                });
+                setShowMapView(true);
+                setHasCompletedAnalysis(true);
+                setProgressStep("complete");
+                setIsAnalyzing(false);
+                // Anonymous user: redirect to /analysis
+                router.push("/analysis");
+              }
+            } else {
+              setProgressStep("complete");
+              setIsAnalyzing(false);
             }
-
-            setProgressStep("complete");
-            setIsAnalyzing(false);
           } else if (data.type === "error") {
             throw new Error(data.error || data.details || "Analysis failed");
           }
