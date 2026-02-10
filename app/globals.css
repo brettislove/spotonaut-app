@@ -17,7 +17,7 @@
   --color-popover-foreground: oklch(0.985 0 0);
   --color-primary: oklch(60.025% 0.26702 303.419);
   --color-primary-foreground: oklch(1 0 0);
-  --color-secondary: oklch(0.55 0.25 258deg);
+  --color-secondary: oklch(92.807% 0.21974 125.037);
   --color-secondary-foreground: oklch(1 0 0);
   --color-muted: oklch(0.269 0 0);
   --color-muted-foreground: oklch(0.708 0 0);
@@ -198,7 +198,7 @@ input[type="number"].no-spinner {
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(60.025% 0.26702 303.419);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.55 0.25 258deg);
+  --secondary: oklch(92.807% 0.21974 125.037);
   --secondary-foreground: oklch(1 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
