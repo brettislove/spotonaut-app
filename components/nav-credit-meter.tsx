@@ -9,7 +9,7 @@ import {
   ContextTrigger,
 } from "@/components/ai-elements/context";
 import { useSession } from "next-auth/react";
-import { getRemainingCredits, isUnlimited } from "@/lib/constants/tiers";
+import { isUnlimited } from "@/lib/constants/tiers";
 
 const NavCreditMeter = () => {
   const { data: session } = useSession();
@@ -21,9 +21,6 @@ const NavCreditMeter = () => {
   const usedCredits = session?.user?.usedCredits ?? 0;
   const maxCredits = session?.user ? session.user.maxCredits : 30;
   const unlimited = isUnlimited(maxCredits);
-
-  const remaining = getRemainingCredits(maxCredits, usedCredits);
-  const displayText = unlimited ? "∞" : (remaining ?? 0).toString();
 
   return (
     <div className="flex items-center justify-center bg-primary/10 rounded-md text-sm font-medium text-primary-foreground">

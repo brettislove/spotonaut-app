@@ -13,10 +13,10 @@ import { cn } from "@/lib/utils";
 import { createContext, useContext } from "react";
 
 const PERCENT_MAX = 100;
-const ICON_RADIUS = 10;
-const ICON_VIEWBOX = 24;
-const ICON_CENTER = 12;
-const ICON_STROKE_WIDTH = 4;
+const ICON_RADIUS = 20;
+const ICON_VIEWBOX = 48;
+const ICON_CENTER = 24;
+const ICON_STROKE_WIDTH = 3;
 
 interface ContextSchema {
   usedCredits: number;
@@ -64,14 +64,18 @@ const CreditsIcon = () => {
     : ((maxCredits ?? 0) - usedCredits) / (maxCredits ?? 1);
   const dashOffset = circumference * (1 - remainingPercent);
 
+  const remaining = unlimited
+    ? "∞"
+    : ((maxCredits ?? 0) - usedCredits).toString();
+
   return (
     <svg
       aria-label="Využití kreditů"
-      height="20"
+      height="32"
       role="img"
-      style={{ color: "currentcolor" }}
+      style={{ color: "currentcolor", minWidth: "32px", minHeight: "32px" }}
       viewBox={`0 0 ${ICON_VIEWBOX} ${ICON_VIEWBOX}`}
-      width="20"
+      width="56"
     >
       <circle
         cx={ICON_CENTER}
@@ -95,6 +99,16 @@ const CreditsIcon = () => {
         strokeWidth={ICON_STROKE_WIDTH}
         style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
       />
+      <text
+        x={ICON_CENTER}
+        y={ICON_CENTER - 1}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize="20"
+        fill="white"
+      >
+        {remaining}
+      </text>
     </svg>
   );
 };
@@ -102,17 +116,16 @@ const CreditsIcon = () => {
 export type ContextTriggerProps = ComponentProps<typeof Button>;
 
 export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
-  const { usedCredits, maxCredits, unlimited } = useContextValue();
-  const remaining = unlimited
-    ? "∞"
-    : ((maxCredits ?? 0) - usedCredits).toString();
-
   return (
     <HoverCardTrigger asChild>
       {children ?? (
-        <Button type="button" variant="ghost" {...props}>
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-auto p-1.5 min-w-[32px] min-h-[32px]"
+          {...props}
+        >
           <CreditsIcon />
-          <span className="font-bold text-primary">{remaining}</span>
         </Button>
       )}
     </HoverCardTrigger>
