@@ -184,12 +184,12 @@ export function NavHistory({
               </DropdownMenu>
             </SidebarMenuItem>
           ))}
-          <SidebarMenuItem>
+          {/* <SidebarMenuItem>
             <SidebarMenuButton className="text-sidebar-foreground/70">
               <IconDots className="text-sidebar-foreground/70" />
               <span>Více</span>
             </SidebarMenuButton>
-          </SidebarMenuItem>
+          </SidebarMenuItem> */}
         </SidebarMenu>
       </SidebarGroup>
 
