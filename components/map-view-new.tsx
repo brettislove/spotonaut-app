@@ -3,7 +3,6 @@ import { Item, ItemContent, ItemMedia, ItemTitle } from "./ui/item";
 import { Spinner } from "./ui/spinner";
 import dynamic from "next/dynamic";
 import { MapContentProps } from "@/lib/types/map";
-import { LatLngExpression } from "leaflet";
 import { AnalysisData } from "@/lib/types/analysis";
 
 // Import Map component dynamically to avoid SSR issues
@@ -41,11 +40,11 @@ export default function MapViewNew({
     return () => clearTimeout(timer);
   }, []);
 
-  // Default to Brno center if no coordinates
-  const position: LatLngExpression = useMemo(() => {
+  // MapLibre uses [lng, lat] — default to Brno center if no coordinates
+  const center: [number, number] = useMemo(() => {
     return analysisData.coordinates
-      ? [analysisData.coordinates.lat, analysisData.coordinates.lng]
-      : [49.1951, 16.6068];
+      ? [analysisData.coordinates.lng, analysisData.coordinates.lat]
+      : [16.6068, 49.1951];
   }, [analysisData.coordinates]);
 
   if (!isMounted) {
@@ -64,7 +63,7 @@ export default function MapViewNew({
   }
   return (
     <MapContent
-      position={position}
+      center={center}
       location={analysisData.locationName || analysisData.location}
       groundedLocationData={analysisData.groundedLocationData}
       filterState={filterState}

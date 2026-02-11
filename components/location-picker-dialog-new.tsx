@@ -7,10 +7,35 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { LocationData } from "@/lib/types/analysis";
-import { handleConfirmLocation, initMap } from "@/utils/location-input";
-import React, { useEffect, useRef, useState } from "react";
-import type L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { handleConfirmLocation } from "@/utils/location-input";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import type { MapViewport } from "@/components/ui/map";
+
+// Dynamically import the map to avoid SSR issues with MapLibre GL
+const LocationPickerMap = dynamic<{
+  center: [number, number];
+  onViewportChange: (viewport: MapViewport) => void;
+}>(
+  () =>
+    import("@/components/ui/map").then((mod) => {
+      const { Map, MapControls } = mod;
+      return function PickerMap({
+        center,
+        onViewportChange,
+      }: {
+        center: [number, number];
+        onViewportChange: (viewport: MapViewport) => void;
+      }) {
+        return (
+          <Map center={center} zoom={13} onViewportChange={onViewportChange}>
+            <MapControls showZoom position="bottom-right" />
+          </Map>
+        );
+      };
+    }),
+  { ssr: false },
+);
 
 interface LocationPickerDialogNewProps {
   setLocationInput: React.Dispatch<React.SetStateAction<string>>;
@@ -29,31 +54,19 @@ export function LocationPickerDialogNew({
   isDialogOpen,
   setIsDialogOpen,
 }: LocationPickerDialogNewProps) {
-  const initialCenter: [number, number] = [49.1951, 16.6068]; // Brno default
+  // Brno default — currentCenter is [lat, lng] for reverse geocoding API
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
   const [isLoadingCurrentAddress, setIsLoadingCurrentAddress] = useState(false);
-  const [currentCenter, setCurrentCenter] =
-    useState<[number, number]>(initialCenter);
+  const [currentCenter, setCurrentCenter] = useState<[number, number]>([
+    49.1951, 16.6068,
+  ]);
   const [currentAddress, setCurrentAddress] = useState<string>("");
-  const mapRef = useRef<L.Map | null>(null);
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  useEffect(() => {
-    if (!isDialogOpen) return;
-
-    initMap(mapContainerRef, mapRef, currentCenter, setCurrentCenter).catch(
-      (error) => console.error("Error initializing map:", error),
-    );
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDialogOpen]);
+  const handleViewportChange = useCallback((viewport: MapViewport) => {
+    // MapLibre center is [lng, lat] — convert to [lat, lng] for geocoding
+    setCurrentCenter([viewport.center[1], viewport.center[0]]);
+  }, []);
 
   // Fetch address when center changes (with debounce)
   useEffect(() => {
@@ -111,11 +124,12 @@ export function LocationPickerDialogNew({
       </DialogHeader>
       {/* Map Container */}
       <div className="relative w-full" style={{ height: "500px" }}>
-        <div
-          ref={mapContainerRef}
-          className="absolute inset-0 rounded-lg overflow-hidden"
-          style={{ height: "100%", width: "100%" }}
-        />
+        <div className="absolute inset-0 rounded-lg overflow-hidden">
+          <LocationPickerMap
+            center={[currentCenter[1], currentCenter[0]]}
+            onViewportChange={handleViewportChange}
+          />
+        </div>
 
         {/* Center Pin */}
         <div

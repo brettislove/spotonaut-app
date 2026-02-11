@@ -1,6 +1,4 @@
 import { LocationSuggestion } from "@/lib/types/analysis";
-import type L from "leaflet";
-import "leaflet/dist/leaflet.css";
 
 // Handle location input change with debounce
 const handleLocationChange = (
@@ -175,56 +173,10 @@ const handleConfirmLocation = async (
   }
 };
 
-// Dynamically import Leaflet only on client side
-const initMap = async (
-  mapContainerRef: React.RefObject<HTMLDivElement | null>,
-  mapRef: React.RefObject<L.Map | null>,
-  currentCenter: [number, number],
-  setCurrentCenter: React.Dispatch<React.SetStateAction<[number, number]>>,
-) => {
-  // Wait for Dialog animation to complete and DOM to be ready
-  await new Promise((resolve) => setTimeout(resolve, 50));
-
-  if (!mapContainerRef.current) return;
-
-  const L = (await import("leaflet")).default;
-
-  // Initialize map only if not already initialized
-  if (!mapRef.current && mapContainerRef.current) {
-    const map = L.map(mapContainerRef.current, {
-      center: currentCenter,
-      zoom: 13,
-      zoomControl: true,
-      scrollWheelZoom: true,
-      dragging: true,
-      touchZoom: true,
-    });
-
-    L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-      {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: "abcd",
-        maxZoom: 20,
-      },
-    ).addTo(map);
-
-    mapRef.current = map;
-
-    // Update center when map is moved
-    map.on("moveend", () => {
-      const center = map.getCenter();
-      setCurrentCenter([center.lat, center.lng]);
-    });
-  }
-};
-
 export {
   getShortLocationName,
   handleConfirmLocation,
   handleLocationChange,
   handleLocationPickerSelect,
   handleSuggestionClick,
-  initMap,
 };
