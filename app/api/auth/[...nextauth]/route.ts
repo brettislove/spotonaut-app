@@ -4,6 +4,8 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import type { JWT } from "next-auth/jwt";
+import type { User, Account } from "next-auth";
 
 const prisma = new PrismaClient();
 
@@ -32,6 +34,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            image: true,
+            password: true,
+            tier: true,
+            maxCredits: true,
+            usedCredits: true,
+            creditsResetAt: true,
+          },
         });
 
         if (!user || !user.password) {
@@ -52,6 +65,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.name,
           image: user.image,
+          tier: user.tier,
+          maxCredits: user.maxCredits,
+          usedCredits: user.usedCredits,
+          creditsResetAt: user.creditsResetAt,
         };
       },
     }),
@@ -63,15 +80,76 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, account }: {
+      token: JWT;
+      user: User;
+      trigger?: "signIn" | "update" | "signUp";
+      account?: Account | null;
+    }) {
+      // On initial sign-in, set user ID and tier data
       if (user) {
         token.id = user.id;
+        token.tier = user.tier;
+        token.maxCredits = user.maxCredits;
+        token.usedCredits = user.usedCredits;
+        token.creditsResetAt = user.creditsResetAt;
       }
+
+      // For OAuth providers (Google), fetch tier data from database since adapter doesn't include it
+      // Also fetch for existing tokens that don't have tier data
+      if (
+        token.id &&
+        (account?.provider === "google" || token.tier === undefined)
+      ) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: {
+            tier: true,
+            maxCredits: true,
+            usedCredits: true,
+            creditsResetAt: true,
+          },
+        });
+
+        if (dbUser) {
+          token.tier = dbUser.tier;
+          token.maxCredits = dbUser.maxCredits;
+          token.usedCredits = dbUser.usedCredits;
+          token.creditsResetAt = dbUser.creditsResetAt;
+        }
+      }
+
+      // Refresh user data from database on update trigger
+      if (trigger === "update" && token.id) {
+        const updatedUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: {
+            tier: true,
+            maxCredits: true,
+            usedCredits: true,
+            creditsResetAt: true,
+          },
+        });
+
+        if (updatedUser) {
+          token.tier = updatedUser.tier;
+          token.maxCredits = updatedUser.maxCredits;
+          token.usedCredits = updatedUser.usedCredits;
+          token.creditsResetAt = updatedUser.creditsResetAt;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.tier = (token.tier as number) ?? 0;
+        session.user.maxCredits = (token.maxCredits as number | null) ?? null;
+        session.user.usedCredits = (token.usedCredits as number) ?? 0;
+        session.user.creditsResetAt = token.creditsResetAt
+          ? new Date(token.creditsResetAt)
+          : null;
       }
       return session;
     },

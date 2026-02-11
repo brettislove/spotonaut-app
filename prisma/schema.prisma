@@ -12,15 +12,19 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  password      String? // Nullable for OAuth users
-  emailVerified DateTime?
-  image         String?
-  promoCode     String? // Promo code used at registration
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String?
+  password       String? // Nullable for OAuth users
+  emailVerified  DateTime?
+  image          String?
+  promoCode      String? // Promo code used at registration
+  tier           Int       @default(0) // 0=Sonda (Free), 1=Raketa (Paid), 2=Modul (Enterprise)
+  maxCredits     Int? // NULL = unlimited (∞), otherwise specific credit limit
+  usedCredits    Int       @default(0) // Credits consumed by the user
+  creditsResetAt DateTime? // When credits reset for renewable tiers (e.g., monthly)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   accounts            Account[]
   analyses            Analysis[]

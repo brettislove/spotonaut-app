@@ -22,6 +22,8 @@ import { handleSignOut } from "@/utils/auth";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import { LogOut } from "lucide-react";
 import Avatar from "boring-avatars";
+import { getTierName } from "@/lib/constants/tiers";
+import { Badge } from "./ui/badge";
 
 export function NavUser() {
   const { data: session } = useSession();
@@ -40,12 +42,15 @@ export function NavUser() {
                 <Avatar name={session?.user?.email || "User"} size={24} />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">
+                <span className="truncate font-medium mb-1">
                   {session?.user?.email}
                 </span>
-                <span className="text-muted-foreground truncate text-xs">
-                  Úroveň: Sonda
-                </span>
+                <Badge
+                  variant="outline"
+                  className="text-muted-foreground truncate text-xs"
+                >
+                  {getTierName(session?.user?.tier ?? 0)}{" "}
+                </Badge>
               </div>
             </SidebarMenuButton>
           </DropdownMenuTrigger>
@@ -61,11 +66,11 @@ export function NavUser() {
                   <Avatar name={session?.user?.email || "User"} size={24} />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">
+                  <span className="truncate font-medium mb-1">
                     {session?.user?.email}
                   </span>
                   <span className="text-muted-foreground truncate text-xs">
-                    Úroveň: Sonda
+                    Úroveň: {getTierName(session?.user?.tier || 0)}{" "}
                   </span>
                 </div>
               </div>

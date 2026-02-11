@@ -20,7 +20,7 @@ const ICON_STROKE_WIDTH = 4;
 
 interface ContextSchema {
   usedCredits: number;
-  maxCredits: number;
+  maxCredits: number | null;
   unlimited: boolean;
 }
 
@@ -59,8 +59,10 @@ const CreditsIcon = () => {
   const { usedCredits, maxCredits, unlimited } = useContextValue();
 
   const circumference = 2 * Math.PI * ICON_RADIUS;
-  const usedPercent = unlimited ? 0 : usedCredits / maxCredits;
-  const dashOffset = circumference * (1 - usedPercent);
+  const remainingPercent = unlimited
+    ? 1
+    : ((maxCredits ?? 0) - usedCredits) / (maxCredits ?? 1);
+  const dashOffset = circumference * (1 - remainingPercent);
 
   return (
     <svg
@@ -101,7 +103,9 @@ export type ContextTriggerProps = ComponentProps<typeof Button>;
 
 export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
   const { usedCredits, maxCredits, unlimited } = useContextValue();
-  const remaining = unlimited ? "∞" : (maxCredits - usedCredits).toString();
+  const remaining = unlimited
+    ? "∞"
+    : ((maxCredits ?? 0) - usedCredits).toString();
 
   return (
     <HoverCardTrigger asChild>
@@ -148,13 +152,14 @@ export const ContextContentHeader = ({
     );
   }
 
-  const usedPercent = usedCredits / maxCredits;
+  const usedPercent = usedCredits / (maxCredits ?? 1);
   const used = new Intl.NumberFormat("cs-CZ", {
     notation: "compact",
   }).format(usedCredits);
   const total = new Intl.NumberFormat("cs-CZ", {
     notation: "compact",
-  }).format(maxCredits);
+  }).format(maxCredits ?? 0);
+  const percentDisplay = Math.round(usedPercent * PERCENT_MAX);
 
   const isLowCredits = usedPercent > 0.8;
 
@@ -162,8 +167,9 @@ export const ContextContentHeader = ({
     <div className={cn("w-full space-y-2 p-3", className)} {...props}>
       {children ?? (
         <>
-          <div className="flex items-center justify-between gap-3 text-xs">
-            <p>Využité kredity</p>
+          <p className="text-xs text-muted-foreground mb-1">Využito:</p>
+          <div className="flex items-center justify-between gap-3 text-xs mb-1">
+            <p className="font-medium">{percentDisplay}%</p>
             <p className="font-mono text-muted-foreground">
               {used} / {total}
             </p>

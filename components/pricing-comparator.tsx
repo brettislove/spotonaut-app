@@ -39,7 +39,7 @@ const tableData = {
   ],
   ai: [
     {
-      feature: "Pokročilý AI chat",
+      feature: "Chat s AI asistentem",
       sonda: "Základní",
       raketa: "Pokročilý kontext",
       modul: "Pokročilý kontext",
@@ -99,7 +99,7 @@ export default function PricingComparator() {
                 <tr key={index} className="*:border-b *:py-3">
                   <td className="text-muted-foreground">{row.feature}</td>
                   <td>
-                    {typeof row.sonda === 'boolean' && row.sonda ? (
+                    {typeof row.sonda === "boolean" && row.sonda ? (
                       <Check className="size-4" />
                     ) : (
                       row.sonda
@@ -107,7 +107,7 @@ export default function PricingComparator() {
                   </td>
                   <td className="bg-muted border-none px-4">
                     <div className="-mb-3 border-b py-3">
-                      {typeof row.raketa === 'boolean' && row.raketa ? (
+                      {typeof row.raketa === "boolean" && row.raketa ? (
                         <Check className="size-4" />
                       ) : (
                         row.raketa
@@ -115,7 +115,7 @@ export default function PricingComparator() {
                     </div>
                   </td>
                   <td>
-                    {typeof row.modul === 'boolean' && row.modul ? (
+                    {typeof row.modul === "boolean" && row.modul ? (
                       <Check className="size-4" />
                     ) : (
                       row.modul
@@ -136,7 +136,7 @@ export default function PricingComparator() {
                 <tr key={index} className="*:border-b *:py-3">
                   <td className="text-muted-foreground">{row.feature}</td>
                   <td>
-                    {typeof row.sonda === 'boolean' && row.sonda ? (
+                    {typeof row.sonda === "boolean" && row.sonda ? (
                       <Check className="size-4" />
                     ) : (
                       row.sonda
@@ -144,7 +144,7 @@ export default function PricingComparator() {
                   </td>
                   <td className="bg-muted border-none px-4">
                     <div className="-mb-3 border-b py-3">
-                      {typeof row.raketa === 'boolean' && row.raketa ? (
+                      {typeof row.raketa === "boolean" && row.raketa ? (
                         <Check className="size-4" />
                       ) : (
                         row.raketa
@@ -152,7 +152,7 @@ export default function PricingComparator() {
                     </div>
                   </td>
                   <td>
-                    {typeof row.modul === 'boolean' && row.modul ? (
+                    {typeof row.modul === "boolean" && row.modul ? (
                       <Check className="size-4" />
                     ) : (
                       row.modul
@@ -163,7 +163,7 @@ export default function PricingComparator() {
               <tr className="*:pb-3 *:pt-8">
                 <td className="flex items-center gap-2 font-medium">
                   <Sparkles className="size-4" />
-                  <span>AI asistence</span>
+                  <span>AI</span>
                 </td>
                 <td></td>
                 <td className="bg-muted border-none px-4"></td>
@@ -173,7 +173,7 @@ export default function PricingComparator() {
                 <tr key={index} className="*:border-b *:py-3">
                   <td className="text-muted-foreground">{row.feature}</td>
                   <td>
-                    {typeof row.sonda === 'boolean' && row.sonda ? (
+                    {typeof row.sonda === "boolean" && row.sonda ? (
                       <Check className="size-4" />
                     ) : (
                       row.sonda
@@ -181,7 +181,7 @@ export default function PricingComparator() {
                   </td>
                   <td className="bg-muted border-none px-4">
                     <div className="-mb-3 border-b py-3">
-                      {typeof row.raketa === 'boolean' && row.raketa ? (
+                      {typeof row.raketa === "boolean" && row.raketa ? (
                         <Check className="size-4" />
                       ) : (
                         row.raketa
@@ -189,7 +189,7 @@ export default function PricingComparator() {
                     </div>
                   </td>
                   <td>
-                    {typeof row.modul === 'boolean' && row.modul ? (
+                    {typeof row.modul === "boolean" && row.modul ? (
                       <Check className="size-4" />
                     ) : (
                       row.modul
@@ -210,7 +210,7 @@ export default function PricingComparator() {
                 <tr key={index} className="*:border-b *:py-3">
                   <td className="text-muted-foreground">{row.feature}</td>
                   <td>
-                    {typeof row.sonda === 'boolean' && row.sonda ? (
+                    {typeof row.sonda === "boolean" && row.sonda ? (
                       <Check className="size-4" />
                     ) : (
                       row.sonda
@@ -218,7 +218,7 @@ export default function PricingComparator() {
                   </td>
                   <td className="bg-muted border-none px-4">
                     <div className="-mb-3 border-b py-3">
-                      {typeof row.raketa === 'boolean' && row.raketa ? (
+                      {typeof row.raketa === "boolean" && row.raketa ? (
                         <Check className="size-4" />
                       ) : (
                         row.raketa
@@ -226,7 +226,7 @@ export default function PricingComparator() {
                     </div>
                   </td>
                   <td>
-                    {typeof row.modul === 'boolean' && row.modul ? (
+                    {typeof row.modul === "boolean" && row.modul ? (
                       <Check className="size-4" />
                     ) : (
                       row.modul

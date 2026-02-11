@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { Resend } from "resend";
 import { getPromoQuota } from "@/lib/constants/chat";
+import { TIER_SONDA, MAX_CREDITS_SONDA } from "@/lib/constants/tiers";
 
 const prisma = new PrismaClient();
 
@@ -67,12 +68,17 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user with promo code if valid
+    // Initialize with Sonda (Free) tier and default credits
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name: name || null,
         promoCode: normalizedPromoCode,
+        tier: TIER_SONDA,
+        maxCredits: MAX_CREDITS_SONDA,
+        usedCredits: 0,
+        creditsResetAt: null,
       },
     });
 
