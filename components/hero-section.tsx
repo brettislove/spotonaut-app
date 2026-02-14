@@ -60,16 +60,26 @@ export default function HeroSection() {
   } = useAnalysis();
   const { setIsLoading } = useChat();
   const { checkRateLimit } = useRateLimit();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   const [progressStep, setProgressStep] = useState<ProgressStep>("geocoding");
   const formRef = useRef<HTMLDivElement>(null);
 
+  // Redirect authenticated users to /app
+  React.useEffect(() => {
+    if (status === "loading") return; // Wait for session check
+    if (session) {
+      router.push("/app");
+    }
+  }, [session, status, router]);
+
   const handleAnalysisSubmit = React.useCallback(
     async (data: AnalysisFormData) => {
       // Check if user has already used free analysis and is not authenticated
-      if (!session && checkIfUsedFreeAnalysis(data, setShowLoginModal)) return;
+      if (!session && checkIfUsedFreeAnalysis(data, setShowLoginModal)) {
+        return;
+      }
 
       // Check rate limit
       if (!checkRateLimit()) {
