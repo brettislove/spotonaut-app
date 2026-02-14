@@ -429,6 +429,7 @@ export function AnalysisProvider({
           groundedLocationData: parsed.analysisData.groundedLocationData,
           chatMessages: parsed.messages,
           usedMapsGrounding: !!parsed.analysisData.groundedLocationData,
+          businessType: parsed.analysisData.businessType || null,
         };
 
         const response = await fetch("/api/analysis/saved", {
@@ -553,17 +554,8 @@ export function AnalysisProvider({
           try {
             const parsed: PersistedState = JSON.parse(localData);
             if (parsed.hasCompletedAnalysis && parsed.analysisData) {
-              // Check if user already has a saved analysis in DB
-              const hasExisting = await checkExistingDatabaseAnalysis();
-
-              if (hasExisting) {
-                // Store pending data and show migration dialog
-                pendingSaveData.current = parsed;
-                setShowMigrationDialog(true);
-              } else {
-                // No existing analysis, migrate directly
-                await migrateLocalStorageToDatabase();
-              }
+              // migrate directly
+              await migrateLocalStorageToDatabase();
               return;
             }
           } catch {

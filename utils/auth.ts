@@ -74,7 +74,8 @@ const handleLogin = async (
       // show friendly mapped message instead of raw token like 'Configuration'
       setError(mapNextAuthError(result.error));
     } else if (result?.ok) {
-      window.location.reload();
+      // Redirect to /app dashboard after successful login
+      window.location.href = "/app";
     }
   } catch (error) {
     setError(
@@ -162,7 +163,6 @@ const handleSignup = async (
       redirect: false,
     });
     if (loginResult?.ok) {
-      window.location.reload();
       // Notify user with toast that account was created and email was sent
       toast.success(
         "Registrace úspěšná — zkontrolujte svůj e-mail pro potvrzení.",
@@ -175,6 +175,8 @@ const handleSignup = async (
           },
         },
       );
+      // Redirect to /app dashboard after successful signup
+      window.location.href = "/app";
     } else {
       // If auto-login didn't happen, show friendly success message and switch to login
       toast.success("Registrace úspěšná! Přihlaste se prosím.", {
@@ -219,7 +221,7 @@ const handleGoogleSignIn = async (
   try {
     setIsLoading(true);
     setError("");
-    await signIn("google", { callbackUrl: "/" });
+    await signIn("google", { callbackUrl: "/app" });
   } catch {
     toast.error("Nepodařilo se přihlásit přes Google", {
       position: "top-center",
