@@ -73,8 +73,10 @@ export default function ChatPanel({
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [disliked, setDisliked] = useState<Record<string, boolean>>({});
   const [promptInputText, setPromptInputText] = useState("");
-  const [showNewAnalysisConfirmDialog, setShowNewAnalysisConfirmDialog] =
-    useState(false);
+  const [
+    showNewAnalysisAfterSignupConfirmDialog,
+    setShowNewAnalysisAfterSignupConfirmDialog,
+  ] = useState(false);
   const [showChatAccessModal, setShowChatAccessModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [status, setStatus] = useState<
@@ -86,13 +88,14 @@ export default function ChatPanel({
   };
 
   const handleNewAnalysis = () => {
-    setShowNewAnalysisConfirmDialog(true);
+    setShowNewAnalysisAfterSignupConfirmDialog(true);
   };
 
   const handleConfirmNewAnalysis = () => {
+    setShowLoginModal(true);
     resetAnalysis();
     clearRestoredState();
-    setShowNewAnalysisConfirmDialog(false);
+    setShowNewAnalysisAfterSignupConfirmDialog(false);
     router.push("/");
   };
 
@@ -206,10 +209,12 @@ export default function ChatPanel({
             <CardDescription>Chatujte s naším AI asistentem.</CardDescription>
           </div>
           {/* Add button to start new analysis */}
-          <Button onClick={handleNewAnalysis}>
-            <Plus className="size-4" />
-            Nová analýza
-          </Button>
+          {!session && (
+            <Button onClick={handleNewAnalysis}>
+              <Plus className="size-4" />
+              Nová analýza
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="flex-1 min-h-0 flex flex-col">
           <Conversation className="flex-1">
@@ -335,10 +340,10 @@ export default function ChatPanel({
       </Card>
 
       <ConfirmDialog
-        open={showNewAnalysisConfirmDialog}
-        onOpenChange={setShowNewAnalysisConfirmDialog}
-        title="Začít novou analýzu?"
-        description="Spuštěním nové analýzy bude stávající analýza odstraněna. Chcete pokračovat?"
+        open={showNewAnalysisAfterSignupConfirmDialog}
+        onOpenChange={setShowNewAnalysisAfterSignupConfirmDialog}
+        title="Je nutné se přihlásit"
+        description="Pro zahájení nové analýzy je nutné se přihlásit. Chcete pokračovat?"
         onConfirm={handleConfirmNewAnalysis}
       />
       <ConfirmDialog

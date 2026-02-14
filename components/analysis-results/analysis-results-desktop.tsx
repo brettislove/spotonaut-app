@@ -33,7 +33,8 @@ export default function AnalysisResultsDesktop({
 
       {/* AI disclaimer */}
       <div className="text-xs text-slate-400 px-3 py-2 max-w-6xl w-full text-center">
-        Výsledky jsou založeny na AI a slouží pouze pro informační účely — nemusí být přesné ani úplné.
+        Výsledky jsou založeny na AI a slouží pouze pro informační účely —
+        nemusí být přesné ani úplné.
       </div>
     </div>
   );
