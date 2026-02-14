@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Map,
   useMap,
@@ -74,6 +74,53 @@ function TiltToggle() {
   );
 }
 
+// ── Globe Animation Component ───────────────────────────────────────
+function GlobeAnimation({ center }: { center: [number, number] }) {
+  const { map, isLoaded } = useMap();
+  const [animatedCenter, setAnimatedCenter] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!map || !isLoaded) return;
+
+    // Create a key from center to detect changes
+    const centerKey = `${center[0]},${center[1]}`;
+
+    // Skip if we've already animated to this location
+    if (animatedCenter === centerKey) return;
+
+    // Store the target location
+    const targetCenter = center;
+    const targetZoom = 15;
+
+    // Reset map to globe view
+    map.jumpTo({
+      center: [targetCenter[0], 0],
+      zoom: 1.5,
+      pitch: 0,
+      bearing: 0,
+    });
+
+    // Start animation after a brief moment to ensure map is fully ready
+    const timer = setTimeout(() => {
+      map.flyTo({
+        center: targetCenter,
+        zoom: targetZoom,
+        duration: 3000, // 3 second animation
+        essential: true,
+        easing: (t) => {
+          // Custom easing for smooth acceleration and deceleration
+          return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        },
+      });
+      setAnimatedCenter(centerKey);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [map, isLoaded, center, animatedCenter]);
+
+  return null;
+}
+
 // ── Main map content ─────────────────────────────────────────────────
 export default function MapContent({
   center,
@@ -83,7 +130,14 @@ export default function MapContent({
 }: MapContentProps) {
   return (
     <div className="relative h-full w-full">
-      <Map theme="light" center={center} zoom={15} scrollZoom>
+      <Map
+        theme="light"
+        center={[16.6068, 49.1951]}
+        zoom={1.5}
+        scrollZoom
+        projection={{ type: "globe" }}
+      >
+        <GlobeAnimation center={center} />
         <MapControls showZoom showCompass position="bottom-right" />
         <TiltToggle />
 
