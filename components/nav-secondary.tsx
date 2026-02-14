@@ -29,7 +29,12 @@ export function NavSecondary({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton
+                asChild
+                className={
+                  item.url === "#" ? "cursor-not-allowed opacity-50" : ""
+                }
+              >
                 <a href={item.url}>
                   <item.icon />
                   <span>{item.title}</span>

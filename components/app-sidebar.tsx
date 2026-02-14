@@ -23,12 +23,7 @@ import {
 } from "@/components/ui/sidebar";
 import SpotonautLogo from "./spotonaut-logo";
 import NavCreditMeter from "./nav-credit-meter";
-import {
-  CircleQuestionMark,
-  HandCoins,
-  LayoutDashboard,
-  Settings,
-} from "lucide-react";
+import { CircleQuestionMark, HandCoins, Home, Settings } from "lucide-react";
 import { Analysis } from "@/lib/types/analysis";
 
 const data = {
@@ -41,7 +36,7 @@ const data = {
     {
       title: "Domů",
       url: "/app",
-      icon: LayoutDashboard,
+      icon: Home,
     },
   ],
   navClouds: [
