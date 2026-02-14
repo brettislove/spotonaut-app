@@ -10,7 +10,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -215,6 +214,26 @@ export default function AnalysisFormNew({
                   )}
                 />
               </FieldGroup>
+              <div className="mt-6">
+                <Field
+                  orientation="horizontal"
+                  className="w-full justify-center gap-2"
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => form.reset()}
+                  >
+                    Vymazat
+                  </Button>
+                  <ShimmerButton
+                    type="submit"
+                    className="cursor-pointer bg-secondary text-black"
+                  >
+                    Spustit analýzu
+                  </ShimmerButton>
+                </Field>
+              </div>
             </form>
           ) : (
             <ChainOfThought defaultOpen>
@@ -264,29 +283,6 @@ export default function AnalysisFormNew({
             </ChainOfThought>
           )}
         </CardContent>
-        <CardFooter>
-          <Field
-            orientation="horizontal"
-            className="w-full justify-center gap-2"
-          >
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => form.reset()}
-              hidden={isAnalyzing}
-            >
-              Vymazat
-            </Button>
-            <ShimmerButton
-              type="submit"
-              form="analysis-form"
-              className="cursor-pointer bg-secondary text-black"
-              hidden={isAnalyzing}
-            >
-              Spustit analýzu
-            </ShimmerButton>
-          </Field>
-        </CardFooter>
       </Card>
 
       <ConfirmDialog
