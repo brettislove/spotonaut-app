@@ -28,7 +28,12 @@ const LocationPickerMap = dynamic<{
         onViewportChange: (viewport: MapViewport) => void;
       }) {
         return (
-          <Map center={center} zoom={13} onViewportChange={onViewportChange}>
+          <Map
+            theme="light"
+            center={center}
+            zoom={13}
+            onViewportChange={onViewportChange}
+          >
             <MapControls showZoom position="bottom-right" />
           </Map>
         );
