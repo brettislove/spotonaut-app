@@ -23,6 +23,9 @@ model User {
   maxCredits     Int? // NULL = unlimited (∞), otherwise specific credit limit
   usedCredits    Int       @default(0) // Credits consumed by the user
   creditsResetAt DateTime? // When credits reset for renewable tiers (e.g., monthly)
+  utmSource      String?   @map("utm_source") // First-touch UTM: where this user originally came from
+  utmMedium      String?   @map("utm_medium") // First-touch UTM: channel type (social, print, cpc...)
+  utmCampaign    String?   @map("utm_campaign") // First-touch UTM: campaign name (vending_expo_warsaw...)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -195,6 +198,28 @@ model PageView {
   @@index([path])
   @@index([country])
   @@map("page_views")
+}
+
+// Visit tracking for UTM attribution and marketing funnel analysis
+model Visit {
+  id          String   @id @default(cuid())
+  sessionId   String // Browser session identifier for grouping visits
+  anonymousId String // Anonymized IP + fingerprint hash
+  visitedUrl  String // Page path the visitor landed on
+  referrer    String? // Document referrer
+  country     String? // Country from IP geolocation
+  region      String? // Region from IP geolocation
+  deviceType  String? // mobile, tablet, desktop
+  utmSource   String?  @map("utm_source")
+  utmMedium   String?  @map("utm_medium")
+  utmCampaign String?  @map("utm_campaign")
+  createdAt   DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@index([utmSource])
+  @@index([utmCampaign])
+  @@map("visits")
 }
 
 // User event tracking (form interactions, modal opens, etc.)

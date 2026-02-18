@@ -9,7 +9,15 @@ const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name, promoCode } = await request.json();
+    const {
+      email,
+      password,
+      name,
+      promoCode,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+    } = await request.json();
 
     // Validate input
     if (!email || !password) {
@@ -79,6 +87,9 @@ export async function POST(request: NextRequest) {
         maxCredits: MAX_CREDITS_SONDA,
         usedCredits: 0,
         creditsResetAt: null,
+        utmSource: utmSource || null,
+        utmMedium: utmMedium || null,
+        utmCampaign: utmCampaign || null,
       },
     });
 

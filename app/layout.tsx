@@ -5,6 +5,8 @@ import "./globals.css";
 import AuthProvider from "@/components/auth-provider";
 import { AnalysisProvider } from "@/lib/contexts/analysis-context";
 import PageTracker from "@/components/page-tracker";
+import UTMCapture from "@/components/utm-capture";
+import UtmAttributionProvider from "@/components/utm-attribution-provider";
 import HeaderWrapper from "@/components/layout/header-wrapper";
 import FooterGuard from "@/components/layout/footer-guard";
 import AnalysisMiniBar from "@/components/analysis-mini-bar";
@@ -186,7 +188,9 @@ export default function RootLayout({
           <AnalysisProvider>
             <Suspense fallback={null}>
               <PageTracker />
+              <UTMCapture />
             </Suspense>
+            <UtmAttributionProvider />
             {/* <Header /> */}
             <Toaster />
             <HeaderWrapper />

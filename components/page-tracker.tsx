@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { trackPageView } from "@/lib/analytics/tracking-client";
+import { trackPageView, trackVisit } from "@/lib/analytics/tracking-client";
 
 export default function PageTracker() {
   const pathname = usePathname();
@@ -11,6 +11,8 @@ export default function PageTracker() {
   useEffect(() => {
     // Track page view when pathname changes
     trackPageView(pathname);
+    // Track visit for UTM/campaign attribution
+    trackVisit(pathname);
   }, [pathname, searchParams]);
 
   return null;

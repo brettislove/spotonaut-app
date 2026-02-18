@@ -140,6 +140,26 @@ const handleSignup = async (
   }
 
   try {
+    // Retrieve first-touch UTM data from localStorage for attribution
+    let utmData: {
+      utmSource?: string;
+      utmMedium?: string;
+      utmCampaign?: string;
+    } = {};
+    try {
+      const storedUtm = localStorage.getItem("spotonaut_first_touch_utm");
+      if (storedUtm) {
+        const parsed = JSON.parse(storedUtm);
+        utmData = {
+          utmSource: parsed.utmSource || undefined,
+          utmMedium: parsed.utmMedium || undefined,
+          utmCampaign: parsed.utmCampaign || undefined,
+        };
+      }
+    } catch {
+      // localStorage unavailable or invalid JSON
+    }
+
     const response = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -147,6 +167,7 @@ const handleSignup = async (
         email,
         password,
         promoCode: promoCode.trim() || undefined,
+        ...utmData,
       }),
     });
 
