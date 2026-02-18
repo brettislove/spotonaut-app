@@ -1,12 +1,60 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/app/api/auth/[...nextauth]/route";
 import { PrismaClient } from "@prisma/client";
-import AnalyticsLineChart from "@/components/analytics/analytics-line-chart";
 import AnalyticsPieChart from "@/components/analytics/analytics-pie-chart";
 import AnalyticsBarChart from "@/components/analytics/analytics-bar-chart";
 import ConversionFunnel from "@/components/analytics/conversion-funnel";
 import ApiPerformanceChart from "@/components/analytics/api-performance-chart";
 import CohortRetentionChart from "@/components/analytics/cohort-retention-chart";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  RefreshCw,
+  Download,
+  AlertTriangle,
+  Star,
+  ArrowLeft,
+} from "lucide-react";
+import Link from "next/link";
+import { ChartConfig } from "@/components/ui/chart";
+import AnalyticsLineChart from "@/components/analytics/analytics-line-chart";
+
+const chartConfig = {
+  analyses: {
+    label: "Analýzy",
+  },
+  totalAnalyses: {
+    label: "Celkové analýzy",
+    color: "var(--chart-1)",
+  },
+  anonymousAnalyses: {
+    label: "Anonymní analýzy",
+    color: "var(--chart-2)",
+  },
+  registeredAnalyses: {
+    label: "Registrované analýzy",
+    color: "var(--chart-3)",
+  },
+  uniqueVisitors: {
+    label: "Návštěvníci",
+    color: "var(--chart-4)",
+  },
+} satisfies ChartConfig;
 
 const prisma = new PrismaClient();
 
@@ -54,11 +102,11 @@ export default async function AdminAnalyticsPage() {
   const totalAnalyses = dailyData.reduce((sum, d) => sum + d.totalAnalyses, 0);
   const totalAnonymous = dailyData.reduce(
     (sum, d) => sum + d.anonymousAnalyses,
-    0
+    0,
   );
   const totalRegistered = dailyData.reduce(
     (sum, d) => sum + d.registeredAnalyses,
-    0
+    0,
   );
   const totalVisitors = dailyData.reduce((sum, d) => sum + d.uniqueVisitors, 0);
 
@@ -189,79 +237,104 @@ export default async function AdminAnalyticsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 p-8">
-      <div className="max-w-7xl mx-auto">
+    <section className="py-16 md:pt-32 md:pb-24">
+      <div className="mx-auto max-w-7xl px-6">
+        <Link href="/admin">
+          <Button variant="ghost" size="sm" className="mb-4">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Zpět na dashboard
+          </Button>
+        </Link>
         {/* Header with Refresh Button */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-12 md:mb-20">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent mb-2">
-              Analytics Dashboard
+            <h1 className="text-4xl font-semibold lg:text-5xl">
+              Přehled analýz a API požadavků
             </h1>
-            <p className="text-slate-400">Poslední 30 dní aktivit uživatelů</p>
           </div>
           <form action="/api/admin/analytics/refresh" method="POST">
-            <button
-              type="submit"
-              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold rounded-xl transition-all"
-            >
-              ↻ Aktualizovat data
-            </button>
+            <Button type="submit" className="gap-2">
+              <RefreshCw className="w-4 h-4" />
+              Aktualizovat data
+            </Button>
           </form>
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-6">
-            <div className="text-slate-400 text-sm mb-2">Celkové analýzy</div>
-            <div className="text-3xl font-bold text-white">{totalAnalyses}</div>
-            <div className="mt-2 text-sm">
-              <span className="text-blue-400">{totalAnonymous}</span>
-              <span className="text-slate-500"> anonymní / </span>
-              <span className="text-purple-400">{totalRegistered}</span>
-              <span className="text-slate-500"> registrovaní</span>
-            </div>
-          </div>
-
-          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-6">
-            <div className="text-slate-400 text-sm mb-2">Návštěvníci</div>
-            <div className="text-3xl font-bold text-white">{totalVisitors}</div>
-            <div className="mt-2 text-sm text-slate-500">
-              Unikátní návštěvníci
-            </div>
-          </div>
-
-          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-6">
-            <div className="text-slate-400 text-sm mb-2">
-              Průměrné hodnocení
-            </div>
-            <div className="text-3xl font-bold text-white">
-              {avgRating ? avgRating.toFixed(1) : "N/A"}
-            </div>
-            <div className="mt-2 text-sm text-yellow-400">
-              {avgRating ? "★★★★★".slice(0, Math.round(avgRating)) : ""}
-            </div>
-          </div>
-
-          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-6">
-            <div className="text-slate-400 text-sm mb-2">API Performance</div>
-            <div className="text-3xl font-bold text-white">
-              {latestPerformance?.avgResponseTimeMs?.toFixed(0) || "N/A"}
-              <span className="text-lg text-slate-500"> ms</span>
-            </div>
-            {(hasErrorAlert || hasResponseTimeAlert) && (
-              <div className="mt-2">
-                <span className="px-2 py-1 bg-red-500/10 text-red-400 rounded-lg text-xs font-medium">
-                  ⚠ Alert
-                </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Celkové analýzy</CardDescription>
+              <CardTitle className="text-3xl">{totalAnalyses}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                <span className="text-blue-600">{totalAnonymous}</span>
+                <span> anonymní / </span>
+                <span className="text-purple-600">{totalRegistered}</span>
+                <span> registrovaní</span>
               </div>
-            )}
-          </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Návštěvníci</CardDescription>
+              <CardTitle className="text-3xl">{totalVisitors}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                Unikátní návštěvníci
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Průměrné hodnocení</CardDescription>
+              <CardTitle className="text-3xl">
+                {avgRating ? avgRating.toFixed(1) : "N/A"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-1">
+                {avgRating && (
+                  <>
+                    {Array.from({ length: Math.round(avgRating) }, (_, i) => (
+                      <Star
+                        key={i}
+                        className="w-4 h-4 fill-yellow-400 text-yellow-400"
+                      />
+                    ))}
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>API Performance</CardDescription>
+              <CardTitle className="text-3xl">
+                {latestPerformance?.avgResponseTimeMs?.toFixed(0) || "N/A"}
+                <span className="text-lg text-muted-foreground ml-1">ms</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(hasErrorAlert || hasResponseTimeAlert) && (
+                <Badge variant="destructive" className="gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Alert
+                </Badge>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Charts Section */}
         <div className="space-y-8 mb-8">
           {/* Trend Line Chart */}
-          <AnalyticsLineChart
+          {/* <AnalyticsLineChart
             data={lineChartData}
             lines={[
               {
@@ -286,6 +359,10 @@ export default async function AdminAnalyticsPage() {
               },
             ]}
             title="Trendy v čase"
+          /> */}
+          <AnalyticsLineChart
+            chartConfig={chartConfig}
+            lineChartData={lineChartData}
           />
 
           {/* User Type Distribution & Weekly Comparison */}
@@ -334,88 +411,73 @@ export default async function AdminAnalyticsPage() {
         </div>
 
         {/* Data Table */}
-        <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-6">
-          <h2 className="text-2xl font-bold text-white mb-6">
-            Denní statistiky
-          </h2>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-800">
-                  <th className="text-left text-slate-400 text-sm font-medium pb-3">
-                    Datum
-                  </th>
-                  <th className="text-right text-slate-400 text-sm font-medium pb-3">
-                    Analýzy
-                  </th>
-                  <th className="text-right text-slate-400 text-sm font-medium pb-3">
-                    Anonymní
-                  </th>
-                  <th className="text-right text-slate-400 text-sm font-medium pb-3">
-                    Registrovaní
-                  </th>
-                  <th className="text-right text-slate-400 text-sm font-medium pb-3">
-                    Návštěvníci
-                  </th>
-                  <th className="text-right text-slate-400 text-sm font-medium pb-3">
-                    Hodnocení
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+        <Card>
+          <CardHeader>
+            <CardTitle>Denní statistiky</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-left">Datum</TableHead>
+                  <TableHead className="text-right">Analýzy</TableHead>
+                  <TableHead className="text-right">Anonymní</TableHead>
+                  <TableHead className="text-right">Registrovaní</TableHead>
+                  <TableHead className="text-right">Návštěvníci</TableHead>
+                  <TableHead className="text-right">Hodnocení</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {dailyData.map((day) => (
-                  <tr
-                    key={day.date}
-                    className="border-b border-slate-800/50 hover:bg-slate-800/30"
-                  >
-                    <td className="py-3 text-white">{day.date}</td>
-                    <td className="py-3 text-right text-white">
+                  <TableRow key={day.date}>
+                    <TableCell>{day.date}</TableCell>
+                    <TableCell className="text-right font-medium">
                       {day.totalAnalyses}
-                    </td>
-                    <td className="py-3 text-right text-blue-400">
+                    </TableCell>
+                    <TableCell className="text-right text-blue-600">
                       {day.anonymousAnalyses}
-                    </td>
-                    <td className="py-3 text-right text-purple-400">
+                    </TableCell>
+                    <TableCell className="text-right text-purple-600">
                       {day.registeredAnalyses}
-                    </td>
-                    <td className="py-3 text-right text-white">
+                    </TableCell>
+                    <TableCell className="text-right">
                       {day.uniqueVisitors}
-                    </td>
-                    <td className="py-3 text-right text-white">
+                    </TableCell>
+                    <TableCell className="text-right">
                       {day.avgFeedbackRating?.toFixed(1) || "-"}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
 
-          {/* Export Button */}
-          <div className="mt-6 flex justify-end">
-            <a
-              href={`/api/admin/analytics/export?type=daily&startDate=${dateStr}&endDate=${
-                new Date().toISOString().split("T")[0]
-              }`}
-              className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-all border border-slate-700"
-            >
-              ↓ Export CSV
-            </a>
-          </div>
-        </div>
+            {/* Export Button */}
+            <div className="mt-6 flex justify-end">
+              <Button asChild variant="outline" className="gap-2">
+                <a
+                  href={`/api/admin/analytics/export?type=daily&startDate=${dateStr}&endDate=${
+                    new Date().toISOString().split("T")[0]
+                  }`}
+                >
+                  <Download className="w-4 h-4" />
+                  Export CSV
+                </a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Export & Documentation */}
-        <div className="mt-8 bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-          <p className="text-slate-300 text-sm">
-            <strong>💡 Tip:</strong> Data se automaticky agregují každou hodinu
-            a den. Pro manuální aktualizaci použijte tlačítko &quot;Aktualizovat
-            data&quot; nahoře.
-          </p>
-        </div>
+        <Card className="mt-8">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">
+              <strong>💡 Tip:</strong> Data se automaticky agregují každou
+              hodinu a den. Pro manuální aktualizaci použijte tlačítko
+              &quot;Aktualizovat data&quot; nahoře.
+            </p>
+          </CardContent>
+        </Card>
       </div>
-
-      {/* Ambient glow effects */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -z-10" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl -z-10" />
-    </div>
+    </section>
   );
 }
