@@ -21,9 +21,9 @@ import { useAnalysis } from "@/lib/contexts/analysis-context";
 
 const menuItems = [
   { name: "Jak to funguje", href: "/how-it-works" },
-  { name: "Blog", href: "#link" },
+  { name: "Blog", href: "/blog" },
   { name: "Ceník", href: "/pricing" },
-  { name: "Kontakt", href: "#link" },
+  { name: "Kontakt", href: "/kontakt" },
 ];
 
 export const HeroHeader = ({
