@@ -48,7 +48,6 @@ import { useRateLimit } from "@/lib/hooks/useRateLimit";
 import { AnalysisData } from "@/lib/types/analysis";
 import { Button } from "../ui/button";
 import { ConfirmDialog } from "../ui/confirm-dialog";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import RequestMorePromptsModalNew from "../request-more-prompts-modal-new";
 import type { MessageType } from "@/lib/types/chat";
@@ -60,16 +59,9 @@ export default function ChatPanel({
   analysisData: AnalysisData;
   className?: string;
 }) {
-  const {
-    messages,
-    setMessages,
-    resetAnalysis,
-    clearRestoredState,
-    setShowLoginModal,
-  } = useAnalysis();
+  const { messages, setMessages, setShowLoginModal } = useAnalysis();
   const { checkRateLimit } = useRateLimit();
   const { data: session } = useSession();
-  const router = useRouter();
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [disliked, setDisliked] = useState<Record<string, boolean>>({});
   const [promptInputText, setPromptInputText] = useState("");
@@ -93,10 +85,6 @@ export default function ChatPanel({
 
   const handleConfirmNewAnalysis = () => {
     setShowLoginModal(true);
-    resetAnalysis();
-    clearRestoredState();
-    setShowNewAnalysisAfterSignupConfirmDialog(false);
-    router.push("/");
   };
 
   // Get suggestions from the last assistant message - to show only the latest ones
@@ -133,9 +121,6 @@ export default function ChatPanel({
       content: text,
       timestamp: new Date(),
     };
-
-    // Append user message to conversation
-    // setMessages((prev) => [...prev, userMessage]);
 
     try {
       // Claim a prompt for this user (server-side lifetime quota) BEFORE appending the user's message
