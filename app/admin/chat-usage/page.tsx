@@ -1,6 +1,18 @@
 import { auth } from "@/app/api/auth/[...nextauth]/route";
 import { PrismaClient } from "@prisma/client";
 import { redirect } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ArrowLeft, MessageSquare } from "lucide-react";
+import Link from "next/link";
 import UpdateQuotaForm from "./update-quota-form";
 import UpdatePendingForm from "./update-pending-form";
 
@@ -40,36 +52,43 @@ export default async function AdminChatUsagePage() {
   const usageMap = new Map(usages.map((u) => [u.userId, u]));
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans relative overflow-hidden">
-      <div className="relative z-10 max-w-6xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white">Chat Prompt Quotas</h1>
-          <p className="text-slate-400">
-            View and update per-user prompt quotas.
+    <section className="py-16 md:pt-32 md:pb-24">
+      <div className="mx-auto max-w-7xl px-6">
+        <Link href="/admin">
+          <Button variant="ghost" size="sm" className="mb-4">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Zpět na dashboard
+          </Button>
+        </Link>
+
+        {/* Header */}
+        <div className="mb-12 md:mb-20">
+          <h1 className="text-4xl font-semibold lg:text-5xl flex items-center gap-3">
+            <MessageSquare className="w-8 h-8" />
+            Uživatelské kvóty
+          </h1>
+          <p className="text-muted-foreground">
+            Zobrazit a upravit kvóty uživatelů pro použití chatových promptů.
           </p>
         </div>
 
-        <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full table-auto">
-              <thead>
-                <tr className="border-b border-slate-800">
-                  <th className="text-left p-4 text-slate-400 text-sm">
-                    Email
-                  </th>
-                  <th className="text-left p-4 text-slate-400 text-sm">Name</th>
-                  <th className="text-left p-4 text-slate-400 text-sm">
-                    Prompts Used
-                  </th>
-                  <th className="text-left p-4 text-slate-400 text-sm">
-                    Quota
-                  </th>
-                  <th className="text-left p-4 text-slate-400 text-sm">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+        {/* Chat Usage Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Uživatelské kvóty</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Jméno</TableHead>
+                  <TableHead>Použité prompty</TableHead>
+                  <TableHead>Kvóta</TableHead>
+                  <TableHead>Akce</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {users.map((user) => {
                   const usage = usageMap.get(user.id);
                   const promptCount = usage?.promptCount ?? 0;
@@ -80,23 +99,18 @@ export default async function AdminChatUsagePage() {
                     usage?.quota === null ? "∞" : currentQuota;
                   const pending = usage?.requestPending ?? false;
                   return (
-                    <tr
-                      key={user.id}
-                      className="border-b border-slate-800 hover:bg-slate-800/30 transition-colors"
-                    >
-                      <td className="p-4 text-slate-200 text-sm whitespace-nowrap">
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">
                         {user.email}
-                      </td>
-                      <td className="p-4 text-slate-400 text-sm">
-                        {user.name ?? "—"}
-                      </td>
-                      <td className="p-4 text-white font-medium">
+                      </TableCell>
+                      <TableCell>{user.name ?? "—"}</TableCell>
+                      <TableCell className="font-medium">
                         {promptCount}
-                      </td>
-                      <td className="p-4 text-white font-medium">
+                      </TableCell>
+                      <TableCell className="font-medium">
                         {displayQuota}
-                      </td>
-                      <td className="p-4">
+                      </TableCell>
+                      <TableCell>
                         <div className="flex gap-3 items-center">
                           <UpdateQuotaForm
                             email={user.email!}
@@ -107,15 +121,15 @@ export default async function AdminChatUsagePage() {
                             currentPending={pending}
                           />
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </section>
   );
 }

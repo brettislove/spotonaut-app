@@ -1,11 +1,7 @@
-import ChatInterface from "@/components/chat-interface";
-import CookieBanner from "@/components/cookie-banner";
+"use client";
+
+import HeroSection from "@/components/hero-section";
 
 export default function Home() {
-  return (
-    <>
-      <ChatInterface />
-      <CookieBanner />
-    </>
-  );
+  return <HeroSection />;
 }

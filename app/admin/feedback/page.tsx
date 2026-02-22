@@ -1,6 +1,19 @@
 import { auth } from "@/app/api/auth/[...nextauth]/route";
 import { PrismaClient } from "@prisma/client";
 import { redirect } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ArrowLeft, Star, BarChart3, MessageSquare, Users } from "lucide-react";
+import Link from "next/link";
 
 const prisma = new PrismaClient();
 
@@ -89,11 +102,14 @@ export default async function AdminFeedbackPage() {
       : 0;
 
   // Count by type
-  const typeBreakdown = feedbackList.reduce((acc, f) => {
-    const type = f.feedbackType || "general";
-    acc[type] = (acc[type] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const typeBreakdown = feedbackList.reduce(
+    (acc, f) => {
+      const type = f.feedbackType || "general";
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   // Count by rating (for future use)
   // const ratingBreakdown = feedbackList.reduce(
@@ -118,30 +134,29 @@ export default async function AdminFeedbackPage() {
     return (
       <div className="flex gap-0.5">
         {[1, 2, 3, 4, 5].map((star) => (
-          <svg
+          <Star
             key={star}
-            className={`w-5 h-5 ${
+            className={`w-4 h-4 ${
               star <= rating
-                ? "text-yellow-400 fill-yellow-400"
-                : "text-slate-600 fill-slate-600"
+                ? "fill-yellow-400 text-yellow-400"
+                : "text-muted-foreground"
             }`}
-            viewBox="0 0 20 20"
-          >
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
+          />
         ))}
       </div>
     );
   };
 
-  const getTypeBadgeClass = (type: string | null) => {
+  const getTypeBadgeVariant = (
+    type: string | null,
+  ): "default" | "secondary" | "destructive" | "outline" => {
     switch (type) {
       case "accuracy":
-        return "bg-blue-500/20 text-blue-300 border-blue-500/30";
+        return "default";
       case "chat":
-        return "bg-purple-500/20 text-purple-300 border-purple-500/30";
+        return "secondary";
       default:
-        return "bg-slate-500/20 text-slate-300 border-slate-500/30";
+        return "outline";
     }
   };
 
@@ -157,217 +172,177 @@ export default async function AdminFeedbackPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans relative overflow-hidden">
-      {/* Ambient glow effects */}
-      <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="fixed bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+    <section className="py-16 md:pt-32 md:pb-24">
+      <div className="mx-auto max-w-7xl px-6">
+        <Link href="/admin">
+          <Button variant="ghost" size="sm" className="mb-4">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Zpět na dashboard
+          </Button>
+        </Link>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">
-            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Zpětná vazba
-            </span>
-          </h1>
-          <p className="text-slate-400">
+        <div className="mb-12 md:mb-20">
+          <h1 className="text-4xl font-semibold lg:text-5xl">Zpětná vazba</h1>
+          <p className="text-muted-foreground">
             Přehled zpětné vazby od uživatelů aplikace Spotonaut
           </p>
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {/* Total Feedback */}
-          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-slate-400 text-sm font-medium">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
                 Celkem hodnocení
-              </h3>
-              <svg
-                className="w-5 h-5 text-blue-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-            </div>
-            <p className="text-3xl font-bold text-white">{totalFeedback}</p>
-          </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{totalFeedback}</div>
+            </CardContent>
+          </Card>
 
           {/* Average Rating */}
-          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-slate-400 text-sm font-medium">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <Star className="w-5 h-5" />
                 Průměrné hodnocení
-              </h3>
-              <svg
-                className="w-5 h-5 text-yellow-400"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <p className="text-3xl font-bold text-white">
-                {averageRating.toFixed(1)}
-              </p>
-              <span className="text-slate-400 text-sm">/ 5.0</span>
-            </div>
-          </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-baseline gap-2">
+                <div className="text-3xl font-bold">
+                  {averageRating.toFixed(1)}
+                </div>
+                <span className="text-muted-foreground text-sm">/ 5.0</span>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Type Breakdown */}
-          <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-slate-400 text-sm font-medium">Podle typu</h3>
-              <svg
-                className="w-5 h-5 text-purple-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-                />
-              </svg>
-            </div>
-            <div className="space-y-2">
-              {Object.entries(typeBreakdown).map(([type, count]) => (
-                <div key={type} className="flex items-center justify-between">
-                  <span className="text-slate-300 text-sm">
-                    {getTypeLabel(type)}
-                  </span>
-                  <span className="text-white font-medium">
-                    {count}{" "}
-                    <span className="text-slate-500 text-xs">
-                      ({Math.round((count / totalFeedback) * 100)}%)
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                Podle typu
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {Object.entries(typeBreakdown).map(([type, count]) => (
+                  <div key={type} className="flex items-center justify-between">
+                    <span className="text-sm">{getTypeLabel(type)}</span>
+                    <span className="font-medium">
+                      {count}{" "}
+                      <span className="text-muted-foreground text-xs">
+                        ({Math.round((count / totalFeedback) * 100)}%)
+                      </span>
                     </span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Feedback Table */}
-        <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-800">
-                  <th className="text-left p-4 text-slate-400 font-medium text-sm">
-                    Datum
-                  </th>
-                  <th className="text-left p-4 text-slate-400 font-medium text-sm">
-                    Uživatel
-                  </th>
-                  <th className="text-left p-4 text-slate-400 font-medium text-sm">
-                    Hodnocení
-                  </th>
-                  <th className="text-left p-4 text-slate-400 font-medium text-sm">
-                    Typ
-                  </th>
-                  <th className="text-left p-4 text-slate-400 font-medium text-sm">
-                    Komentář
-                  </th>
-                  <th className="text-left p-4 text-slate-400 font-medium text-sm">
-                    Lokalita
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+        <Card>
+          <CardHeader>
+            <CardTitle>Všechna hodnocení</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Datum</TableHead>
+                  <TableHead>Uživatel</TableHead>
+                  <TableHead>Hodnocení</TableHead>
+                  <TableHead>Typ</TableHead>
+                  <TableHead>Komentář</TableHead>
+                  <TableHead>Lokalita</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {feedbackList.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center p-8 text-slate-500">
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       Zatím nebyla přijata žádná zpětná vazba
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   feedbackList.map((feedback) => (
-                    <tr
-                      key={feedback.id}
-                      className="border-b border-slate-800 hover:bg-slate-800/30 transition-colors"
-                    >
-                      <td className="p-4 text-slate-300 text-sm whitespace-nowrap">
+                    <TableRow key={feedback.id}>
+                      <TableCell className="whitespace-nowrap">
                         {formatDate(feedback.createdAt)}
-                      </td>
-                      <td className="p-4">
+                      </TableCell>
+                      <TableCell>
                         {feedback.user ? (
                           <div>
-                            <div className="text-white text-sm">
+                            <div className="font-medium">
                               {feedback.user.email}
                             </div>
                             {feedback.user.name && (
-                              <div className="text-slate-500 text-xs">
+                              <div className="text-sm text-muted-foreground">
                                 {feedback.user.name}
                               </div>
                             )}
                           </div>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-md bg-slate-700/50 text-slate-400 text-xs">
-                            Anonymní
-                          </span>
+                          <Badge variant="secondary">Anonymní</Badge>
                         )}
-                      </td>
-                      <td className="p-4">{renderStars(feedback.rating)}</td>
-                      <td className="p-4">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${getTypeBadgeClass(
-                            feedback.feedbackType
-                          )}`}
+                      </TableCell>
+                      <TableCell>{renderStars(feedback.rating)}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={getTypeBadgeVariant(feedback.feedbackType)}
                         >
                           {getTypeLabel(feedback.feedbackType)}
-                        </span>
-                      </td>
-                      <td className="p-4 max-w-md">
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-md">
                         {feedback.comment ? (
-                          <p className="text-slate-300 text-sm line-clamp-2">
-                            {feedback.comment}
-                          </p>
+                          <p className="line-clamp-2">{feedback.comment}</p>
                         ) : (
-                          <span className="text-slate-600 text-sm italic">
+                          <span className="text-muted-foreground italic">
                             Bez komentáře
                           </span>
                         )}
-                      </td>
-                      <td className="p-4">
+                      </TableCell>
+                      <TableCell>
                         {feedback.analysis ? (
-                          <div className="text-sm">
-                            <div className="text-white">
+                          <div>
+                            <div className="font-medium">
                               {feedback.analysis.locationName}
                             </div>
-                            <div className="text-slate-500 text-xs truncate max-w-[200px]">
+                            <div className="text-sm text-muted-foreground truncate max-w-[200px]">
                               {feedback.analysis.location}
                             </div>
                           </div>
                         ) : (
-                          <span className="text-slate-600 text-sm">—</span>
+                          <span className="text-muted-foreground">—</span>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </TableBody>
+            </Table>
 
-        {/* Footer note */}
-        {feedbackList.length === 100 && (
-          <div className="mt-4 text-center text-slate-500 text-sm">
-            Zobrazeno posledních 100 hodnocení
-          </div>
-        )}
+            {/* Footer note */}
+            {feedbackList.length === 100 && (
+              <div className="mt-4 text-center text-sm text-muted-foreground">
+                Zobrazeno posledních 100 hodnocení
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </section>
   );
 }

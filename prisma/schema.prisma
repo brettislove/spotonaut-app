@@ -12,15 +12,22 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  password      String? // Nullable for OAuth users
-  emailVerified DateTime?
-  image         String?
-  promoCode     String? // Promo code used at registration
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String?
+  password       String? // Nullable for OAuth users
+  emailVerified  DateTime?
+  image          String?
+  promoCode      String? // Promo code used at registration
+  tier           Int       @default(0) // 0=Sonda (Free), 1=Raketa (Paid), 2=Modul (Enterprise)
+  maxCredits     Int? // NULL = unlimited (∞), otherwise specific credit limit
+  usedCredits    Int       @default(0) // Credits consumed by the user
+  creditsResetAt DateTime? // When credits reset for renewable tiers (e.g., monthly)
+  utmSource      String?   @map("utm_source") // First-touch UTM: where this user originally came from
+  utmMedium      String?   @map("utm_medium") // First-touch UTM: channel type (social, print, cpc...)
+  utmCampaign    String?   @map("utm_campaign") // First-touch UTM: campaign name (vending_expo_warsaw...)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   accounts            Account[]
   analyses            Analysis[]
@@ -93,6 +100,8 @@ model Analysis {
   coordinates           Json? // { lat: number, lng: number }
   metrics               Json // { localityScore, footfallScore, recommendedHours }
   groundingSources      Json? // [{ placeId, title, uri }] from Google Maps grounding
+  groundedLocationData  Json? // Full grounded location data (competitors, footfallProxies, etc.)
+  chatMessages          Json? // Chat history messages for saved analysis
   usedMapsGrounding     Boolean  @default(false)
   businessType          String? // Type of business being analyzed
   operatingHours        Int? // Hours per day
@@ -101,6 +110,7 @@ model Analysis {
   errorMessage          String? // Error message if failed
   processingTimeMs      Int? // Total processing time in milliseconds
   apiResponseTimeMs     Int? // Google AI API response time in milliseconds
+  isSavedAnalysis       Boolean  @default(false) // Whether this is a user-saved analysis
   createdAt             DateTime @default(now())
 
   user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -111,6 +121,7 @@ model Analysis {
   @@index([createdAt, userId])
   @@index([businessType])
   @@index([completedSuccessfully])
+  @@index([userId, isSavedAnalysis])
   @@map("analyses")
 }
 
@@ -187,6 +198,28 @@ model PageView {
   @@index([path])
   @@index([country])
   @@map("page_views")
+}
+
+// Visit tracking for UTM attribution and marketing funnel analysis
+model Visit {
+  id          String   @id @default(cuid())
+  sessionId   String // Browser session identifier for grouping visits
+  anonymousId String // Anonymized IP + fingerprint hash
+  visitedUrl  String // Page path the visitor landed on
+  referrer    String? // Document referrer
+  country     String? // Country from IP geolocation
+  region      String? // Region from IP geolocation
+  deviceType  String? // mobile, tablet, desktop
+  utmSource   String?  @map("utm_source")
+  utmMedium   String?  @map("utm_medium")
+  utmCampaign String?  @map("utm_campaign")
+  createdAt   DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@index([utmSource])
+  @@index([utmCampaign])
+  @@map("visits")
 }
 
 // User event tracking (form interactions, modal opens, etc.)

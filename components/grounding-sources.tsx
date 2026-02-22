@@ -36,7 +36,7 @@ export const renderSourceLink = (source: { title: string; uri: string }) => {
             : (() => {
                 try {
                   return new URL(source.uri).hostname;
-                } catch (e) {
+                } catch {
                   return source.title || "Source";
                 }
               })()}

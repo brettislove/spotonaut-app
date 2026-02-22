@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
           error: "Pro pokračování v konverzaci se musíte přihlásit",
           requiresAuth: true,
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
         { error: "Messages array is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
           error:
             "Grounded location data is required. Please complete an analysis first.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       if (usage && usage.quota !== null && usage.promptCount >= usage.quota) {
         return NextResponse.json(
           { error: "Chat prompt limit exceeded", limitExceeded: true },
-          { status: 403 }
+          { status: 403 },
         );
       }
     }
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     if (!lastMessage || !lastMessage.content) {
       return NextResponse.json(
         { error: "Invalid message format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
         {
           error: `Zpráva je příliš dlouhá (${lastMessage.content.length} znaků). Maximální délka je ${MAX_MESSAGE_LENGTH} znaků.`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -107,13 +107,14 @@ export async function POST(request: NextRequest) {
       console.log("Using Pro model with stored grounded location data");
       const proResult = await generateProChatWithGrounding({
         messages: messages.map((msg: { role: string; content: string }) => ({
-          role: msg.role === "user" ? "user" : "model",
+          role: msg.role,
           content: msg.content,
         })),
         groundedLocation: groundedLocationData as GroundedLocationData,
       });
 
       const text = proResult.text;
+      const suggestions = proResult.suggestions;
       // Extract sources from the grounded location data if available
       const groundingSources: Array<{ title: string; uri: string }> = [];
       if (groundedLocationData.primaryMapsUrl) {
@@ -128,6 +129,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         message: text || "Omlouváme se, nepodařilo se vygenerovat odpověď.",
         sources: groundingSources,
+        suggestions: suggestions,
       });
     } catch (proError) {
       console.error("Pro chat with grounding failed:", proError);
@@ -139,7 +141,7 @@ export async function POST(request: NextRequest) {
               ? proError.message
               : "Unknown error occurred",
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
   } catch (error) {
@@ -151,7 +153,7 @@ export async function POST(request: NextRequest) {
         error: "Failed to process message",
         details: errorMessage,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

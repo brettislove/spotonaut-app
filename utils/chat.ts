@@ -1,5 +1,25 @@
+import type { MessageType } from "@/lib/types/chat";
+
+/**
+ * Utility to show too many requests message
+ * @param setMessages
+ * @returns void
+ */
+const tooManyRequestsMessage = (
+  setMessages: React.Dispatch<React.SetStateAction<MessageType[]>>,
+) => {
+  const rateLimitMessage: MessageType = {
+    id: Date.now().toString(),
+    role: "assistant",
+    content:
+      "Příliš mnoho požadavků. Prosím, zkuste to znovu za chvíli. Maximální počet dotazů je 5 za minutu.",
+    timestamp: new Date(),
+  };
+  setMessages((prev) => [...prev, rateLimitMessage]);
+};
+
 // Utility to handle feedback on messages
-export const handleFeedback = (
+const handleFeedback = (
   id: string,
   type: "up" | "down",
   setFeedbackMap: React.Dispatch<
@@ -13,17 +33,24 @@ export const handleFeedback = (
 };
 
 // Utility to scroll to bottom of chat
-export const scrollToBottom = (
+const scrollToBottom = (
   messagesEndRef: React.RefObject<HTMLDivElement | null>,
 ) => {
   messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 };
 
 // Utility to show authentication modal
-export const showAuthModalAction = (
+const showAuthModalAction = (
   setAuthModalMode: React.Dispatch<React.SetStateAction<"login" | "signup">>,
   setShowAuthModal: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
   setAuthModalMode("login");
   setShowAuthModal(true);
+};
+
+export {
+  tooManyRequestsMessage,
+  handleFeedback,
+  scrollToBottom,
+  showAuthModalAction,
 };

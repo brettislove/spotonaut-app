@@ -7,34 +7,22 @@ import {
   archiveOldRecordsIfNeeded,
   type GroundingSource,
 } from "@/lib/google-ai/usage";
-import type { BusinessType } from "@/lib/constants/business-types";
 import {
   getGroundedLocationDataWithFlash,
   generateProAnalysisWithGroundingStream,
   type BusinessAnalysisMetrics,
   type GroundedLocationData,
 } from "@/lib/google-ai/location-analysis";
-import type { ProgressStep } from "@/components/analysis-progress";
+import type { ProgressStep } from "@/lib/types/analysis";
 import {
   anonymizeIP,
   extractIPFromHeaders,
 } from "@/lib/security/ip-anonymization";
 import { runAggregationsIfNeeded } from "@/lib/analytics/aggregation";
 import { runCleanupIfNeeded } from "@/lib/analytics/retention";
+import type { AnalysisRequest } from "@/lib/types/analysis";
 
 const prisma = new PrismaClient();
-
-interface AnalysisRequest {
-  location: string;
-  businessType: BusinessType;
-  operatingHours: number;
-  timeframe: "day" | "week" | "month" | "year";
-  fingerprint?: string;
-  coordinates?: {
-    lat: number;
-    lon: number;
-  };
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,21 +53,16 @@ export async function POST(request: NextRequest) {
               "Dosáhli jste limitu pro anonymní analýzy. Zaregistrujte se pro neomezený přístup.",
             requiresAuth: true,
           },
-          { status: 403 }
+          { status: 403 },
         );
       }
     }
 
     // Validate required fields
-    if (
-      !data.location ||
-      !data.businessType ||
-      !data.operatingHours ||
-      !data.timeframe
-    ) {
+    if (!data.location || !data.businessType) {
       return NextResponse.json(
         { error: "Všechna pole jsou povinná" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -87,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     // Run archive check opportunistically (non-blocking)
     archiveOldRecordsIfNeeded(prisma).catch((err) =>
-      console.error("Archive check failed:", err)
+      console.error("Archive check failed:", err),
     );
 
     // Run aggregation and cleanup opportunistically (non-blocking)
@@ -108,6 +91,11 @@ export async function POST(request: NextRequest) {
         // attempting to enqueue after close which throws ERR_INVALID_STATE.
         let streamClosed = false;
 
+        /**
+         * Safely enqueue a payload to the stream controller.
+         * @param payload The data to enqueue.
+         * @returns void
+         */
         const safeEnqueue = (payload: Uint8Array) => {
           if (streamClosed) return;
           try {
@@ -120,19 +108,27 @@ export async function POST(request: NextRequest) {
           }
         };
 
+        /**
+         * Send progress update to the client.
+         * @param step The current progress step.
+         */
         const sendProgress = (step: ProgressStep) => {
           safeEnqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ type: "progress", step })}\n\n`
-            )
+              `data: ${JSON.stringify({ type: "progress", step })}\n\n`,
+            ),
           );
         };
 
+        /**
+         * Send a chunk of text to the client.
+         * @param text The text to send.
+         */
         const sendChunk = (text: string) => {
           safeEnqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ type: "chunk", text })}\n\n`
-            )
+              `data: ${JSON.stringify({ type: "chunk", text })}\n\n`,
+            ),
           );
         };
 
@@ -211,7 +207,7 @@ export async function POST(request: NextRequest) {
               // Increment quota usage if Maps was used
               if (usedMapsGrounding) {
                 incrementGlobalMapsUsage(prisma).catch((err) =>
-                  console.error("Failed to increment Maps usage:", err)
+                  console.error("Failed to increment Maps usage:", err),
                 );
               }
             } catch (error) {
@@ -274,13 +270,13 @@ export async function POST(request: NextRequest) {
                 `${request.nextUrl.origin}/api/real-estate-listings?` +
                   `lat=${coordinates.lat}&lng=${coordinates.lng}&` +
                   `radius=1000&businessType=${encodeURIComponent(
-                    data.businessType.type
+                    data.businessType.type,
                   )}`,
                 {
                   headers: {
                     "User-Agent": "Spotonaut-Internal/1.0",
                   },
-                }
+                },
               );
 
               if (realEstateResponse.ok) {
@@ -292,13 +288,13 @@ export async function POST(request: NextRequest) {
                   groundedLocation.availableProperties =
                     realEstateData.listings;
                   console.log(
-                    `Found ${realEstateData.listings.length} real estate listings`
+                    `Found ${realEstateData.listings.length} real estate listings`,
                   );
                 }
               } else {
                 console.warn(
                   "Real estate API returned error:",
-                  realEstateResponse.status
+                  realEstateResponse.status,
                 );
               }
             } catch (error) {
@@ -323,8 +319,6 @@ export async function POST(request: NextRequest) {
           const analysisStream = generateProAnalysisWithGroundingStream({
             location: data.location,
             businessType: data.businessType,
-            operatingHours: data.operatingHours,
-            timeframe: data.timeframe,
             groundedLocation,
           });
 
@@ -358,9 +352,26 @@ export async function POST(request: NextRequest) {
           const apiResponseTimeMs =
             apiEndTime > 0 ? apiEndTime - apiStartTime : null;
 
-          // Save analysis to database (non-blocking)
-          prisma.analysis
-            .create({
+          // Save analysis to database
+          let analysisId: string | null = null;
+          try {
+            // Build initial chat message from the analysis text
+            const initialChatMessages = fullText
+              ? [
+                  {
+                    id: Date.now().toString(),
+                    role: "assistant" as const,
+                    content: fullText,
+                    timestamp: new Date().toISOString(),
+                    sources: sources.map((s) => ({
+                      title: s.title,
+                      uri: s.uri,
+                    })),
+                  },
+                ]
+              : undefined;
+
+            const savedAnalysis = await prisma.analysis.create({
               data: {
                 userId: session?.user?.id || null,
                 locationName,
@@ -372,17 +383,22 @@ export async function POST(request: NextRequest) {
                   sources.length > 0
                     ? JSON.parse(JSON.stringify(sources))
                     : undefined,
+                groundedLocationData: groundedLocation
+                  ? JSON.parse(JSON.stringify(groundedLocation))
+                  : undefined,
+                chatMessages: initialChatMessages
+                  ? JSON.parse(JSON.stringify(initialChatMessages))
+                  : undefined,
                 businessType: data.businessType.type,
-                operatingHours: data.operatingHours,
-                timeframe: data.timeframe,
                 completedSuccessfully: true,
                 processingTimeMs,
                 apiResponseTimeMs,
               },
-            })
-            .catch((dbError) => {
-              console.error("Failed to save analysis:", dbError);
             });
+            analysisId = savedAnalysis.id;
+          } catch (dbError) {
+            console.error("Failed to save analysis:", dbError);
+          }
 
           // Update anonymous usage tracking (non-blocking)
           if (!session && data.fingerprint && ip !== "unknown") {
@@ -419,6 +435,7 @@ export async function POST(request: NextRequest) {
               encoder.encode(
                 `data: ${JSON.stringify({
                   type: "done",
+                  analysisId,
                   analysis:
                     fullText ||
                     "Omlouváme se, nepodařilo se vygenerovat analýzu.",
@@ -431,8 +448,9 @@ export async function POST(request: NextRequest) {
                   sources,
                   usedMapsGrounding,
                   groundedLocationData: groundedLocation,
-                })}\n\n`
-              )
+                  businessType: data.businessType.type,
+                })}\n\n`,
+              ),
             );
           } finally {
             // Close the controller if not already considered closed.
@@ -441,7 +459,7 @@ export async function POST(request: NextRequest) {
             } catch (err) {
               console.warn(
                 "Failed to close controller (already closed?):",
-                err
+                err,
               );
             }
             streamClosed = true;
@@ -469,8 +487,6 @@ export async function POST(request: NextRequest) {
                 },
                 usedMapsGrounding: false,
                 businessType: data.businessType.type,
-                operatingHours: data.operatingHours,
-                timeframe: data.timeframe,
                 completedSuccessfully: false,
                 errorMessage,
                 processingTimeMs,
@@ -489,8 +505,8 @@ export async function POST(request: NextRequest) {
                   type: "error",
                   error: "Nepodařilo se zpracovat analýzu",
                   details: errorMessage,
-                })}\n\n`
-              )
+                })}\n\n`,
+              ),
             );
           } finally {
             try {
@@ -520,7 +536,7 @@ export async function POST(request: NextRequest) {
         error: "Nepodařilo se zpracovat analýzu",
         details: errorMessage,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

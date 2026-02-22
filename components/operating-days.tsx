@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
@@ -71,14 +71,9 @@ export default function OperatingDays({
     setHours((prev) => {
       const isActive = !!prev[key];
       const next = { ...prev };
-      next[key] = isActive ? 0 : DEFAULTS[key] ?? 8;
+      next[key] = isActive ? 0 : (DEFAULTS[key] ?? 8);
       return next;
     });
-  };
-
-  const setDayHours = (key: DayKey, value: number) => {
-    const v = Math.max(0, Math.min(24, Math.round(value || 0)));
-    setHours((prev) => ({ ...prev, [key]: v }));
   };
 
   return (
