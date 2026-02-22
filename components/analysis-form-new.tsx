@@ -10,7 +10,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -65,7 +64,6 @@ export default function AnalysisFormNew({
     hasCompletedAnalysis,
     resetAnalysis,
     clearRestoredState,
-    markOverwriteConfirmed,
   } = useAnalysis();
   const [locationInput, setLocationInput] = React.useState("");
   const [fullLocationData, setFullLocationData] =
@@ -120,7 +118,6 @@ export default function AnalysisFormNew({
 
   function handleConfirmNewAnalysis() {
     if (pendingFormData) {
-      markOverwriteConfirmed(); // Mark that user already confirmed overwrite
       resetAnalysis();
       clearRestoredState();
       setShowConfirmDialog(false);
@@ -133,9 +130,7 @@ export default function AnalysisFormNew({
     <>
       <Card className="w-full max-w-xl mx-auto bg-gradient-to-br from-primary-900/60 via-slate-900/70 to-secondar-900/60 backdrop-blur-sm border border-slate-700/60 shadow-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">
-            Vstupní formulář
-          </CardTitle>
+          <CardTitle className="text-2xl text-center">Data k analýze</CardTitle>
           <CardDescription className="text-center mt-2">
             Vyplňte základní informace o vašem podnikání potřebné pro analýzu.
           </CardDescription>
@@ -219,6 +214,26 @@ export default function AnalysisFormNew({
                   )}
                 />
               </FieldGroup>
+              <div className="mt-6">
+                <Field
+                  orientation="horizontal"
+                  className="w-full justify-center gap-2"
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => form.reset()}
+                  >
+                    Vymazat
+                  </Button>
+                  <ShimmerButton
+                    type="submit"
+                    className="cursor-pointer bg-secondary text-black"
+                  >
+                    Spustit analýzu
+                  </ShimmerButton>
+                </Field>
+              </div>
             </form>
           ) : (
             <ChainOfThought defaultOpen>
@@ -268,29 +283,6 @@ export default function AnalysisFormNew({
             </ChainOfThought>
           )}
         </CardContent>
-        <CardFooter>
-          <Field
-            orientation="horizontal"
-            className="w-full justify-center gap-2"
-          >
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => form.reset()}
-              hidden={isAnalyzing}
-            >
-              Vymazat
-            </Button>
-            <ShimmerButton
-              type="submit"
-              form="analysis-form"
-              className="cursor-pointer bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800"
-              hidden={isAnalyzing}
-            >
-              Spustit analýzu
-            </ShimmerButton>
-          </Field>
-        </CardFooter>
       </Card>
 
       <ConfirmDialog

@@ -8,20 +8,36 @@ export default function AnalysisDialogs() {
     showMigrationDialog,
     setShowMigrationDialog,
     showOverwriteDialog,
-    setShowOverwriteDialog,
     confirmOverwriteAndSave,
+    dismissOverwriteDialog,
     loadFromDatabase,
     resetAnalysis,
+    fingerprint,
   } = useAnalysis();
+
+  // Clean up fingerprint localStorage data after migration is handled
+  const cleanupFingerprintData = () => {
+    if (fingerprint) {
+      try {
+        localStorage.removeItem(`analysis_${fingerprint}`);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+  };
 
   // Handle migration dialog - user has local analysis and existing DB analysis
   const handleMigrationConfirm = async () => {
     setShowMigrationDialog(false);
     await confirmOverwriteAndSave();
+    // Clean up fingerprint data after successful migration
+    cleanupFingerprintData();
   };
 
   const handleMigrationKeepExisting = async () => {
     setShowMigrationDialog(false);
+    // Clean up fingerprint localStorage data so migration dialog doesn't re-appear
+    cleanupFingerprintData();
     // Clear local state and load from database instead
     resetAnalysis();
     await loadFromDatabase();
@@ -33,7 +49,9 @@ export default function AnalysisDialogs() {
   };
 
   const handleOverwriteCancel = () => {
-    setShowOverwriteDialog(false);
+    // Properly dismiss: reset isNewlyCompletedAnalysis flag to prevent
+    // the auto-save effect from re-firing and showing the dialog again
+    dismissOverwriteDialog();
   };
 
   return (

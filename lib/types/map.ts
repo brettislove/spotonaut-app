@@ -1,9 +1,8 @@
-import { LatLngExpression } from "leaflet";
 import { GroundedLocationData } from "../google-ai/location-analysis";
-import React from "react";
 
 interface MapContentProps {
-  position: LatLngExpression;
+  /** Center coordinates as [longitude, latitude] (MapLibre convention) */
+  center: [number, number];
   location: string;
   groundedLocationData?: GroundedLocationData;
   filterState?: Record<string, boolean>;

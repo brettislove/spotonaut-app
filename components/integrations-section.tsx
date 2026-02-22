@@ -1,11 +1,4 @@
-import {
-  Gemini,
-  Replit,
-  MagicUI,
-  VSCodium,
-  MediaWiki,
-  GooglePaLM,
-} from "@/components/logos";
+import { Gemini, VSCodium, GooglePaLM } from "@/components/logos";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -110,7 +103,7 @@ export default function IntegrationsSection() {
               </p>
 
               <Button variant="default" size="sm" asChild>
-                <Link href="/">Vyzkoušet zdarma</Link>
+                <Link href="/#analysis-form">Vyzkoušet zdarma</Link>
               </Button>
             </div>
           </div>

@@ -48,7 +48,6 @@ import { useRateLimit } from "@/lib/hooks/useRateLimit";
 import { AnalysisData } from "@/lib/types/analysis";
 import { Button } from "../ui/button";
 import { ConfirmDialog } from "../ui/confirm-dialog";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import RequestMorePromptsModalNew from "../request-more-prompts-modal-new";
 import type { MessageType } from "@/lib/types/chat";
@@ -60,21 +59,16 @@ export default function ChatPanel({
   analysisData: AnalysisData;
   className?: string;
 }) {
-  const {
-    messages,
-    setMessages,
-    resetAnalysis,
-    clearRestoredState,
-    setShowLoginModal,
-  } = useAnalysis();
+  const { messages, setMessages, setShowLoginModal } = useAnalysis();
   const { checkRateLimit } = useRateLimit();
   const { data: session } = useSession();
-  const router = useRouter();
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [disliked, setDisliked] = useState<Record<string, boolean>>({});
   const [promptInputText, setPromptInputText] = useState("");
-  const [showNewAnalysisConfirmDialog, setShowNewAnalysisConfirmDialog] =
-    useState(false);
+  const [
+    showNewAnalysisAfterSignupConfirmDialog,
+    setShowNewAnalysisAfterSignupConfirmDialog,
+  ] = useState(false);
   const [showChatAccessModal, setShowChatAccessModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [status, setStatus] = useState<
@@ -86,14 +80,11 @@ export default function ChatPanel({
   };
 
   const handleNewAnalysis = () => {
-    setShowNewAnalysisConfirmDialog(true);
+    setShowNewAnalysisAfterSignupConfirmDialog(true);
   };
 
   const handleConfirmNewAnalysis = () => {
-    resetAnalysis();
-    clearRestoredState();
-    setShowNewAnalysisConfirmDialog(false);
-    router.push("/");
+    setShowLoginModal(true);
   };
 
   // Get suggestions from the last assistant message - to show only the latest ones
@@ -130,9 +121,6 @@ export default function ChatPanel({
       content: text,
       timestamp: new Date(),
     };
-
-    // Append user message to conversation
-    // setMessages((prev) => [...prev, userMessage]);
 
     try {
       // Claim a prompt for this user (server-side lifetime quota) BEFORE appending the user's message
@@ -206,10 +194,12 @@ export default function ChatPanel({
             <CardDescription>Chatujte s naším AI asistentem.</CardDescription>
           </div>
           {/* Add button to start new analysis */}
-          <Button onClick={handleNewAnalysis}>
-            <Plus className="size-4" />
-            Nová analýza
-          </Button>
+          {!session && (
+            <Button onClick={handleNewAnalysis}>
+              <Plus className="size-4" />
+              Nová analýza
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="flex-1 min-h-0 flex flex-col">
           <Conversation className="flex-1">
@@ -335,10 +325,10 @@ export default function ChatPanel({
       </Card>
 
       <ConfirmDialog
-        open={showNewAnalysisConfirmDialog}
-        onOpenChange={setShowNewAnalysisConfirmDialog}
-        title="Začít novou analýzu?"
-        description="Spuštěním nové analýzy bude stávající analýza odstraněna. Chcete pokračovat?"
+        open={showNewAnalysisAfterSignupConfirmDialog}
+        onOpenChange={setShowNewAnalysisAfterSignupConfirmDialog}
+        title="Je nutné se přihlásit"
+        description="Pro zahájení nové analýzy je nutné se přihlásit. Chcete pokračovat?"
         onConfirm={handleConfirmNewAnalysis}
       />
       <ConfirmDialog

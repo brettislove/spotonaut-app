@@ -6,6 +6,7 @@ const ButtonHeartbeat = ({
   InnerText,
   variant = "default",
   className = "",
+  onClick,
   ...props
 }: {
   size?:
@@ -22,18 +23,20 @@ const ButtonHeartbeat = ({
   InnerText: string;
   variant?: "default" | "outline" | "ghost" | "link" | "destructive";
   className?: string;
+  onClick?: () => void;
 }) => {
+  const content = <span className="text-nowrap">{InnerText}</span>;
+
   return (
     <Button
       size={size}
       variant={variant}
       className={`animate-heartbeat ${className}`}
       style={{ "--heartbeat-color": "var(--primary)" } as React.CSSProperties}
+      onClick={onClick}
       {...props}
     >
-      <Link href="#link">
-        <span className="text-nowrap">{InnerText}</span>
-      </Link>
+      {onClick ? content : <Link href="#link">{content}</Link>}
     </Button>
   );
 };

@@ -74,7 +74,7 @@ interface AnalysisContextType {
   migrateLocalStorageToDatabase: () => Promise<boolean>;
   checkExistingDatabaseAnalysis: () => Promise<boolean>;
   confirmOverwriteAndSave: () => Promise<boolean>;
-  markOverwriteConfirmed: () => void;
+  dismissOverwriteDialog: () => void;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(
@@ -93,7 +93,13 @@ interface PersistedState {
   showMapView: boolean;
 }
 
-export function AnalysisProvider({ children }: { children: ReactNode }) {
+export function AnalysisProvider({
+  children,
+  skipRestore = false,
+}: {
+  children: ReactNode;
+  skipRestore?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const { data: session, status: sessionStatus } = useSession();
@@ -109,6 +115,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const isNewlyCompletedAnalysis = useRef(false);
   const prevIsAnalyzingRef = useRef(false);
   const hasUserConfirmedOverwrite = useRef(false);
+  const hasMigrationBeenHandled = useRef(false);
 
   // State
   const [messages, setMessages] = useState<Message[]>([]);
@@ -140,9 +147,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Get storage key based on user authentication
+  // Only anonymous users use localStorage - authenticated users use database exclusively
   const getStorageKey = useCallback(() => {
     if (session?.user?.email) {
-      return `analysis_${session.user.email}`;
+      // Authenticated users should never read/write localStorage for analysis data
+      return null;
     }
     if (fingerprint) {
       return `analysis_${fingerprint}`;
@@ -150,9 +159,12 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     return null;
   }, [session, fingerprint]);
 
-  // Load persisted state on mount
+  // Load persisted state on mount (ONLY for non-authenticated users)
   useEffect(() => {
-    if (!fingerprint && !session?.user?.email) return;
+    if (skipRestore) return; // Skip restoration when viewing a specific analysis
+    // Authenticated users get data from the database, not localStorage
+    if (session?.user?.email) return;
+    if (!fingerprint) return;
     if (restoredState) return; // Already loaded
 
     const storageKey = getStorageKey();
@@ -175,28 +187,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      let stored = localStorage.getItem(storageKey);
-
-      // If user just authenticated, try to find data from fingerprint storage
-      if (!stored && session?.user?.email && fingerprint) {
-        const fingerprintKey = `analysis_${fingerprint}`;
-        stored = localStorage.getItem(fingerprintKey);
-
-        // If found, migrate to email-based key and clean up old one
-        if (stored) {
-          localStorage.setItem(storageKey, stored);
-          localStorage.removeItem(fingerprintKey);
-        }
-      }
-
-      // Don't restore if user is logged out but data belongs to a logged-in user
-      if (stored && !session?.user?.email) {
-        // Check if this is email-based storage (belongs to logged-in user)
-        if (storageKey.startsWith("analysis_") && storageKey.includes("@")) {
-          // This is email-based storage, don't restore for logged-out users
-          return;
-        }
-      }
+      const stored = localStorage.getItem(storageKey);
 
       if (stored) {
         const parsed: PersistedState = JSON.parse(stored);
@@ -208,7 +199,13 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Failed to restore analysis state:", error);
     }
-  }, [fingerprint, session?.user?.email, getStorageKey, restoredState]);
+  }, [
+    fingerprint,
+    session?.user?.email,
+    getStorageKey,
+    restoredState,
+    skipRestore,
+  ]);
 
   // Apply restored state once available
   useEffect(() => {
@@ -234,6 +231,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
 
   // Persist state changes to localStorage (only for non-authenticated users)
   useEffect(() => {
+    if (skipRestore) return; // Don't persist when viewing a specific analysis
     // Skip localStorage persistence for authenticated users - they use database
     if (session?.user?.email) return;
     if (!fingerprint) return;
@@ -431,6 +429,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
           groundedLocationData: parsed.analysisData.groundedLocationData,
           chatMessages: parsed.messages,
           usedMapsGrounding: !!parsed.analysisData.groundedLocationData,
+          businessType: parsed.analysisData.businessType || null,
         };
 
         const response = await fetch("/api/analysis/saved", {
@@ -474,14 +473,25 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     }
   }, [migrateLocalStorageToDatabase, saveToDatabase]);
 
+  // Dismiss overwrite dialog and suppress further auto-save attempts for this analysis
+  const dismissOverwriteDialog = useCallback(() => {
+    setShowOverwriteDialog(false);
+    // Reset the flag so auto-save doesn't re-fire
+    isNewlyCompletedAnalysis.current = false;
+    // Mark as "saved" to fully suppress future auto-save attempts
+    setIsSavedToDatabase(true);
+  }, []);
+
   // Auto-save to database when analysis completes (for authenticated users)
   useEffect(() => {
+    if (skipRestore) return; // Don't auto-save when viewing a specific analysis
     if (!session?.user?.email) return;
     if (!hasCompletedAnalysis || !analysisData) return;
     if (isSavedToDatabase) return; // Already saved
     if (isAnalyzing) return; // Still analyzing
     if (isLoadingFromDatabaseRef.current) return; // Don't auto-save when loading from DB
     if (!isNewlyCompletedAnalysis.current) return; // Only auto-save newly completed analyses, not restored ones
+    if (showOverwriteDialog) return; // Don't re-fire while dialog is already shown
 
     // Check if there's an existing analysis and show overwrite dialog
     const autoSave = async () => {
@@ -507,12 +517,15 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     analysisData,
     isSavedToDatabase,
     isAnalyzing,
+    showOverwriteDialog,
     checkExistingDatabaseAnalysis,
     saveToDatabase,
+    skipRestore,
   ]);
 
   // Handle login/signup: check for LocalStorage data to migrate or load from DB
   useEffect(() => {
+    if (skipRestore) return; // Don't migrate/load when viewing a specific analysis
     // Only run when session changes from unauthenticated to authenticated
     if (sessionStatus !== "authenticated") return;
     if (!session?.user?.email) return;
@@ -523,6 +536,15 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     prevSessionRef.current = session;
 
     const handleLoginMigration = async () => {
+      // Clean up any stale email-based localStorage keys from previous implementation
+      if (session?.user?.email) {
+        try {
+          localStorage.removeItem(`analysis_${session.user.email}`);
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
+
       // Check if there's LocalStorage data from fingerprint to migrate
       if (fingerprint) {
         const fingerprintKey = `analysis_${fingerprint}`;
@@ -532,21 +554,13 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
           try {
             const parsed: PersistedState = JSON.parse(localData);
             if (parsed.hasCompletedAnalysis && parsed.analysisData) {
-              // Check if user already has a saved analysis in DB
-              const hasExisting = await checkExistingDatabaseAnalysis();
-
-              if (hasExisting) {
-                // Store pending data and show migration dialog
-                pendingSaveData.current = parsed;
-                setShowMigrationDialog(true);
-              } else {
-                // No existing analysis, migrate directly
-                await migrateLocalStorageToDatabase();
-              }
+              // migrate directly
+              await migrateLocalStorageToDatabase();
               return;
             }
           } catch {
-            // Invalid localStorage data, ignore
+            // Invalid localStorage data, clean it up
+            localStorage.removeItem(fingerprintKey);
           }
         }
       }
@@ -556,19 +570,14 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     };
 
     handleLoginMigration();
-  }, [
-    session,
-    sessionStatus,
-    fingerprint,
-    checkExistingDatabaseAnalysis,
-    migrateLocalStorageToDatabase,
-    loadFromDatabase,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.email, sessionStatus, fingerprint, skipRestore]);
 
   // Reset the login check flag when user logs out
   useEffect(() => {
     if (sessionStatus === "unauthenticated") {
       hasCheckedDatabaseOnLogin.current = false;
+      hasMigrationBeenHandled.current = false;
       prevSessionRef.current = null;
       setIsSavedToDatabase(false);
       setHasExistingDatabaseAnalysis(false);
@@ -608,11 +617,6 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     resetAnalysis();
     router.push("/");
   }, [resetAnalysis, router]);
-
-  // Mark that user has confirmed overwrite (called from form before starting analysis)
-  const markOverwriteConfirmed = useCallback(() => {
-    hasUserConfirmedOverwrite.current = true;
-  }, []);
 
   // Track pathname changes (for potential future use)
   useEffect(() => {
@@ -738,7 +742,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     migrateLocalStorageToDatabase,
     checkExistingDatabaseAnalysis,
     confirmOverwriteAndSave,
-    markOverwriteConfirmed,
+    dismissOverwriteDialog,
   };
 
   return (

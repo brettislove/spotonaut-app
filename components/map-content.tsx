@@ -1,350 +1,375 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import L from "leaflet";
-
-// Import Leaflet CSS
-import "leaflet/dist/leaflet.css";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Map,
+  useMap,
+  MapMarker,
+  MarkerContent,
+  MarkerPopup,
+  MapControls,
+} from "@/components/ui/map";
 import { MapContentProps } from "@/lib/types/map";
+import { Mountain, RotateCcw } from "lucide-react";
 
-// Component to trigger map invalidation
-function MapInvalidator() {
-  const map = useMap();
+// ── Marker color helper ──────────────────────────────────────────────
+function getMarkerColor(type: string) {
+  switch (type) {
+    case "competitors":
+      return "#ef4444";
+    case "transit":
+      return "#3b82f6";
+    case "shopping":
+      return "#10b981";
+    case "office":
+      return "#8b5cf6";
+    case "residential":
+      return "#f59e0b";
+    case "availableProperties":
+      return "#ec4899";
+    default:
+      return "#6b7280";
+  }
+}
+
+// ── 3D Tilt toggle (child of Map) ────────────────────────────────────
+const STYLE_3D = "https://tiles.openfreemap.org/styles/liberty";
+const STYLE_2D_LIGHT =
+  "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+
+function TiltToggle() {
+  const { map, isLoaded } = useMap();
+  const [is3D, setIs3D] = useState(false);
+
+  const toggle = useCallback(() => {
+    if (!map) return;
+    const next = !is3D;
+    setIs3D(next);
+
+    map.setStyle(next ? STYLE_3D : STYLE_2D_LIGHT);
+    map.easeTo({
+      pitch: next ? 60 : 0,
+      bearing: next ? -20 : 0,
+      duration: 1000,
+    });
+  }, [map, is3D]);
+
+  if (!isLoaded) return null;
+
+  return (
+    <button
+      onClick={toggle}
+      className="absolute bottom-2 left-2 z-10 flex items-center gap-1.5 rounded-md border border-border bg-background/90 px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur hover:bg-accent transition-colors cursor-pointer"
+    >
+      {is3D ? (
+        <>
+          <RotateCcw className="size-3.5" /> 2D
+        </>
+      ) : (
+        <>
+          <Mountain className="size-3.5" /> 3D
+        </>
+      )}
+    </button>
+  );
+}
+
+// ── Globe Animation Component ───────────────────────────────────────
+function GlobeAnimation({ center }: { center: [number, number] }) {
+  const { map, isLoaded } = useMap();
+  const [animatedCenter, setAnimatedCenter] = useState<string | null>(null);
 
   useEffect(() => {
-    // Small delay to ensure DOM is ready
+    if (!map || !isLoaded) return;
+
+    // Create a key from center to detect changes
+    const centerKey = `${center[0]},${center[1]}`;
+
+    // Skip if we've already animated to this location
+    if (animatedCenter === centerKey) return;
+
+    // Store the target location
+    const targetCenter = center;
+    const targetZoom = 15;
+
+    // Reset map to globe view
+    map.jumpTo({
+      center: [targetCenter[0], 0],
+      zoom: 1.5,
+      pitch: 0,
+      bearing: 0,
+    });
+
+    // Start animation after a brief moment to ensure map is fully ready
     const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 100);
+      map.flyTo({
+        center: targetCenter,
+        zoom: targetZoom,
+        duration: 3000, // 3 second animation
+        essential: true,
+        easing: (t) => {
+          // Custom easing for smooth acceleration and deceleration
+          return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        },
+      });
+      setAnimatedCenter(centerKey);
+    }, 300);
 
     return () => clearTimeout(timer);
-  }, [map]);
+  }, [map, isLoaded, center, animatedCenter]);
 
   return null;
 }
 
+// ── Main map content ─────────────────────────────────────────────────
 export default function MapContent({
-  position,
+  center,
   location,
   groundedLocationData,
   filterState,
 }: MapContentProps) {
-  const customIcon = useMemo(
-    () =>
-      L.divIcon({
-        className: "custom-marker",
-        html: `
-        <div style="position: relative;">
-          <div style="
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-            border-radius: 50% 50% 50% 0;
-            transform: rotate(-45deg);
-            border: 3px solid white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          "></div>
-          <div style="
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            width: 16px;
-            height: 16px;
-            background: white;
-            border-radius: 50%;
-            transform: rotate(45deg);
-          "></div>
-        </div>
-      `,
-        iconSize: [40, 40],
-        iconAnchor: [20, 40],
-        popupAnchor: [0, -40],
-      }),
-    [],
-  );
-
-  const createMarkerIcon = useMemo(
-    () => (type: string, color: string) =>
-      L.divIcon({
-        className: "custom-marker",
-        html: `
-      <div style="position: relative;">
-        <div style="
-          width: 30px;
-          height: 30px;
-          background: ${color};
-          border-radius: 50%;
-          border: 2px solid white;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">
-          <div style="
-            width: 12px;
-            height: 12px;
-            background: white;
-            border-radius: 50%;
-            opacity: 0.8;
-          "></div>
-        </div>
-      </div>
-    `,
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-        popupAnchor: [0, -15],
-      }),
-    [],
-  );
-
-  const getMarkerColor = (type: string) => {
-    switch (type) {
-      case "competitors":
-        return "#ef4444"; // red
-      case "transit":
-        return "#3b82f6"; // blue
-      case "shopping":
-        return "#10b981"; // green
-      case "office":
-        return "#8b5cf6"; // purple
-      case "residential":
-        return "#f59e0b"; // yellow
-      case "availableProperties":
-        return "#ec4899"; // pink
-      default:
-        return "#6b7280"; // gray
-    }
-  };
-
   return (
-    <div className="relative h-full w-full overflow-visible">
-      <MapContainer
-        center={position}
-        zoom={15}
-        style={{ height: "100%", width: "100%" }}
-        className="z-0"
-        scrollWheelZoom={true}
+    <div className="relative h-full w-full">
+      <Map
+        theme="light"
+        center={[16.6068, 49.1951]}
+        zoom={1.5}
+        scrollZoom
+        projection={{ type: "globe" }}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          subdomains="abcd"
-          maxZoom={20}
-        />
-        <MapInvalidator />
-        <Marker position={position} icon={customIcon}>
-          <Popup>
-            <div className="text-sm">
-              <strong>{location}</strong>
-            </div>
-          </Popup>
-        </Marker>
+        <GlobeAnimation center={center} />
+        <MapControls showZoom showCompass position="bottom-right" />
+        <TiltToggle />
 
-        {/* Render competitors */}
+        {/* Primary location marker */}
+        <MapMarker longitude={center[0]} latitude={center[1]}>
+          <MarkerContent>
+            <div className="relative">
+              <div
+                className="h-10 w-10 rounded-full rounded-bl-none -rotate-45 border-3 border-white shadow-lg"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                }}
+              />
+              <div className="absolute left-3 top-3 h-4 w-4 rounded-full bg-white rotate-45" />
+            </div>
+          </MarkerContent>
+          <MarkerPopup>
+            <div className="text-sm font-semibold text-foreground">
+              {location}
+            </div>
+          </MarkerPopup>
+        </MapMarker>
+
+        {/* ── Competitors ───────────────────────────────────────── */}
         {(groundedLocationData?.competitors ?? [])
-          .filter(
-            (competitor) => competitor.coordinates && filterState?.competitors,
-          )
-          .map((competitor, index) => {
-            return (
-              <Marker
-                key={`competitor-${index}`}
-                position={[
-                  competitor.coordinates!.lat,
-                  competitor.coordinates!.lng,
-                ]}
-                icon={createMarkerIcon(
-                  "competitors",
-                  getMarkerColor("competitors"),
-                )}
-              >
-                <Popup>
-                  <div className="text-sm max-w-48">
-                    <strong className="text-red-600">{competitor.name}</strong>
-                    {competitor.category && (
-                      <div className="text-gray-600">{competitor.category}</div>
-                    )}
-                    {competitor.rating && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <span>⭐</span>
-                        <span>{competitor.rating.toFixed(1)}</span>
-                        {competitor.userRatingsTotal && (
-                          <span className="text-gray-500">
-                            ({competitor.userRatingsTotal})
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {competitor.distanceMeters && (
-                      <div className="text-gray-500 text-xs mt-1">
-                        {Math.round(competitor.distanceMeters)}m daleko
-                      </div>
-                    )}
-                    {competitor.address && (
-                      <div className="text-gray-600 text-xs mt-1">
-                        {competitor.address}
-                      </div>
-                    )}
-                    {competitor.mapsUrl && (
+          .filter((c) => c.coordinates && filterState?.competitors)
+          .map((competitor, index) => (
+            <MapMarker
+              key={`competitor-${index}`}
+              longitude={competitor.coordinates!.lng}
+              latitude={competitor.coordinates!.lat}
+            >
+              <MarkerContent>
+                <div
+                  className="h-7 w-7 rounded-full border-2 border-white shadow-md flex items-center justify-center"
+                  style={{ background: getMarkerColor("competitors") }}
+                >
+                  <div className="h-3 w-3 rounded-full bg-white/80" />
+                </div>
+              </MarkerContent>
+              <MarkerPopup className="max-w-48">
+                <div className="text-sm space-y-1">
+                  <strong className="text-red-600">{competitor.name}</strong>
+                  {competitor.category && (
+                    <div className="text-muted-foreground">
+                      {competitor.category}
+                    </div>
+                  )}
+                  {competitor.rating && (
+                    <div className="flex items-center gap-1">
+                      <span>⭐</span>
+                      <span>{competitor.rating.toFixed(1)}</span>
+                      {competitor.userRatingsTotal && (
+                        <span className="text-muted-foreground">
+                          ({competitor.userRatingsTotal})
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {competitor.distanceMeters && (
+                    <div className="text-muted-foreground text-xs">
+                      {Math.round(competitor.distanceMeters)}m daleko
+                    </div>
+                  )}
+                  {competitor.address && (
+                    <div className="text-muted-foreground text-xs">
+                      {competitor.address}
+                    </div>
+                  )}
+                  {competitor.mapsUrl && (
+                    <a
+                      href={competitor.mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline text-xs block"
+                    >
+                      Zobrazit na Google Maps
+                    </a>
+                  )}
+                </div>
+              </MarkerPopup>
+            </MapMarker>
+          ))}
+
+        {/* ── Footfall proxies ──────────────────────────────────── */}
+        {(groundedLocationData?.footfallProxies ?? [])
+          .filter((p) => p.coordinates && filterState?.[p.type])
+          .map((proxy, index) => (
+            <MapMarker
+              key={`proxy-${proxy.type}-${index}`}
+              longitude={proxy.coordinates!.lng}
+              latitude={proxy.coordinates!.lat}
+            >
+              <MarkerContent>
+                <div
+                  className="h-7 w-7 rounded-full border-2 border-white shadow-md flex items-center justify-center"
+                  style={{ background: getMarkerColor(proxy.type) }}
+                >
+                  <div className="h-3 w-3 rounded-full bg-white/80" />
+                </div>
+              </MarkerContent>
+              <MarkerPopup className="max-w-48">
+                <div className="text-sm space-y-1">
+                  <strong style={{ color: getMarkerColor(proxy.type) }}>
+                    {proxy.type === "transit"
+                      ? "Doprava"
+                      : proxy.type === "shopping"
+                        ? "Nákupy"
+                        : proxy.type === "office"
+                          ? "Kancelář"
+                          : proxy.type === "residential"
+                            ? "Bydlení"
+                            : "Ostatní"}
+                  </strong>
+                  <div className="text-muted-foreground">
+                    {proxy.description}
+                  </div>
+                  {proxy.distanceMeters && (
+                    <div className="text-muted-foreground text-xs">
+                      {Math.round(proxy.distanceMeters)}m daleko
+                    </div>
+                  )}
+                </div>
+              </MarkerPopup>
+            </MapMarker>
+          ))}
+
+        {/* ── Available commercial properties ───────────────────── */}
+        {(groundedLocationData?.availableProperties ?? [])
+          .filter((p) => p.coordinates && filterState?.availableProperties)
+          .map((property) => (
+            <MapMarker
+              key={`property-${property.source}-${property.id}`}
+              longitude={property.coordinates!.lng}
+              latitude={property.coordinates!.lat}
+            >
+              <MarkerContent>
+                <div
+                  className="h-7 w-7 rounded-full border-2 border-white shadow-md flex items-center justify-center"
+                  style={{
+                    background: getMarkerColor("availableProperties"),
+                  }}
+                >
+                  <div className="h-3 w-3 rounded-full bg-white/80" />
+                </div>
+              </MarkerContent>
+              <MarkerPopup className="max-w-64">
+                <div className="text-sm space-y-1">
+                  <strong className="text-pink-600 block">
+                    {property.title}
+                  </strong>
+                  <div className="text-muted-foreground text-xs">
+                    {property.category}
+                  </div>
+                  {property.price && (
+                    <div className="flex items-center gap-1 font-semibold text-base">
+                      <span>{property.price.toLocaleString("cs-CZ")} Kč</span>
+                      {property.transactionType === "rent" && (
+                        <span className="text-xs text-muted-foreground font-normal">
+                          / měsíc
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {property.pricePerSqm && property.size && (
+                    <div className="text-muted-foreground text-xs">
+                      {property.pricePerSqm.toLocaleString("cs-CZ")} Kč/m²
+                    </div>
+                  )}
+                  {property.size && (
+                    <div className="text-sm">
+                      <span className="font-medium">{property.size} m²</span>
+                    </div>
+                  )}
+                  {property.address && (
+                    <div className="text-muted-foreground text-xs">
+                      📍 {property.address}
+                    </div>
+                  )}
+                  {property.distanceMeters && (
+                    <div className="text-muted-foreground text-xs">
+                      {Math.round(property.distanceMeters)}m od lokace
+                    </div>
+                  )}
+                  {property.labels && property.labels.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {property.labels.slice(0, 3).map((label, idx) => (
+                        <span
+                          key={idx}
+                          className="text-xs bg-muted px-1.5 py-0.5 rounded"
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <a
+                    href={property.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 text-xs block hover:underline font-medium pt-1"
+                  >
+                    Zobrazit inzerát →
+                  </a>
+                  <div className="text-xs text-muted-foreground pt-2 mt-1 border-t border-border">
+                    Zdroj:{" "}
+                    {property.source === "sreality" ? (
                       <a
-                        href={competitor.mapsUrl}
+                        href="https://www.sreality.cz"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 underline text-xs mt-1 block"
+                        className="hover:underline"
                       >
-                        Zobrazit na Google Maps
+                        Sreality.cz
+                      </a>
+                    ) : (
+                      <a
+                        href="https://www.bezrealitky.cz"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline"
+                      >
+                        Bezrealitky.cz
                       </a>
                     )}
                   </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-
-        {/* Render footfall proxies */}
-        {(groundedLocationData?.footfallProxies ?? [])
-          .filter((proxy) => proxy.coordinates && filterState?.[proxy.type])
-          .map((proxy, index) => {
-            return (
-              <Marker
-                key={`proxy-${proxy.type}-${index}`}
-                position={[proxy.coordinates!.lat, proxy.coordinates!.lng]}
-                icon={createMarkerIcon(proxy.type, getMarkerColor(proxy.type))}
-              >
-                <Popup>
-                  <div className="text-sm max-w-48">
-                    <strong
-                      className="capitalize"
-                      style={{ color: getMarkerColor(proxy.type) }}
-                    >
-                      {proxy.type === "transit"
-                        ? "Doprava"
-                        : proxy.type === "shopping"
-                          ? "Nákupy"
-                          : proxy.type === "office"
-                            ? "Kancelář"
-                            : proxy.type === "residential"
-                              ? "Bydlení"
-                              : "Ostatní"}
-                    </strong>
-                    <div className="text-gray-600">{proxy.description}</div>
-                    {proxy.distanceMeters && (
-                      <div className="text-gray-500 text-xs mt-1">
-                        {Math.round(proxy.distanceMeters)}m daleko
-                      </div>
-                    )}
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-
-        {/* Render available commercial properties */}
-        {(groundedLocationData?.availableProperties ?? [])
-          .filter(
-            (property) =>
-              property.coordinates && filterState?.availableProperties,
-          )
-          .map((property) => {
-            return (
-              <Marker
-                key={`property-${property.source}-${property.id}`}
-                position={[
-                  property.coordinates!.lat,
-                  property.coordinates!.lng,
-                ]}
-                icon={createMarkerIcon(
-                  "availableProperties",
-                  getMarkerColor("availableProperties"),
-                )}
-              >
-                <Popup>
-                  <div className="text-sm max-w-64">
-                    <strong className="text-pink-600 block mb-1">
-                      {property.title}
-                    </strong>
-                    <div className="text-gray-600 text-xs mb-2">
-                      {property.category}
-                    </div>
-                    {property.price && (
-                      <div className="flex items-center gap-1 mt-1 font-semibold text-base">
-                        <span>{property.price.toLocaleString("cs-CZ")} Kč</span>
-                        {property.transactionType === "rent" && (
-                          <span className="text-xs text-gray-500 font-normal">
-                            / měsíc
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {property.pricePerSqm && property.size && (
-                      <div className="text-gray-500 text-xs">
-                        {property.pricePerSqm.toLocaleString("cs-CZ")} Kč/m²
-                      </div>
-                    )}
-                    {property.size && (
-                      <div className="text-gray-600 text-sm mt-1">
-                        <span className="font-medium">{property.size} m²</span>
-                      </div>
-                    )}
-                    {property.address && (
-                      <div className="text-gray-600 text-xs mt-1">
-                        📍 {property.address}
-                      </div>
-                    )}
-                    {property.distanceMeters && (
-                      <div className="text-gray-500 text-xs mt-1">
-                        {Math.round(property.distanceMeters)}m od lokace
-                      </div>
-                    )}
-                    {property.labels && property.labels.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {property.labels.slice(0, 3).map((label, idx) => (
-                          <span
-                            key={idx}
-                            className="text-xs bg-gray-100 px-1.5 py-0.5 rounded"
-                          >
-                            {label}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <a
-                      href={property.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 text-xs mt-2 block hover:underline font-medium"
-                    >
-                      Zobrazit inzerát →
-                    </a>
-                    <div className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-200">
-                      Zdroj:{" "}
-                      {property.source === "sreality" ? (
-                        <a
-                          href="https://www.sreality.cz"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-gray-500 hover:underline"
-                        >
-                          Sreality.cz
-                        </a>
-                      ) : (
-                        <a
-                          href="https://www.bezrealitky.cz"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-gray-500 hover:underline"
-                        >
-                          Bezrealitky.cz
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-      </MapContainer>
+                </div>
+              </MarkerPopup>
+            </MapMarker>
+          ))}
+      </Map>
     </div>
   );
 }

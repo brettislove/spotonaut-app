@@ -60,7 +60,7 @@ export function extractUTMParams(url: string): {
   utmContent?: string;
 } {
   const params = new URLSearchParams(
-    new URL(url, window.location.origin).search
+    new URL(url, window.location.origin).search,
   );
   return {
     utmSource: params.get("utm_source") || undefined,
@@ -69,6 +69,73 @@ export function extractUTMParams(url: string): {
     utmTerm: params.get("utm_term") || undefined,
     utmContent: params.get("utm_content") || undefined,
   };
+}
+
+const UTM_STORAGE_KEY = "spotonaut_first_touch_utm";
+
+/**
+ * Get first-touch UTM data from localStorage.
+ * Returns the stored UTM parameters or null if none exist.
+ */
+export function getFirstTouchUTM(): {
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+} | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const stored = localStorage.getItem(UTM_STORAGE_KEY);
+    if (!stored) return null;
+    const data = JSON.parse(stored);
+    return {
+      utmSource: data.utmSource || undefined,
+      utmMedium: data.utmMedium || undefined,
+      utmCampaign: data.utmCampaign || undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Track a visit for UTM/campaign attribution.
+ * Sends visit data to /api/tracking/visit.
+ *
+ * Bypasses cookie consent when UTM params are present in the URL —
+ * campaign attribution for the first visit is considered functional data.
+ * Without UTM params, standard cookie consent is required.
+ */
+export async function trackVisit(path?: string): Promise<void> {
+  const utmParams = extractUTMParams(window.location.href);
+  const hasUtm = !!(
+    utmParams.utmSource ||
+    utmParams.utmMedium ||
+    utmParams.utmCampaign
+  );
+
+  // Allow tracking without consent if UTM params are present (functional data)
+  if (!hasUtm && !hasConsent()) return;
+
+  try {
+    const currentPath = path || window.location.pathname;
+    const sessionId = getSessionId();
+    const fingerprint = getFingerprint();
+
+    await fetch("/api/tracking/visit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId,
+        visitedUrl: currentPath,
+        referrer: document.referrer || null,
+        fingerprint,
+        ...utmParams,
+      }),
+    });
+  } catch (error) {
+    console.error("Failed to track visit:", error);
+  }
 }
 
 /**
@@ -103,7 +170,7 @@ export async function trackPageView(path?: string): Promise<void> {
 export async function trackEvent(
   eventType: string,
   eventData?: Record<string, any>,
-  page?: string
+  page?: string,
 ): Promise<void> {
   if (!hasConsent()) return;
 

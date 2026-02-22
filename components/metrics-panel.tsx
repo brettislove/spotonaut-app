@@ -71,9 +71,9 @@ export default function MetricsPanel({
               </ItemMedia>
               <ItemContent>
                 <ItemTitle>
-                  {analysisData.groundedLocationData?.categories}
+                  {analysisData.locationName || analysisData.location}
                 </ItemTitle>
-                <ItemDescription>{analysisData.locationName}</ItemDescription>
+                <ItemDescription>{analysisData.businessType}</ItemDescription>
               </ItemContent>
             </Item>
             <DropdownMenu>

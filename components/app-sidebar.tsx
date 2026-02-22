@@ -1,28 +1,17 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   IconCamera,
-  IconChartBar,
-  IconDashboard,
-  IconDatabase,
   IconFileAi,
   IconFileDescription,
-  IconFileWord,
-  IconFolder,
-  IconHelp,
-  IconInnerShadowTop,
-  IconListDetails,
-  IconReport,
-  IconSearch,
-  IconSettings,
-  IconUsers,
-} from "@tabler/icons-react"
+} from "@tabler/icons-react";
 
-import { NavDocuments } from "@/components/nav-documents"
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavHistory } from "@/components/nav-history";
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -31,39 +20,23 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
+import SpotonautLogo from "./spotonaut-logo";
+import NavCreditMeter from "./nav-credit-meter";
+import { CircleQuestionMark, HandCoins, Home, Settings } from "lucide-react";
+import { Analysis } from "@/lib/types/analysis";
 
 const data = {
   user: {
-    name: "shadcn",
     email: "m@example.com",
+    tier: "Sonda",
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
     {
-      title: "Dashboard",
-      url: "#",
-      icon: IconDashboard,
-    },
-    {
-      title: "Lifecycle",
-      url: "#",
-      icon: IconListDetails,
-    },
-    {
-      title: "Analytics",
-      url: "#",
-      icon: IconChartBar,
-    },
-    {
-      title: "Projects",
-      url: "#",
-      icon: IconFolder,
-    },
-    {
-      title: "Team",
-      url: "#",
-      icon: IconUsers,
+      title: "Domů",
+      url: "/app",
+      icon: Home,
     },
   ],
   navClouds: [
@@ -116,41 +89,59 @@ const data = {
   ],
   navSecondary: [
     {
-      title: "Settings",
+      title: "Nastavení",
       url: "#",
-      icon: IconSettings,
+      icon: Settings,
     },
     {
-      title: "Get Help",
-      url: "#",
-      icon: IconHelp,
+      title: "Plány a ceník",
+      url: "/app/billing",
+      icon: HandCoins,
     },
     {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
+      title: "Jak to funguje?",
+      url: "/app/how-it-works",
+      icon: CircleQuestionMark,
     },
   ],
-  documents: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: IconDatabase,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: IconFileWord,
-    },
-  ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [analyses, setAnalyses] = useState<Analysis[]>([]);
+  const [, setIsLoading] = useState(true);
+  const pathname = usePathname();
+
+  // Extract active analysis ID from pathname like /app/analysis/[id]
+  const activeAnalysisId = pathname?.match(/\/app\/analysis\/([^/]+)/)?.[1];
+
+  useEffect(() => {
+    async function fetchRecentAnalyses() {
+      try {
+        const response = await fetch("/api/analyses/recent");
+        if (response.ok) {
+          const data = await response.json();
+          setAnalyses(data);
+        }
+      } catch (error) {
+        console.error("Error fetching recent analyses:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchRecentAnalyses();
+  }, []);
+
+  const handleRename = (id: string, newName: string) => {
+    setAnalyses((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, locationName: newName } : a)),
+    );
+  };
+
+  const handleDelete = (id: string) => {
+    setAnalyses((prev) => prev.filter((a) => a.id !== id));
+  };
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -160,22 +151,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
-              </a>
+              <SpotonautLogo />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
+        <NavHistory
+          analyses={analyses}
+          activeAnalysisId={activeAnalysisId}
+          onRename={handleRename}
+          onDelete={handleDelete}
+        />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavCreditMeter />
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

@@ -84,7 +84,8 @@ export default function AnalysisMiniBar() {
     hasCompletedAnalysis &&
     !isAnalyzing &&
     analysisData &&
-    pathname !== "/analysis";
+    pathname !== "/analysis" &&
+    !pathname.startsWith("/app");
 
   if (!shouldShow) {
     return null;
@@ -102,7 +103,7 @@ export default function AnalysisMiniBar() {
   };
 
   const handleNavigateToAnalysis = () => {
-    router.push("/analysis");
+    router.push(session ? `/app/analysis/${analysisData.id}` : "/analysis");
   };
 
   const handleSignUp = () => {

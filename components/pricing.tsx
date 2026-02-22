@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -8,121 +11,204 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "./ui/badge";
 
 export default function Pricing() {
+  const [isAnnual, setIsAnnual] = useState(false);
+
   return (
-    <section className="py-16 md:py-32">
+    <section className="py-16 md:pt-32 md:pb-24 bg-gradient-to-b from-background to-muted/20">
       <div className="mx-auto max-w-6xl px-6">
         <div className="mx-auto max-w-2xl space-y-6 text-center">
           <h1 className="text-center text-4xl font-semibold lg:text-5xl">
-            Ceník
+            Zjistěte skutečný potenciál vaší lokality během vteřin.
           </h1>
-          <p>Vyberte si plán, který nejlépe vyhovuje vašim potřebám.</p>
+          <p>
+            Vyberte si plán, který odpovídá vašim ambicím. Od prvního nápadu po
+            franšízovou síť.
+          </p>
         </div>
 
-        <div className="mt-8 grid gap-6 md:mt-20 md:grid-cols-3">
+        <div className="mt-8 flex items-center justify-center gap-4 md:mt-12">
+          <span
+            className={`text-sm ${!isAnnual ? "font-semibold" : "text-muted-foreground"}`}
+          >
+            Měsíční
+          </span>
+          <Switch
+            checked={isAnnual}
+            onCheckedChange={setIsAnnual}
+            aria-label="Přepnout na roční platbu"
+          />
+          <span
+            className={`text-sm ${isAnnual ? "font-semibold" : "text-muted-foreground"}`}
+          >
+            Roční
+            {/* <span className="ml-2 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+              -20%
+            </span> */}
+            <Badge
+              variant="outline"
+              className="ml-2 text-green-600 dark:text-green-400 border-green-200 dark:border-green-700"
+            >
+              -20%
+            </Badge>
+          </span>
+        </div>
+
+        <div className="mt-8 grid gap-6 md:mt-20 md:grid-cols-3 items-stretch">
           <Card className="flex flex-col">
             <CardHeader>
-              <CardTitle className="font-medium">Sonda</CardTitle>
+              <CardTitle className="font-medium">🌑 Sonda</CardTitle>
               <span className="my-3 block text-2xl font-semibold">
-                0 Kč / měsíc
+                0 Kč {isAnnual ? "/ rok" : "/ měsíc"}
               </span>
               <CardDescription className="text-sm">
                 Pro rychlý sken okolí.
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 flex-grow">
               <hr className="border-dashed" />
 
               <ul className="list-outside space-y-3 text-sm">
                 {[
-                  "Basic Analytics Dashboard",
-                  "5GB Cloud Storage",
-                  "Email and Chat Support",
-                ].map((item, index) => (
-                  <li key={index} className="flex items-center gap-2">
-                    <Check className="size-3" />
-                    {item}
-                  </li>
-                ))}
+                  "30 kreditů do začátku (jednorázově)",
+                  'Základní "Skóre lokality"',
+                  "Náhled na mapě",
+                  "Pokročilý AI chat",
+                  "Možnost uložit si 1 analýzu",
+                  "Export do PDF",
+                  "Zobrazení realitních inzercí",
+                ].map((item, index) => {
+                  const isDisabled = index > 4; // First 5 items are available, rest are disabled
+                  return (
+                    <li
+                      key={index}
+                      className={`flex items-center gap-2 ${isDisabled ? "text-muted-foreground" : ""}`}
+                    >
+                      {isDisabled ? (
+                        <X className="size-3 text-muted-foreground" />
+                      ) : (
+                        <Check className="size-3" />
+                      )}
+                      <span className={isDisabled ? "line-through" : ""}>
+                        {item}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             </CardContent>
 
             <CardFooter className="mt-auto">
               <Button asChild variant="outline" className="w-full">
-                <Link href="">Začít!</Link>
+                <Link href="">Vyzkoušet zdarma</Link>
               </Button>
             </CardFooter>
           </Card>
 
-          <Card className="relative">
-            <span className="bg-linear-to-br/increasing absolute inset-x-0 -top-3 mx-auto flex h-6 w-fit items-center rounded-full from-purple-400 to-amber-300 px-3 py-1 text-xs font-medium text-amber-950 ring-1 ring-inset ring-white/20 ring-offset-1 ring-offset-gray-950/5">
-              Nejoblíbenější
+          <Card className="relative flex flex-col">
+            <span className="bg-secondary absolute inset-x-0 -top-3 mx-auto flex h-6 w-fit items-center rounded-full from-purple-400 to-amber-300 px-3 py-1 text-xs font-medium text-amber-950 ring-1 ring-inset ring-white/20 ring-offset-1 ring-offset-gray-950/5">
+              🔥 Nejpopulárnější
             </span>
 
-            <div className="flex flex-col">
-              <CardHeader>
-                <CardTitle className="font-medium">Raketa</CardTitle>
-                <span className="my-3 block text-2xl font-semibold">
-                  490 Kč / měsíc
-                </span>
-                <CardDescription className="text-sm">
-                  Pokročilá analýza pro profesionály.
-                </CardDescription>
-              </CardHeader>
+            <CardHeader>
+              <CardTitle className="font-medium">🚀 Raketa</CardTitle>
+              <span className="my-3 block text-2xl font-semibold">
+                {isAnnual ? (
+                  <>
+                    <span className="text-muted-foreground line-through mr-2">
+                      490 Kč
+                    </span>
+                    <span className="text-3xl text-primary">392 Kč</span>
+                    <span className="text-sm text-muted-foreground block">
+                      / měsíc (roční platba)
+                    </span>
+                  </>
+                ) : (
+                  "490 Kč / měsíc"
+                )}
+              </span>
+              <CardDescription className="text-sm">
+                Pokročilá analýza pro profesionály.
+              </CardDescription>
+            </CardHeader>
 
-              <CardContent className="space-y-4">
-                <hr className="border-dashed" />
-                <ul className="list-outside space-y-3 text-sm">
-                  {[
-                    "Everything in Free Plan",
-                    "5GB Cloud Storage",
-                    "Email and Chat Support",
-                    "Access to Community Forum",
-                    "Single User Access",
-                    "Access to Basic Templates",
-                    "Mobile App Access",
-                    "1 Custom Report Per Month",
-                    "Monthly Product Updates",
-                    "Standard Security Features",
-                  ].map((item, index) => (
-                    <li key={index} className="flex items-center gap-2">
-                      <Check className="size-3" />
-                      {item}
+            <CardContent className="space-y-4 flex-grow">
+              <hr className="border-dashed" />
+              <ul className="list-outside space-y-3 text-sm">
+                {[
+                  "Vše v plánu Sonda, plus:",
+                  "500 kreditů / měsíc",
+                  "Profesionální PDF reporty",
+                  "Zobrazení realitních inzercí",
+                  "Možnost uložit si neomezený počet analýz",
+                  "Možnost jednorázově dokoupit kredity",
+                ].map((item, index) => {
+                  const isDisabled = index > 9; // First 10 items are available, last 3 are disabled
+                  return (
+                    <li
+                      key={index}
+                      className={`flex items-center gap-2 ${isDisabled ? "text-muted-foreground" : ""}`}
+                    >
+                      {isDisabled ? (
+                        <span className="size-3 text-muted-foreground">✗</span>
+                      ) : (
+                        <Check className="size-3" />
+                      )}
+                      <span className={isDisabled ? "line-through" : ""}>
+                        {item}
+                      </span>
                     </li>
-                  ))}
-                </ul>
-              </CardContent>
+                  );
+                })}
+              </ul>
+            </CardContent>
 
-              <CardFooter>
-                <Button asChild className="w-full">
-                  <Link href="">Začít!</Link>
-                </Button>
-              </CardFooter>
-            </div>
+            <CardFooter className="mt-auto">
+              <Button asChild className="w-full">
+                <Link href="">Začít naplno</Link>
+              </Button>
+            </CardFooter>
           </Card>
 
           <Card className="flex flex-col">
             <CardHeader>
-              <CardTitle className="font-medium">Modul</CardTitle>
+              <CardTitle className="font-medium">🛰️ Modul</CardTitle>
               <span className="my-3 block text-2xl font-semibold">
-                2990 Kč / měsíc
+                {isAnnual ? (
+                  <>
+                    <span className="text-muted-foreground line-through mr-2">
+                      2990 Kč
+                    </span>
+                    <span className="text-3xl text-primary">2392 Kč</span>
+                    <span className="text-sm text-muted-foreground block">
+                      / měsíc (roční platba)
+                    </span>
+                  </>
+                ) : (
+                  "2990 Kč / měsíc"
+                )}
               </span>
               <CardDescription className="text-sm">
                 Pro podniková řešení na míru.
               </CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 flex-grow">
               <hr className="border-dashed" />
 
               <ul className="list-outside space-y-3 text-sm">
                 {[
-                  "Everything in Pro Plan",
-                  "5GB Cloud Storage",
-                  "Email and Chat Support",
+                  "Vše v plánu Raketa, plus:",
+                  "5 000+ kreditů / měsíc",
+                  "Týmový přístup (více uživatelů)",
+                  "Export do Excelu/CSV",
+                  "Srovnávací analýzy lokalit",
+                  "Prioritní podpora",
                 ].map((item, index) => (
                   <li key={index} className="flex items-center gap-2">
                     <Check className="size-3" />

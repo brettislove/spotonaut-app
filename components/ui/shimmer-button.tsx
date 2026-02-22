@@ -13,7 +13,9 @@ interface ShimmerButtonProps extends HTMLMotionProps<"button"> {
 function ShimmerButton({ children, className, ...props }: ShimmerButtonProps) {
   return (
     <motion.button
-      className="relative inline-flex overflow-hidden rounded-lg bg-[linear-gradient(120deg,var(--secondary)_calc(var(--shimmer-button-x)-25%),var(--secondary-foreground)_var(--shimmer-button-x),var(--secondary)_calc(var(--shimmer-button-x)+25%))] [--shimmer-button-x:0%]"
+      className={cn(
+        "relative inline-flex overflow-hidden rounded-lg bg-[linear-gradient(120deg,var(--secondary)_calc(var(--shimmer-button-x)-25%),var(--secondary-foreground)_var(--shimmer-button-x),var(--secondary)_calc(var(--shimmer-button-x)+25%))] [--shimmer-button-x:0%]",
+      )}
       initial={{
         scale: 1,
         "--shimmer-button-x": "-100%",

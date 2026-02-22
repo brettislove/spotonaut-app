@@ -9,7 +9,7 @@ import { AnimatedGroup } from "@/components/ui/animated-group";
 import { Variants } from "framer-motion";
 import ButtonHeartbeat from "./button/button-heartbeat";
 import AnalysisFormNew from "./analysis-form-new";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { AnalysisFormData } from "@/lib/types/analysis";
 import {
@@ -60,15 +60,26 @@ export default function HeroSection() {
   } = useAnalysis();
   const { setIsLoading } = useChat();
   const { checkRateLimit } = useRateLimit();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   const [progressStep, setProgressStep] = useState<ProgressStep>("geocoding");
+  const formRef = useRef<HTMLDivElement>(null);
+
+  // Redirect authenticated users to /app
+  React.useEffect(() => {
+    if (status === "loading") return; // Wait for session check
+    if (session) {
+      router.push("/app");
+    }
+  }, [session, status, router]);
 
   const handleAnalysisSubmit = React.useCallback(
     async (data: AnalysisFormData) => {
       // Check if user has already used free analysis and is not authenticated
-      if (!session && checkIfUsedFreeAnalysis(data, setShowLoginModal)) return;
+      if (!session && checkIfUsedFreeAnalysis(data, setShowLoginModal)) {
+        return;
+      }
 
       // Check rate limit
       if (!checkRateLimit()) {
@@ -292,6 +303,11 @@ export default function HeroSection() {
                       size="lg"
                       className="rounded-xl px-5 text-base"
                       InnerText="Vyzkoušet zdarma"
+                      onClick={() =>
+                        formRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                        })
+                      }
                     />
                   </div>
                   <Button
@@ -301,7 +317,7 @@ export default function HeroSection() {
                     variant="ghost"
                     className="group h-10.5 rounded-xl px-5"
                   >
-                    <Link href="#link">
+                    <Link href="/how-it-works">
                       <span className="text-nowrap">Jak to funguje?</span>
                       <ArrowRight className="transition-transform duration-200 group-hover:translate-x-0.5" />
                     </Link>
@@ -324,18 +340,16 @@ export default function HeroSection() {
               }}
             >
               <div className="relative mt-8 overflow-auto px-2 sm:mr-0 sm:mt-12 md:mt-20">
-                <AnalysisFormNew
-                  handleAnalysisSubmit={handleAnalysisSubmit}
-                  progressStep={progressStep}
-                />
-                {/* <AnalysisForm
-                  onSubmit={(data) => {
-                    console.log("Analysis form submitted:", data);
-                    // Navigate to analysis page or handle submission
-                  }}
-                  onCancel={() => {}}
-                  showCancelButton={false}
-                /> */}
+                <div
+                  ref={formRef}
+                  id="analysis-form"
+                  className="scroll-mt-[100px]"
+                >
+                  <AnalysisFormNew
+                    handleAnalysisSubmit={handleAnalysisSubmit}
+                    progressStep={progressStep}
+                  />
+                </div>
               </div>
             </AnimatedGroup>
           </div>

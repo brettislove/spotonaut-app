@@ -74,7 +74,8 @@ const handleLogin = async (
       // show friendly mapped message instead of raw token like 'Configuration'
       setError(mapNextAuthError(result.error));
     } else if (result?.ok) {
-      window.location.reload();
+      // Redirect to /app dashboard after successful login
+      window.location.href = "/app";
     }
   } catch (error) {
     setError(
@@ -139,6 +140,26 @@ const handleSignup = async (
   }
 
   try {
+    // Retrieve first-touch UTM data from localStorage for attribution
+    let utmData: {
+      utmSource?: string;
+      utmMedium?: string;
+      utmCampaign?: string;
+    } = {};
+    try {
+      const storedUtm = localStorage.getItem("spotonaut_first_touch_utm");
+      if (storedUtm) {
+        const parsed = JSON.parse(storedUtm);
+        utmData = {
+          utmSource: parsed.utmSource || undefined,
+          utmMedium: parsed.utmMedium || undefined,
+          utmCampaign: parsed.utmCampaign || undefined,
+        };
+      }
+    } catch {
+      // localStorage unavailable or invalid JSON
+    }
+
     const response = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -146,6 +167,7 @@ const handleSignup = async (
         email,
         password,
         promoCode: promoCode.trim() || undefined,
+        ...utmData,
       }),
     });
 
@@ -162,7 +184,6 @@ const handleSignup = async (
       redirect: false,
     });
     if (loginResult?.ok) {
-      window.location.reload();
       // Notify user with toast that account was created and email was sent
       toast.success(
         "Registrace úspěšná — zkontrolujte svůj e-mail pro potvrzení.",
@@ -175,6 +196,8 @@ const handleSignup = async (
           },
         },
       );
+      // Redirect to /app dashboard after successful signup
+      window.location.href = "/app";
     } else {
       // If auto-login didn't happen, show friendly success message and switch to login
       toast.success("Registrace úspěšná! Přihlaste se prosím.", {
@@ -219,7 +242,7 @@ const handleGoogleSignIn = async (
   try {
     setIsLoading(true);
     setError("");
-    await signIn("google", { callbackUrl: "/" });
+    await signIn("google", { callbackUrl: "/app" });
   } catch {
     toast.error("Nepodařilo se přihlásit přes Google", {
       position: "top-center",

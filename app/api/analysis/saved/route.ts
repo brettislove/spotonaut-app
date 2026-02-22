@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
         groundedLocationData: data.groundedLocationData || null,
         chatMessages: data.chatMessages || null,
         usedMapsGrounding: data.usedMapsGrounding || false,
+        businessType: data.businessType || null,
         completedSuccessfully: true,
         isSavedAnalysis: true,
       },

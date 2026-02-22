@@ -1,5 +1,15 @@
 import type { BusinessType } from "@/lib/constants/business-types";
 
+export interface AnalysisRequest {
+  location: string;
+  businessType: BusinessType;
+  fingerprint?: string;
+  coordinates?: {
+    lat: number;
+    lon: number;
+  };
+}
+
 export interface AnalysisFormData {
   location: string;
   businessType: BusinessType;
@@ -47,6 +57,21 @@ export interface AnalysisData {
   };
   sources?: Array<{ title: string; uri: string }>;
   groundedLocationData?: import("@/lib/google-ai/location-analysis").GroundedLocationData;
+  businessType?: string | null;
+}
+
+export interface Analysis {
+  id: string;
+  locationName: string;
+  location: string;
+  coordinates: { lat: number; lng: number } | null;
+  metrics: {
+    localityScore?: number;
+    footfallScore?: number;
+    recommendedHours?: number;
+  };
+  businessType: string | null;
+  createdAt: string;
 }
 
 export type ProgressStep =

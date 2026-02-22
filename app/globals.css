@@ -15,9 +15,9 @@
   --color-card-foreground: oklch(0.985 0 0);
   --color-popover: oklch(0.205 0 0);
   --color-popover-foreground: oklch(0.985 0 0);
-  --color-primary: oklch(60.025% 0.26702 303.419);
+  --color-primary: oklch(60.929% 0.30352 312.939);
   --color-primary-foreground: oklch(1 0 0);
-  --color-secondary: oklch(0.55 0.25 258deg);
+  --color-secondary: oklch(92.807% 0.21974 125.037);
   --color-secondary-foreground: oklch(1 0 0);
   --color-muted: oklch(0.269 0 0);
   --color-muted-foreground: oklch(0.708 0 0);
@@ -194,11 +194,16 @@ input[type="number"].no-spinner {
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(60.025% 0.26702 303.419);
+  --primary: oklch(60.929% 0.30352 312.939);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.55 0.25 258deg);
+  --secondary: oklch(92.807% 0.21974 125.037);
   --secondary-foreground: oklch(1 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
@@ -225,6 +230,14 @@ input[type="number"].no-spinner {
   body {
     @apply bg-background text-foreground;
   }
+  .maplibregl-popup-content {
+    @apply bg-transparent! shadow-none! p-0! rounded-none!;
+    @apply bg-transparent! shadow-none! p-0! rounded-none!;
+  }
+  .maplibregl-popup-tip {
+    @apply hidden!;
+    @apply hidden!;
+  }
 }
 
 .dark {
@@ -248,4 +261,3 @@ input[type="number"].no-spinner {
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 }
-

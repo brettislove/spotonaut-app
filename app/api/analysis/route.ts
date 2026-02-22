@@ -7,7 +7,6 @@ import {
   archiveOldRecordsIfNeeded,
   type GroundingSource,
 } from "@/lib/google-ai/usage";
-import type { BusinessType } from "@/lib/constants/business-types";
 import {
   getGroundedLocationDataWithFlash,
   generateProAnalysisWithGroundingStream,
@@ -21,18 +20,9 @@ import {
 } from "@/lib/security/ip-anonymization";
 import { runAggregationsIfNeeded } from "@/lib/analytics/aggregation";
 import { runCleanupIfNeeded } from "@/lib/analytics/retention";
+import type { AnalysisRequest } from "@/lib/types/analysis";
 
 const prisma = new PrismaClient();
-
-interface AnalysisRequest {
-  location: string;
-  businessType: BusinessType;
-  fingerprint?: string;
-  coordinates?: {
-    lat: number;
-    lon: number;
-  };
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -101,6 +91,11 @@ export async function POST(request: NextRequest) {
         // attempting to enqueue after close which throws ERR_INVALID_STATE.
         let streamClosed = false;
 
+        /**
+         * Safely enqueue a payload to the stream controller.
+         * @param payload The data to enqueue.
+         * @returns void
+         */
         const safeEnqueue = (payload: Uint8Array) => {
           if (streamClosed) return;
           try {
@@ -113,6 +108,10 @@ export async function POST(request: NextRequest) {
           }
         };
 
+        /**
+         * Send progress update to the client.
+         * @param step The current progress step.
+         */
         const sendProgress = (step: ProgressStep) => {
           safeEnqueue(
             encoder.encode(
@@ -121,6 +120,10 @@ export async function POST(request: NextRequest) {
           );
         };
 
+        /**
+         * Send a chunk of text to the client.
+         * @param text The text to send.
+         */
         const sendChunk = (text: string) => {
           safeEnqueue(
             encoder.encode(
@@ -349,9 +352,26 @@ export async function POST(request: NextRequest) {
           const apiResponseTimeMs =
             apiEndTime > 0 ? apiEndTime - apiStartTime : null;
 
-          // Save analysis to database (non-blocking)
-          prisma.analysis
-            .create({
+          // Save analysis to database
+          let analysisId: string | null = null;
+          try {
+            // Build initial chat message from the analysis text
+            const initialChatMessages = fullText
+              ? [
+                  {
+                    id: Date.now().toString(),
+                    role: "assistant" as const,
+                    content: fullText,
+                    timestamp: new Date().toISOString(),
+                    sources: sources.map((s) => ({
+                      title: s.title,
+                      uri: s.uri,
+                    })),
+                  },
+                ]
+              : undefined;
+
+            const savedAnalysis = await prisma.analysis.create({
               data: {
                 userId: session?.user?.id || null,
                 locationName,
@@ -363,15 +383,22 @@ export async function POST(request: NextRequest) {
                   sources.length > 0
                     ? JSON.parse(JSON.stringify(sources))
                     : undefined,
+                groundedLocationData: groundedLocation
+                  ? JSON.parse(JSON.stringify(groundedLocation))
+                  : undefined,
+                chatMessages: initialChatMessages
+                  ? JSON.parse(JSON.stringify(initialChatMessages))
+                  : undefined,
                 businessType: data.businessType.type,
                 completedSuccessfully: true,
                 processingTimeMs,
                 apiResponseTimeMs,
               },
-            })
-            .catch((dbError) => {
-              console.error("Failed to save analysis:", dbError);
             });
+            analysisId = savedAnalysis.id;
+          } catch (dbError) {
+            console.error("Failed to save analysis:", dbError);
+          }
 
           // Update anonymous usage tracking (non-blocking)
           if (!session && data.fingerprint && ip !== "unknown") {
@@ -408,6 +435,7 @@ export async function POST(request: NextRequest) {
               encoder.encode(
                 `data: ${JSON.stringify({
                   type: "done",
+                  analysisId,
                   analysis:
                     fullText ||
                     "Omlouváme se, nepodařilo se vygenerovat analýzu.",
@@ -420,6 +448,7 @@ export async function POST(request: NextRequest) {
                   sources,
                   usedMapsGrounding,
                   groundedLocationData: groundedLocation,
+                  businessType: data.businessType.type,
                 })}\n\n`,
               ),
             );
