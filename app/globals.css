@@ -15,7 +15,7 @@
   --color-card-foreground: oklch(0.985 0 0);
   --color-popover: oklch(0.205 0 0);
   --color-popover-foreground: oklch(0.985 0 0);
-  --color-primary: oklch(60.025% 0.26702 303.419);
+  --color-primary: oklch(60.929% 0.30352 312.939);
   --color-primary-foreground: oklch(1 0 0);
   --color-secondary: oklch(92.807% 0.21974 125.037);
   --color-secondary-foreground: oklch(1 0 0);
@@ -201,7 +201,7 @@ input[type="number"].no-spinner {
   --chart-5: oklch(0.645 0.246 16.439);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(60.025% 0.26702 303.419);
+  --primary: oklch(60.929% 0.30352 312.939);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(92.807% 0.21974 125.037);
   --secondary-foreground: oklch(1 0 0);

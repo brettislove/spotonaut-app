@@ -142,11 +142,11 @@ export function LocationPickerDialogNew({
           style={{ transform: "translate(-50%, -60px)" }}
         >
           <div className="relative">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 rounded-full flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg">
               <div className="w-3 h-3 bg-white rounded-full" />
             </div>
-            <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-8 bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800" />
-            <div className="absolute top-full left-1/2 -translate-x-1/2 translate-y-8 w-3 h-3 bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800 rounded-full border-1 border-white shadow-lg" />
+            <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-8 bg-primary" />
+            <div className="absolute top-full left-1/2 -translate-x-1/2 translate-y-8 w-3 h-3 bg-primary rounded-full border-1 border-white shadow-lg" />
           </div>
         </div>
 
@@ -179,7 +179,7 @@ export function LocationPickerDialogNew({
           ) : (
             <div className="flex items-start gap-2">
               <svg
-                className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5"
+                className="w-4 h-4 text-secondary flex-shrink-0 mt-0.5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -224,7 +224,7 @@ export function LocationPickerDialogNew({
               setFormField,
             ).then(() => setIsDialogOpen(false))
           }
-          className="bg-gradient-to-br from-blue-500 via-blue-600/100 to-blue-800"
+          className="bg-secondary text-black hover:bg-secondary/90 focus:ring-secondary/50"
         >
           {isLoadingAddress ? "Načítání..." : "Potvrdit lokalitu"}
         </Button>
