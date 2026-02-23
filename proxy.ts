@@ -19,10 +19,22 @@ const publicOnlyRoutes = [
 ];
 
 export async function proxy(request: NextRequest) {
-  const token = await getToken({
+  const authSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+  const isSecureRequest = request.nextUrl.protocol === "https:";
+
+  let token = await getToken({
     req: request,
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: authSecret,
+    secureCookie: isSecureRequest,
   });
+
+  if (!token) {
+    token = await getToken({
+      req: request,
+      secret: authSecret,
+      secureCookie: !isSecureRequest,
+    });
+  }
 
   const { pathname } = request.nextUrl;
 
