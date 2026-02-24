@@ -22,7 +22,7 @@ import { useAnalysis } from "@/lib/contexts/analysis-context";
 const menuItems = [
   { name: "Jak to funguje", href: "/how-it-works" },
   { name: "Blog", href: "/blog" },
-  // { name: "Ceník", href: "/pricing" },
+  { name: "Ceník", href: "/pricing" },
   { name: "Kontakt", href: "/kontakt" },
 ];
 
@@ -39,15 +39,16 @@ export const HeroHeader = ({
   const { data: session } = useSession();
   const [menuState, setMenuState] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
   return (
     <header>
-      {/* Mobile menu overlay */}
-      {menuState && (
-        <div
-          className="fixed inset-0 z-10 bg-black/20 lg:hidden"
-          onClick={() => setMenuState(false)}
-        />
-      )}
       <nav
         data-state={menuState && "active"}
         className="fixed z-20 w-full px-2"
@@ -118,7 +119,6 @@ export const HeroHeader = ({
                       <Link
                         href={item.href}
                         className="text-muted-foreground hover:text-accent-foreground block duration-150"
-                        onClick={() => setMenuState(false)}
                       >
                         <span>{item.name}</span>
                       </Link>
