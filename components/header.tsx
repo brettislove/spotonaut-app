@@ -21,8 +21,8 @@ import { useAnalysis } from "@/lib/contexts/analysis-context";
 
 const menuItems = [
   { name: "Jak to funguje", href: "/how-it-works" },
-  { name: "Blog", href: "/blog" },
-  { name: "Ceník", href: "/pricing" },
+  // { name: "Blog", href: "/blog" },
+  // { name: "Ceník", href: "/pricing" },
   { name: "Kontakt", href: "/kontakt" },
 ];
 
