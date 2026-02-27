@@ -6,17 +6,7 @@ import { getToken } from "next-auth/jwt";
 const protectedRoutes = ["/app"];
 
 // Public routes that authenticated users should be redirected away from
-const publicOnlyRoutes = [
-  "/",
-  "/how-it-works",
-  "/pricing",
-  "/about",
-  "/blog",
-  "/kontakt",
-  "/privacy",
-  "/terms",
-  "/cookies",
-];
+const publicOnlyRoutes = ["/", "/how-it-works", "/pricing", "/blog"];
 
 export async function proxy(request: NextRequest) {
   const authSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;

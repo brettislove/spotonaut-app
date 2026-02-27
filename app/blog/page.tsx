@@ -34,14 +34,14 @@ export default function BlogPage() {
       <div className="container mx-auto flex flex-col items-center gap-16 lg:px-16">
         <div className="text-center">
           <Badge variant="secondary" className="mb-6">
-            {"Latest Updates"}
+            {"Nejnovější články"}
           </Badge>
           <h2 className="mb-3 text-3xl font-semibold text-pretty md:mb-4 md:text-4xl lg:mb-6 lg:max-w-3xl lg:text-5xl">
             {"Blog"}
           </h2>
           <p className="mb-8 text-muted-foreground md:text-base lg:max-w-2xl lg:text-lg">
             {
-              "Discover the latest trends, tips, and best practices in modern web development. From UI components to design systems, stay updated with our expert insights."
+              "Praktické tipy, návody a případové studie k výběru lokality a podnikatelskému rozhodování na základě dat."
             }
           </p>
         </div>
@@ -83,7 +83,7 @@ export default function BlogPage() {
                   target="_blank"
                   className="flex items-center text-foreground hover:underline"
                 >
-                  Read more
+                  Číst dál
                   <ArrowRight className="ml-2 size-4" />
                 </a>
               </CardFooter>

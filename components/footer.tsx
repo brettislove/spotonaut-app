@@ -3,20 +3,36 @@ import Link from "next/link";
 
 const links = [
   {
+    title: "O nás",
+    href: "/about",
+  },
+  {
     title: "Jak to funguje",
     href: "/how-it-works",
   },
-  {
-    title: "Blog",
-    href: "/blog",
-  },
-  {
-    title: "Ceník",
-    href: "/pricing",
-  },
+  // {
+  //   title: "Blog",
+  //   href: "/blog",
+  // },
+  // {
+  //   title: "Ceník",
+  //   href: "/pricing",
+  // },
   {
     title: "Kontakt",
-    href: "/contact",
+    href: "/kontakt",
+  },
+  {
+    title: "GDPR",
+    href: "/privacy",
+  },
+  {
+    title: "Podmínky",
+    href: "/terms",
+  },
+  {
+    title: "Cookies",
+    href: "/cookies",
   },
 ];
 

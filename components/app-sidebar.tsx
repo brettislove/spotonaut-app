@@ -93,15 +93,42 @@ const data = {
       url: "#",
       icon: Settings,
     },
-    {
-      title: "Plány a ceník",
-      url: "/app/billing",
-      icon: HandCoins,
-    },
+    // {
+    //   title: "Plány a ceník",
+    //   url: "/app/billing",
+    //   icon: HandCoins,
+    // },
     {
       title: "Jak to funguje?",
       url: "/app/how-it-works",
       icon: CircleQuestionMark,
+    },
+    {
+      title: "Podmínky a zásady",
+      url: "/about",
+      icon: IconFileDescription,
+      items: [
+        {
+          title: "O nás",
+          url: "/about",
+        },
+        {
+          title: "Kontakt",
+          url: "/kontakt",
+        },
+        {
+          title: "GDPR",
+          url: "/privacy",
+        },
+        {
+          title: "Podmínky",
+          url: "/terms",
+        },
+        {
+          title: "Cookies",
+          url: "/cookies",
+        },
+      ],
     },
   ],
 };

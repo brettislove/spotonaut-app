@@ -26,12 +26,10 @@ export default function ContactSection() {
 
         <Card className="mx-auto mt-12 max-w-lg p-8 shadow-md sm:p-16">
           <div>
-            <h2 className="text-xl font-semibold">
-              Let's get you to the right place
-            </h2>
+            <h2 className="text-xl font-semibold">Napište nám váš dotaz</h2>
             <p className="mt-4 text-sm">
-              Reach out to our sales team! We’re eager to learn more about how
-              you plan to use our application.
+              Ozvěte se našemu týmu. Rádi zjistíme více o vašem záměru a
+              pomůžeme vám vybrat nejlepší postup.
             </p>
           </div>
 
@@ -40,58 +38,58 @@ export default function ContactSection() {
             className="**:[&>label]:block mt-12 space-y-6 *:space-y-3"
           >
             <div>
-              <Label htmlFor="name">Full name</Label>
+              <Label htmlFor="name">Jméno a příjmení</Label>
               <Input type="text" id="name" required />
             </div>
 
             <div>
-              <Label htmlFor="email">Work Email</Label>
+              <Label htmlFor="email">Pracovní e-mail</Label>
               <Input type="email" id="email" required />
             </div>
 
             <div>
-              <Label htmlFor="country">Country/Region</Label>
+              <Label htmlFor="country">Země / region</Label>
               <Select>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select Country/Region" />
+                  <SelectValue placeholder="Vyberte zemi / region" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">DR Congo</SelectItem>
-                  <SelectItem value="2">United States</SelectItem>
-                  <SelectItem value="3">France</SelectItem>
+                  <SelectItem value="1">Česká republika</SelectItem>
+                  <SelectItem value="2">Slovensko</SelectItem>
+                  <SelectItem value="3">Jiná země</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label htmlFor="website">Company Website</Label>
+              <Label htmlFor="website">Web společnosti</Label>
               <Input type="url" id="website" />
               <span className="text-muted-foreground inline-block text-sm">
-                Must start with 'https'
+                URL musí začínat „https://“
               </span>
             </div>
 
             <div>
-              <Label htmlFor="job">Job function</Label>
+              <Label htmlFor="job">Typ podnikání</Label>
               <Select>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select Job Function" />
+                  <SelectValue placeholder="Vyberte typ podnikání" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Finance</SelectItem>
-                  <SelectItem value="2">Education</SelectItem>
-                  <SelectItem value="3">Legal</SelectItem>
-                  <SelectItem value="4">More</SelectItem>
+                  <SelectItem value="1">Gastronomie</SelectItem>
+                  <SelectItem value="2">Maloobchod</SelectItem>
+                  <SelectItem value="3">Služby</SelectItem>
+                  <SelectItem value="4">Jiné</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label htmlFor="msg">Message</Label>
+              <Label htmlFor="msg">Zpráva</Label>
               <Textarea id="msg" rows={3} />
             </div>
 
-            <Button>Submit</Button>
+            <Button>Odeslat</Button>
           </form>
         </Card>
       </div>
