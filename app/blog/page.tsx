@@ -1,16 +1,12 @@
-import Link from "next/link";
 import { getAllPosts } from "@/lib/blog";
-import { Calendar, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Metadata } from "next";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -33,9 +29,6 @@ export default function BlogPage() {
     <section className={cn("py-32")}>
       <div className="container mx-auto flex flex-col items-center gap-16 lg:px-16">
         <div className="text-center">
-          <Badge variant="secondary" className="mb-6">
-            {"Nejnovější články"}
-          </Badge>
           <h2 className="mb-3 text-3xl font-semibold text-pretty md:mb-4 md:text-4xl lg:mb-6 lg:max-w-3xl lg:text-5xl">
             {"Blog"}
           </h2>
