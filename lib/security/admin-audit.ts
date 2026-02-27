@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 import {
   anonymizeIP,
   extractIPFromHeaders,
@@ -9,7 +9,7 @@ type AdminAuditPayload = {
   resource: string;
   result: "success" | "denied" | "error";
   actorEmail?: string | null;
-  details?: Record<string, unknown>;
+  details?: Prisma.InputJsonValue;
 };
 
 export async function writeAdminAuditEvent(
@@ -20,6 +20,14 @@ export async function writeAdminAuditEvent(
   try {
     const ip = extractIPFromHeaders(headers);
     const anonymousId = anonymizeIP(ip);
+    const eventData: Prisma.InputJsonObject = {
+      actorEmail: payload.actorEmail || null,
+      action: payload.action,
+      resource: payload.resource,
+      result: payload.result,
+      details: payload.details ?? null,
+      auditedAt: new Date().toISOString(),
+    };
 
     await prisma.userEvent.create({
       data: {
@@ -28,14 +36,7 @@ export async function writeAdminAuditEvent(
         sessionId: null,
         eventType: "admin_action",
         page: "/admin",
-        eventData: {
-          actorEmail: payload.actorEmail || null,
-          action: payload.action,
-          resource: payload.resource,
-          result: payload.result,
-          details: payload.details || null,
-          auditedAt: new Date().toISOString(),
-        },
+        eventData,
       },
     });
   } catch (error) {

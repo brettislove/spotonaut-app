@@ -31,6 +31,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.spotonaut.com"),
   title: "Spotonaut - Poradíme, kde (ne)podnikat.",
   description: "Váš parťák pro objevování ziskových lokalit. Data místo dojmů.",
   icons: {
