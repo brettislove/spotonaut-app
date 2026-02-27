@@ -3,10 +3,30 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, email, message } = body || {};
+    const name = typeof body?.name === "string" ? body.name.trim() : "";
+    const email = typeof body?.email === "string" ? body.email.trim() : "";
+    const message =
+      typeof body?.message === "string" ? body.message.trim() : "";
 
     if (!name || !email || !message) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Vyplňte prosím všechna povinná pole." },
+        { status: 400 },
+      );
+    }
+
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return NextResponse.json(
+        { error: "Zadejte prosím platný e-mail." },
+        { status: 400 },
+      );
+    }
+
+    if (name.length > 120 || message.length > 5000) {
+      return NextResponse.json(
+        { error: "Zadaný text je příliš dlouhý." },
+        { status: 400 },
+      );
     }
 
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -17,8 +37,8 @@ export async function POST(req: Request) {
 
     if (!RESEND_API_KEY) {
       return NextResponse.json(
-        { error: "Email provider not configured" },
-        { status: 500 }
+        { error: "E-mailová služba není nakonfigurována." },
+        { status: 500 },
       );
     }
 
@@ -50,15 +70,18 @@ export async function POST(req: Request) {
       const text = await res.text().catch(() => "");
       console.error("Resend error:", text);
       return NextResponse.json(
-        { error: "Failed to send email" },
-        { status: 502 }
+        { error: "Nepodařilo se odeslat e-mail." },
+        { status: 502 },
       );
     }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Došlo k chybě serveru." },
+      { status: 500 },
+    );
   }
 }
 
