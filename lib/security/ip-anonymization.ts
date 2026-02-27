@@ -1,12 +1,20 @@
 import crypto from "crypto";
 
+function getIpHashSecret(): string {
+  const secret = process.env.IP_HASH_SECRET;
+  if (!secret) {
+    throw new Error("Missing required environment variable: IP_HASH_SECRET");
+  }
+  return secret;
+}
+
 /**
  * Gets a daily rotating salt for IP hashing
  * This ensures same IP gets same hash on same day, but different hash on different days
  */
 function getDailySalt(): string {
   const date = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-  const secret = process.env.IP_HASH_SECRET || "default-secret-change-me";
+  const secret = getIpHashSecret();
   return crypto
     .createHash("sha256")
     .update(`${secret}-${date}`)
@@ -40,7 +48,7 @@ export function anonymizeIP(ip: string): string {
  * @returns Object with country and region
  */
 export async function getCountryFromIP(
-  ip: string
+  ip: string,
 ): Promise<{ country: string; region: string | null }> {
   if (!ip || ip === "unknown") {
     return { country: "Unknown", region: null };

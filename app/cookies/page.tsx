@@ -34,7 +34,7 @@ export default function CookiesPage() {
               Zásady používání cookies
             </h1>
             <p className="text-muted-foreground mb-8">
-              Poslední aktualizace: 20. prosince 2025
+              Poslední aktualizace: 27. února 2026
             </p>
 
             <div className="space-y-8 text-muted-foreground">
@@ -80,8 +80,8 @@ export default function CookiesPage() {
                     Analytické a marketingové cookies
                   </p>
                   <p>
-                    V současné době je nepoužíváme. Pokud je v budoucnu začneme
-                    používat, budeme vás informovat a vyžádáme si souhlas.
+                    Používáme je pouze na základě vašeho souhlasu. Bez souhlasu
+                    analytické a marketingové sledování nespouštíme.
                   </p>
                 </div>
               </section>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/api/auth/[...nextauth]/route";
 import { PrismaClient } from "@prisma/client";
+import { writeAdminAuditEvent } from "@/lib/security/admin-audit";
 
 const prisma = new PrismaClient();
 
@@ -28,12 +29,12 @@ function isAdmin(email: string | null | undefined): boolean {
 function clampDateRange(
   startDate: string,
   endDate: string,
-  maxDays: number
+  maxDays: number,
 ): { start: string; end: string } {
   const start = new Date(startDate);
   const end = new Date(endDate);
   const diffDays = Math.ceil(
-    (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+    (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
   );
 
   if (diffDays > maxDays) {
@@ -54,6 +55,12 @@ export async function GET(request: NextRequest) {
     const session = await auth();
 
     if (!session?.user?.email || !isAdmin(session.user.email)) {
+      await writeAdminAuditEvent(prisma, request.headers, {
+        action: "analytics_read",
+        resource: "admin_analytics",
+        result: "denied",
+        actorEmail: session?.user?.email || null,
+      });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -230,13 +237,21 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(
       { error: "Invalid type parameter" },
-      { status: 400 }
+      { status: 400 },
     );
   } catch (error) {
+    await writeAdminAuditEvent(prisma, request.headers, {
+      action: "analytics_read",
+      resource: "admin_analytics",
+      result: "error",
+      details: {
+        error: error instanceof Error ? error.message : "unknown_error",
+      },
+    });
     console.error("Analytics API error:", error);
     return NextResponse.json(
       { error: "Failed to fetch analytics data" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

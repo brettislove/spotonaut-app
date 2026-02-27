@@ -101,21 +101,11 @@ export function getFirstTouchUTM(): {
 /**
  * Track a visit for UTM/campaign attribution.
  * Sends visit data to /api/tracking/visit.
- *
- * Bypasses cookie consent when UTM params are present in the URL —
- * campaign attribution for the first visit is considered functional data.
- * Without UTM params, standard cookie consent is required.
  */
 export async function trackVisit(path?: string): Promise<void> {
-  const utmParams = extractUTMParams(window.location.href);
-  const hasUtm = !!(
-    utmParams.utmSource ||
-    utmParams.utmMedium ||
-    utmParams.utmCampaign
-  );
+  if (!hasConsent()) return;
 
-  // Allow tracking without consent if UTM params are present (functional data)
-  if (!hasUtm && !hasConsent()) return;
+  const utmParams = extractUTMParams(window.location.href);
 
   try {
     const currentPath = path || window.location.pathname;

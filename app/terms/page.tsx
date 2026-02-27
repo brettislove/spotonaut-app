@@ -34,7 +34,7 @@ export default function TermsPage() {
               Podmínky použití
             </h1>
             <p className="text-muted-foreground mb-8">
-              Poslední aktualizace: 20. prosince 2025
+              Poslední aktualizace: 27. února 2026
             </p>
 
             <div className="space-y-8 text-muted-foreground">
@@ -116,7 +116,19 @@ export default function TermsPage() {
 
               <section>
                 <h2 className="text-2xl font-semibold text-foreground mb-4">
-                  6. Cookies a sledovací technologie
+                  6. Platební údaje
+                </h2>
+                <p>
+                  V případě online plateb používáme hostované platební rozhraní
+                  poskytovatele platebních služeb. Údaje z platebních karet
+                  (např. číslo karty, CVC/CVV) nejsou v rámci našich systémů
+                  ukládány ani zpracovávány.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-foreground mb-4">
+                  7. Cookies a sledovací technologie
                 </h2>
                 <p>
                   Naše webová stránka může používat cookies pro zlepšení
@@ -134,7 +146,7 @@ export default function TermsPage() {
 
               <section>
                 <h2 className="text-2xl font-semibold text-foreground mb-4">
-                  7. Kontakt
+                  8. Kontakt
                 </h2>
                 <p className="mb-4">
                   Máte-li dotazy k těmto podmínkám nebo k ochraně osobních
@@ -162,7 +174,7 @@ export default function TermsPage() {
 
               <section>
                 <h2 className="text-2xl font-semibold text-foreground mb-4">
-                  8. Změny těchto podmínek
+                  9. Změny těchto podmínek
                 </h2>
                 <p>
                   Provozovatel si vyhrazuje právo tyto podmínky aktualizovat. O

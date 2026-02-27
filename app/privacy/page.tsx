@@ -34,7 +34,7 @@ export default function PrivacyPage() {
               Zásady ochrany osobních údajů
             </h1>
             <p className="text-muted-foreground mb-8">
-              Poslední aktualizace: 21. prosince 2025
+              Poslední aktualizace: 27. února 2026
             </p>
 
             <div className="space-y-8 text-muted-foreground">
@@ -148,7 +148,24 @@ export default function PrivacyPage() {
 
               <section>
                 <h2 className="text-2xl font-semibold text-foreground mb-4">
-                  6. Vaše práva
+                  6. Platební údaje a platební brána
+                </h2>
+                <p className="mb-4">
+                  Pro online platby používáme hostovanou platební stránku
+                  poskytovatele platebních služeb. Údaje z platebních karet
+                  (např. číslo karty, CVC/CVV) nezadáváte do našeho systému a
+                  nejsou námi ukládány ani zpracovávány.
+                </p>
+                <p>
+                  Pokud by se rozsah zpracování platebních údajů v budoucnu
+                  změnil, provedeme odpovídající aktualizaci bezpečnostních
+                  opatření a dokumentace.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-foreground mb-4">
+                  7. Vaše práva
                 </h2>
                 <p className="mb-4">V souladu s GDPR máte práva, například:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
@@ -164,18 +181,19 @@ export default function PrivacyPage() {
 
               <section>
                 <h2 className="text-2xl font-semibold text-foreground mb-4">
-                  7. Zabezpečení
+                  8. Zabezpečení
                 </h2>
                 <p>
                   Používáme technická a organizační opatření k ochraně osobních
-                  údajů, včetně šifrování přenosu (HTTPS) a omezení přístupu k
-                  datům.
+                  údajů, včetně šifrování přenosu (HTTPS/TLS), bezpečnostních
+                  HTTP hlaviček a omezení přístupu k datům pouze pro oprávněné
+                  osoby.
                 </p>
               </section>
 
               <section>
                 <h2 className="text-2xl font-semibold text-foreground mb-4">
-                  8. Cookies a sledovací technologie
+                  9. Cookies a sledovací technologie
                 </h2>
                 <p>
                   Podrobné informace o používaných cookies naleznete v{" "}
@@ -191,7 +209,7 @@ export default function PrivacyPage() {
 
               <section>
                 <h2 className="text-2xl font-semibold text-foreground mb-4">
-                  9. Kontakt
+                  10. Kontakt
                 </h2>
                 <p className="mb-4">
                   Pro uplatnění práv nebo další dotazy nás kontaktujte:
@@ -215,7 +233,7 @@ export default function PrivacyPage() {
 
               <section>
                 <h2 className="text-2xl font-semibold text-foreground mb-4">
-                  10. Změny zásad
+                  11. Změny zásad
                 </h2>
                 <p>
                   Tyto zásady můžeme čas od času aktualizovat. O podstatných

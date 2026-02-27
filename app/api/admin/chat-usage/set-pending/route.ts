@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/api/auth/[...nextauth]/route";
 import { PrismaClient } from "@prisma/client";
+import { writeAdminAuditEvent } from "@/lib/security/admin-audit";
 
 const prisma = new PrismaClient();
 
@@ -21,12 +22,23 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session || !session.user) {
+      await writeAdminAuditEvent(prisma, request.headers, {
+        action: "chat_pending_update",
+        resource: "chat_usage",
+        result: "denied",
+      });
       return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
     }
 
     const userEmail = (session.user.email || "").toLowerCase();
     const admins = parseAdminEmails();
     if (!admins.includes(userEmail)) {
+      await writeAdminAuditEvent(prisma, request.headers, {
+        action: "chat_pending_update",
+        resource: "chat_usage",
+        result: "denied",
+        actorEmail: session.user.email,
+      });
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -49,6 +61,17 @@ export async function POST(request: NextRequest) {
         where: { userId: user.id },
         data: { requestPending },
       });
+      await writeAdminAuditEvent(prisma, request.headers, {
+        action: "chat_pending_update",
+        resource: "chat_usage",
+        result: "success",
+        actorEmail: session.user.email,
+        details: {
+          targetEmail: email,
+          requestPending,
+          mode: "update",
+        },
+      });
       return NextResponse.json({
         ok: true,
         requestPending: updated.requestPending,
@@ -58,11 +81,30 @@ export async function POST(request: NextRequest) {
     const created = await prisma.chatUsage.create({
       data: { userId: user.id, promptCount: 0, quota: 3, requestPending },
     });
+    await writeAdminAuditEvent(prisma, request.headers, {
+      action: "chat_pending_update",
+      resource: "chat_usage",
+      result: "success",
+      actorEmail: session.user.email,
+      details: {
+        targetEmail: email,
+        requestPending,
+        mode: "create",
+      },
+    });
     return NextResponse.json({
       ok: true,
       requestPending: created.requestPending,
     });
   } catch (err) {
+    await writeAdminAuditEvent(prisma, request.headers, {
+      action: "chat_pending_update",
+      resource: "chat_usage",
+      result: "error",
+      details: {
+        error: err instanceof Error ? err.message : "unknown_error",
+      },
+    });
     console.error("Admin set-pending error", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
