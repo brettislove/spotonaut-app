@@ -15,26 +15,25 @@ export default function FAQSection() {
       id: "item-1",
       question: "Jaká data používáme pro analýzu?",
       answer:
-        "Naše analýza využívá zejména veřejně dostupná data z Google Maps a Sreality, nad kterými náš AI model provádí vyhodnocení lokality.",
+        "Naše analýza využívá veřejně dostupná data z Google Maps a Sreality.cz.  AI model je zpracovává a pomáha analyzova jejich vzájemné propojení, či vliv na obchodní potenciál zvolené lokality.",
     },
     {
       id: "item-2",
       question: "Jaké jsou hlavní výhody využití Spotonauta pro můj byznys?",
-      answer:
-        "We accept all major credit cards (Visa, Mastercard, American Express), PayPal, Apple Pay, and Google Pay. For enterprise customers, we also offer invoicing options.",
+      answer: `Spotonaut vám pomůže vybrat správné místo rychle a bez zbytečného rizika.\n\n Během pár minut zjistíte, jaký má lokalita potenciál, a můžete porovnat více míst mezi sebou. Díky tomu děláte rozhodnutí na základě dat, ne pocitu. Výrazně tím snížíte šanci, že investujete do špatné adresy.\n\n Navíc je Spotonaut aktuálně zdarma a stále přidáváme nové funkce.`,
     },
     {
       id: "item-3",
       question:
         "V čem se Spotonaut liší od jiných zprostředkovatelů lokačních analýz?",
       answer:
-        "You can modify or cancel your order within 1 hour of placing it. After this window, please contact our customer support team who will assist you with any changes.",
+        "Spotonaut je rychlý, dostupný a praktický.\n\nNejsme drahá konzultační firma ani složitý enterprise nástroj. Analýzu získáte během pár minut, bez dlouhých jednání a vysokých nákladů. Zaměřujeme se na jednoduchost, srozumitelnost a reálné využití v praxi pro malé podnikatele i rostoucí sítě.\n\nNavíc nástroj neustále vyvíjíme podle zpětné vazby uživatelů.",
     },
     {
       id: "item-4",
       question: "Jaký je typický případ užití?",
       answer:
-        "Yes, we ship to over 50 countries worldwide. International shipping typically takes 7-14 business days. Additional customs fees may apply depending on your country's import regulations.",
+        "Chci otevřít nový stánek, provozovnu nebo umístit automat, ale nejsem si jistý lokalitou.\n\nZadám adresu, porovnám možnosti a během chvíle mám jasnější představu, kde má smysl investovat.\n\nSpotonaut pomáhá rozhodnout se dřív, než podepíšete nájem nebo utratíte první peníze.",
     },
   ];
 
@@ -95,7 +94,9 @@ export default function FAQSection() {
                     {item.question}
                   </AccordionTrigger>
                   <AccordionContent>
-                    <p className="text-base">{item.answer}</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {item.answer}
+                    </p>
                   </AccordionContent>
                 </AccordionItem>
               ))}
