@@ -1,63 +1,97 @@
 ---
-title: 'Jak vybrat správnou lokalitu pro vaši restauraci'
-excerpt: 'Výběr správné lokality je klíčový pro úspěch každého gastronomického podniku. Zjistěte, na co se zaměřit při analýze potenciálních lokalit.'
-coverImage: '/images/blog/restaurant-location.jpg'
-date: '2026-02-10'
+title: 'Jak vybrat správnou lokalitu pro výdejní automat (praktický návod)'
+excerpt: 'Výběr správné lokality pro výdejní automat je klíčový faktor, který rozhoduje o jeho ziskovosti.'
+coverImage: '/blog/vending.png'
+date: '2026-02-14'
 author:
-  name: SpotOnaut Team
+  name: Matěj Křen
   picture: '/images/avatar.png'
 ogImage:
-  url: '/images/blog/restaurant-location.jpg'
+  url: '/blog/vending.png'
 ---
 
-# Jak vybrat správnou lokalitu pro vaši restauraci
+# Jak vybrat správnou lokalitu pro výdejní automat (praktický návod)
 
-Výběr lokality restaurace je jedním z nejdůležitějších rozhodnutí, které majitel podniku učiní. Správná lokalita může znamenat rozdíl mezi úspěchem a neúspěchem vašeho podnikání.
+Výběr správné lokality pro výdejní automat je klíčový faktor, který rozhoduje o jeho ziskovosti. Špatně zvolené místo může znamenat nízké tržby a dlouhou návratnost investice. Správné místo může vytvořit stabilní a dlouhodobý příjem.
 
-## Klíčové faktory při výběru lokality
+Pokud řešíte otázku „kam umístit výdejní automat?“, čtěte dál.
 
-### 1. Pěší provoz
+## Proč je lokalita pro automat důležitější než samotný produkt?
 
-Hustý pěší provoz je jedním z nejdůležitějších faktorů. Hledejte lokality s:
+Mnoho lidí řeší typ zboží, cenu nebo design stroje. Ale realita je jednoduchá:
 
-- Vysokou koncentrací chodců
-- Blízkostí k obchodním centrům
-- Dostupností hromadnou dopravou
+📍 Lokalita má větší vliv než samotný automat. I průměrný automat na správném místě může vydělávat víc než špičkový automat na špatném místě.
 
-### 2. Viditelnost a přístupnost
+## 5 faktorů, které rozhodují o úspěchu výdejního automatu
 
-Vaše restaurace musí být:
+### 1️⃣ Průchodnost (foot traffic)
 
-- **Snadno viditelná** z hlavních ulic
-- **Dostupná** pěšky i autem
-- **Parkování** - dostatečná kapacita pro zákazníky
+Kolik lidí místem projde? Ale hlavně – kolik z nich se může reálně zastavit? Automat u rychlé silnice má jinou hodnotu než automat ve vstupní hale budovy.
 
-### 3. Demografické údaje
+### 2️⃣ Typ prostředí
 
-Analyzujte místní populaci:
+- Kancelářská budova
+- Nemocnice
+- Škola
+- Bytový dům
+- Obchodní centrum
 
-- Věkové složení
-- Příjmová úroveň
-- Životní styl a stravovací návyky
+Každé prostředí má jiný rytmus, jinou cílovou skupinu a jiný potenciál.
 
-## Jak SpotOnaut pomáhá
+### 3️⃣ Opakovatelnost pohybu
 
-Naše platforma analyzuje všechny tyto faktory automaticky:
+Automat funguje lépe tam, kde se lidé vracejí každý den. Stabilní pohyb = stabilní tržby.
 
-```
-✓ Analýza dopravní obslužnosti
-✓ Vyhodnocení pěšího provozu
-✓ Demografická data
-✓ Konkurenční analýza
-✓ AI doporučení
-```
+### 4️⃣ Konkurence
 
-## Případová studie
+Je v okolí jiný automat? Obchod? Bufet?
 
-Nedávno jsme pomohli majiteli kavárny najít ideální lokalitu v Praze. Původně uvažoval o lokalitě v centru s vysokým nájmem, ale naše analýza odhalila lepší možnost - lokalitu s rostoucím počtem mladých profesionálů a nižší konkurencí, kde nyní jeho kavárna prosperuje.
+Někdy konkurence potvrzuje poptávku. Jindy znamená nasycený trh.
 
-## Závěr
+### 5️⃣ Viditelnost a dostupnost
 
-Výběr správné lokality vyžaduje důkladnou analýzu mnoha faktorů. Se SpotOnaut můžete učinit informované rozhodnutí založené na datech, ne jen na intuici.
+Je automat na trase pohybu lidí? Je snadno přístupný? Je dobře vidět? Umístění „za roh“ může výrazně snížit prodeje.
 
-[Vyzkoušejte analýzu](/app) zdarma a objevte potenciál různých lokalit pro vaši restauraci.
+## Nejčastější chyba: výběr podle pocitu
+
+„Tady to vypadá dobře.“
+„Tady je hodně lidí.“
+
+Jenže bez dat nevíte:
+
+- Jaká je skutečná průchodnost
+- Jaká je struktura okolí
+- Jak silná je konkurence
+- Jaký je obchodní kontext místa
+
+Rozhodnutí za desítky až stovky tisíc korun by nemělo být jen intuice.
+
+## Jak si lokalitu pro výdejní automat ověřit
+
+Dnes už nemusíte trávit hodiny obcházením okolí. Spotonaut vám pomůže:
+
+- 📍 zobrazit lokalitu na mapě
+- 📊 získat skóre lokality (0–100)
+- 🚶 vyhodnotit průchodnost
+- 🏪 zobrazit konkurenci a body zájmu v okolí
+
+Neříkáme, že automat bude vydělávat. Ale pomáháme vám rozhodnout se na základě dat.
+
+## Praktický příklad
+
+Dvě lokality vzdálené 250 metrů:
+
+Lokalita A – hlavní ulice s vysokým průchodem, ale bez zastavení.
+Lokalita B – vstup do administrativní budovy s nižším, ale pravidelným pohybem.
+
+Bez dat hádáte. S daty porovnáváte.
+
+## Než automat umístíte, udělejte jednu věc
+
+Ověřte si adresu.
+
+Základní verze Spotonauta je dostupná zdarma, abyste si mohli zjistit, jestli má vaše lokalita smysl.
+
+👉 Podívejte se na spotonaut.com
+
+Než investujete do automatu.

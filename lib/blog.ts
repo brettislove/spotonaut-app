@@ -2,6 +2,7 @@ import fs from "fs";
 import { join } from "path";
 import matter from "gray-matter";
 import { remark } from "remark";
+import remarkGfm from "remark-gfm";
 import html from "remark-html";
 
 const postsDirectory = join(process.cwd(), "_posts");
@@ -95,6 +96,7 @@ export function getAllPosts(fields: string[] = []): Partial<Post>[] {
  */
 export async function markdownToHtml(markdown: string): Promise<string> {
   const result = await remark()
+    .use(remarkGfm)
     .use(html, { sanitize: false })
     .process(markdown);
   return result.toString();

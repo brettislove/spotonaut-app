@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@plugin "@tailwindcss/typography";
 @source "../node_modules/streamdown/dist/*.js";
 
 @custom-variant dark (&:is(.dark *));
@@ -237,6 +238,103 @@ input[type="number"].no-spinner {
   .maplibregl-popup-tip {
     @apply hidden!;
     @apply hidden!;
+  }
+}
+
+@layer components {
+  .markdown-content {
+    @apply max-w-none text-foreground/90;
+  }
+
+  .markdown-content h1,
+  .markdown-content h2,
+  .markdown-content h3,
+  .markdown-content h4 {
+    @apply mt-10 mb-4 scroll-mt-24 font-bold text-foreground;
+  }
+
+  .markdown-content h1 {
+    @apply mt-12 mb-6 text-3xl;
+  }
+
+  .markdown-content h2 {
+    @apply text-2xl;
+  }
+
+  .markdown-content h3 {
+    @apply text-xl;
+  }
+
+  .markdown-content p {
+    @apply mb-4 leading-relaxed;
+  }
+
+  .markdown-content a {
+    @apply text-primary no-underline;
+  }
+
+  .markdown-content a:hover {
+    @apply underline;
+  }
+
+  .markdown-content ul {
+    @apply my-6 list-disc pl-6;
+  }
+
+  .markdown-content ol {
+    @apply my-6 list-decimal pl-6;
+  }
+
+  .markdown-content li {
+    @apply my-2;
+  }
+
+  .markdown-content li::marker {
+    @apply text-primary;
+  }
+
+  .markdown-content code {
+    @apply rounded bg-muted px-2 py-1 text-sm text-primary;
+  }
+
+  .markdown-content pre {
+    @apply my-6 overflow-x-auto rounded-lg border bg-muted p-4;
+  }
+
+  .markdown-content pre code {
+    @apply bg-transparent p-0 text-foreground;
+  }
+
+  .markdown-content blockquote {
+    @apply my-6 border-l-4 border-primary pl-4 text-muted-foreground;
+  }
+
+  .markdown-content hr {
+    @apply my-10 border-border;
+  }
+
+  .markdown-content table {
+    @apply my-6 w-full table-auto border-collapse;
+  }
+
+  .markdown-content thead {
+    @apply border-b;
+  }
+
+  .markdown-content th {
+    @apply px-3 py-2 text-left font-semibold;
+  }
+
+  .markdown-content td {
+    @apply px-3 py-2;
+  }
+
+  .markdown-content tr {
+    @apply border-b border-border;
+  }
+
+  .markdown-content img {
+    @apply my-8 rounded-lg border bg-muted/20;
   }
 }
 

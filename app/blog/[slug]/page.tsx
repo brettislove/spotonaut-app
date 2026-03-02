@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
 
 interface BlogPostPageProps {
   params: Promise<{
@@ -106,27 +107,20 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <div className="mb-12 rounded-xl overflow-hidden bg-muted/50 border">
               <div className="aspect-video w-full flex items-center justify-center text-muted-foreground/30">
                 {/* Placeholder for image */}
-                <span className="text-sm">Cover Image: {post.coverImage}</span>
+                <Image
+                  src={post.ogImage?.url || post.coverImage}
+                  alt={`Cover image for ${post.title}`}
+                  width={1200}
+                  height={675}
+                  className="object-cover w-full h-full"
+                />
               </div>
             </div>
           )}
 
           {/* Content */}
           <div
-            className="prose prose-neutral dark:prose-invert prose-lg max-w-none
-                prose-headings:font-bold prose-headings:font-inter
-                prose-h1:text-3xl prose-h1:mb-6 prose-h1:mt-12
-                prose-h2:text-2xl prose-h2:mb-4 prose-h2:mt-10
-                prose-h3:text-xl prose-h3:mb-3 prose-h3:mt-8
-                prose-p:leading-relaxed prose-p:mb-4
-                prose-a:text-primary prose-a:no-underline hover:prose-a:underline
-                prose-strong:font-semibold
-                prose-ul:my-6
-                prose-ol:my-6
-                prose-li:my-2
-                prose-code:text-primary prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
-                prose-pre:bg-muted prose-pre:border
-                prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:pl-4"
+            className="markdown-content"
             dangerouslySetInnerHTML={{ __html: post.content }}
           />
         </article>

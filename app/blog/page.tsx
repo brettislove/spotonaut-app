@@ -8,6 +8,7 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "Blog | SpotOnaut",
@@ -50,9 +51,11 @@ export default function BlogPage() {
                   target="_blank"
                   className="transition-opacity duration-200 fade-in hover:opacity-70"
                 >
-                  <img
-                    src={post.coverImage}
-                    alt={post.title}
+                  <Image
+                    src={post.ogImage?.url || post.coverImage || "/placeholder.png"}
+                    alt={post.title ?? ""}
+                    width={1200}
+                    height={675}
                     className="h-full w-full object-cover object-center"
                   />
                 </a>
