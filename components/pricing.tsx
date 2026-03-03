@@ -121,15 +121,15 @@ export default function Pricing() {
                 {isAnnual ? (
                   <>
                     <span className="text-muted-foreground line-through mr-2">
-                      490 Kč
+                      399 Kč
                     </span>
-                    <span className="text-3xl text-primary">392 Kč</span>
+                    <span className="text-3xl text-primary">319 Kč</span>
                     <span className="text-sm text-muted-foreground block">
                       / měsíc (roční platba)
                     </span>
                   </>
                 ) : (
-                  "490 Kč / měsíc"
+                  "399 Kč / měsíc"
                 )}
               </span>
               <CardDescription className="text-sm">
