@@ -43,13 +43,11 @@ export default function AboutPage() {
                   Provozovatel webu
                 </h2>
                 <div className="p-4 rounded-lg border bg-muted/30">
-                  <p className="font-semibold text-foreground">
-                    Břetislav Dančák
-                  </p>
+                  <p className="font-semibold text-foreground">Matěj Křen</p>
                   <p className="text-muted-foreground text-sm mt-2">
-                    IČO: 14015056
+                    IČO: 06608183
                     <br />
-                    Sídlo: Čápkova 16/8, 602 00 Brno, Česká republika
+                    Sídlo: Kostelecká Lhota 51, 517 41 Kostelec nad Orlicí
                   </p>
                 </div>
               </section>

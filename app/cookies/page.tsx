@@ -181,8 +181,8 @@ export default function CookiesPage() {
                     </a>
                   </p>
                   <p className="text-foreground mt-2">
-                    <strong>Adresa:</strong> Čápkova 16/8, 602 00 Brno, Česká
-                    republika
+                    <strong>Adresa:</strong> Kostelecká Lhota 51, 517 41
+                    Kostelec nad Orlicí
                   </p>
                 </div>
               </section>
