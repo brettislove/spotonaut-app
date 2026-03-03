@@ -11,9 +11,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Check, X } from "lucide-react";
+import { Check, Info, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "./ui/badge";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 
 export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false);
@@ -31,7 +37,7 @@ export default function Pricing() {
           </p>
         </div>
 
-        <div className="mt-8 flex items-center justify-center gap-4 md:mt-12">
+        {/* <div className="mt-8 flex items-center justify-center gap-4 md:mt-12">
           <span
             className={`text-sm ${!isAnnual ? "font-semibold" : "text-muted-foreground"}`}
           >
@@ -48,7 +54,7 @@ export default function Pricing() {
             Roční
             {/* <span className="ml-2 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
               -20%
-            </span> */}
+            </span> 
             <Badge
               variant="outline"
               className="ml-2 text-green-600 dark:text-green-400 border-green-200 dark:border-green-700"
@@ -56,9 +62,9 @@ export default function Pricing() {
               -20%
             </Badge>
           </span>
-        </div>
+        </div> */}
 
-        <div className="mt-8 grid gap-6 md:mt-20 md:grid-cols-3 items-stretch">
+        <div className="mt-8 grid gap-6 md:mt-20 md:grid-cols-4 items-stretch">
           <Card className="flex flex-col">
             <CardHeader>
               <CardTitle className="font-medium">🌑 Sonda</CardTitle>
@@ -75,15 +81,14 @@ export default function Pricing() {
 
               <ul className="list-outside space-y-3 text-sm">
                 {[
-                  "30 kreditů do začátku (jednorázově)",
+                  "25 kreditů do začátku (jednorázově)",
                   'Základní "Skóre lokality"',
                   "Náhled na mapě",
                   "Pokročilý AI chat",
-                  "Možnost uložit si 1 analýzu",
-                  "Export do PDF",
+                  // "Možnost uložit si 1 analýzu",
                   "Zobrazení realitních inzercí",
                 ].map((item, index) => {
-                  const isDisabled = index > 4; // First 5 items are available, rest are disabled
+                  const isDisabled = index > 3; // First 5 items are available, rest are disabled
                   return (
                     <li
                       key={index}
@@ -109,7 +114,6 @@ export default function Pricing() {
               </Button>
             </CardFooter>
           </Card>
-
           <Card className="relative flex flex-col">
             <span className="bg-secondary absolute inset-x-0 -top-3 mx-auto flex h-6 w-fit items-center rounded-full from-purple-400 to-amber-300 px-3 py-1 text-xs font-medium text-amber-950 ring-1 ring-inset ring-white/20 ring-offset-1 ring-offset-gray-950/5">
               🔥 Nejpopulárnější
@@ -123,17 +127,25 @@ export default function Pricing() {
                     <span className="text-muted-foreground line-through mr-2">
                       399 Kč
                     </span>
-                    <span className="text-3xl text-primary">319 Kč</span>
+                    <span className="text-3xl text-primary block">319 Kč</span>
                     <span className="text-sm text-muted-foreground block">
                       / měsíc (roční platba)
                     </span>
                   </>
                 ) : (
-                  "399 Kč / měsíc"
+                  <>
+                    <span className="text-muted-foreground line-through block">
+                      399 Kč
+                    </span>
+                    <span className="text-3xl text-primary mr-4">299 Kč</span>
+                    <span className="text-sm text-muted-foreground block">
+                      / měsíc (early bird cena)
+                    </span>
+                  </>
                 )}
               </span>
               <CardDescription className="text-sm">
-                Pokročilá analýza pro profesionály.
+                Pokročilá analýza.
               </CardDescription>
             </CardHeader>
 
@@ -142,11 +154,11 @@ export default function Pricing() {
               <ul className="list-outside space-y-3 text-sm">
                 {[
                   "Vše v plánu Sonda, plus:",
-                  "500 kreditů / měsíc",
-                  "Profesionální PDF reporty",
+                  "200 kreditů / měsíc",
+                  // "Profesionální PDF reporty",
                   "Zobrazení realitních inzercí",
                   "Možnost uložit si neomezený počet analýz",
-                  "Možnost jednorázově dokoupit kredity",
+                  // "Možnost jednorázově dokoupit kredity",
                 ].map((item, index) => {
                   const isDisabled = index > 9; // First 10 items are available, last 3 are disabled
                   return (
@@ -174,7 +186,6 @@ export default function Pricing() {
               </Button>
             </CardFooter>
           </Card>
-
           <Card className="flex flex-col">
             <CardHeader>
               <CardTitle className="font-medium">🛰️ Modul</CardTitle>
@@ -190,11 +201,19 @@ export default function Pricing() {
                     </span>
                   </>
                 ) : (
-                  "2990 Kč / měsíc"
+                  <>
+                    <span className="text-muted-foreground line-through block">
+                      2999 Kč
+                    </span>
+                    <span className="text-3xl text-primary mr-4">2249 Kč</span>
+                    <span className="text-sm text-muted-foreground block">
+                      / měsíc (early bird cena)
+                    </span>
+                  </>
                 )}
               </span>
               <CardDescription className="text-sm">
-                Pro podniková řešení na míru.
+                Pro profesionály.
               </CardDescription>
             </CardHeader>
 
@@ -204,10 +223,10 @@ export default function Pricing() {
               <ul className="list-outside space-y-3 text-sm">
                 {[
                   "Vše v plánu Raketa, plus:",
-                  "5 000+ kreditů / měsíc",
-                  "Týmový přístup (více uživatelů)",
-                  "Export do Excelu/CSV",
-                  "Srovnávací analýzy lokalit",
+                  "2 200 kreditů / měsíc",
+                  // "Týmový přístup (více uživatelů)",
+                  // "Export do Excelu/CSV",
+                  // "Srovnávací analýzy lokalit",
                   "Prioritní podpora",
                 ].map((item, index) => (
                   <li key={index} className="flex items-center gap-2">
@@ -217,13 +236,57 @@ export default function Pricing() {
                 ))}
               </ul>
             </CardContent>
-
             <CardFooter className="mt-auto">
               <Button asChild variant="outline" className="w-full">
-                <Link href="">Kontaktujte nás</Link>
+                <Link href="">Profi nasazení</Link>
               </Button>
             </CardFooter>
           </Card>
+          <Card className="flex flex-col">
+            <CardHeader>
+              <CardTitle className="font-medium">🪐 Orbita</CardTitle>
+              <span className="my-3 block text-2xl font-semibold">
+                {/* {isAnnual ? (
+                  <>
+                    <span className="text-muted-foreground line-through mr-2"></span>
+                    <span className="text-3xl text-primary">Dle dohody</span>
+                    <span className="text-sm text-muted-foreground block">
+                      / měsíc (roční platba)
+                    </span>
+                  </>
+                ) : ( */}
+                Dle dohody
+                {/* )} */}
+              </span>
+              <CardDescription className="text-sm">
+                Podniková řešení na míru.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-4 flex-grow">
+              <hr className="border-dashed" />
+
+              <ul className="list-outside space-y-3 text-sm">
+                {["Další funkce na míru dle potřeb vašeho podnikání"].map(
+                  (item, index) => (
+                    <li key={index} className="flex items-center gap-2">
+                      <Check className="size-5" />
+                      {item}
+                    </li>
+                  ),
+                )}
+              </ul>
+            </CardContent>
+
+            <CardFooter className="mt-auto">
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/kontakt">Kontaktujte nás</Link>
+              </Button>
+            </CardFooter>
+          </Card>
+          <p className="text-sm text-muted-foreground mt-4 col-span-4 text-center italic">
+            Ceny jsou bez DPH.
+          </p>
         </div>
       </div>
     </section>

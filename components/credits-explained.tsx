@@ -19,7 +19,7 @@ export default function CreditsExplained() {
         <div className="flex flex-col sm:flex-row justify-center items-center gap-6 mb-8">
           <div className="flex items-center gap-2 text-lg">
             <span className="text-2xl">🗺️</span>
-            <span>1 kompletní analýza lokality = 10 Kreditů</span>
+            <span>1 analýza lokality = 10 Kreditů</span>
           </div>
           <div className="flex items-center gap-2 text-lg">
             <span className="text-2xl">💬</span>
@@ -29,7 +29,7 @@ export default function CreditsExplained() {
 
         <div className="bg-muted/50 rounded-lg p-6 mb-6">
           <p className="text-sm text-muted-foreground mb-4">
-            S tarifem 🚀 Raketa (500 kreditů) můžete měsíčně udělat například:
+            S tarifem 🚀 Raketa (200 kreditů) můžete měsíčně udělat například:
           </p>
 
           <div className="flex justify-center gap-2 mb-4">
@@ -59,26 +59,31 @@ export default function CreditsExplained() {
           <div className="text-center">
             {selectedScenario === "A" && (
               <p className="text-lg font-medium">
-                50 Hloubkových analýz a 0 dotazů.
+                20 Hloubkových analýz a 0 dotazů.
               </p>
             )}
             {selectedScenario === "B" && (
               <p className="text-lg font-medium">
-                20 Analýz (200 kr.) + 300 Dotazů na AI (doladění detailů).
+                10 Analýz (100 kr.) + 100 Dotazů na AI (doladění detailů).
               </p>
             )}
             {selectedScenario === "C" && (
               <p className="text-lg font-medium">
-                5 Analýz (50 kr.) + Exporty + 450 Dotazů.
+                5 Analýz (50 kr.) + 150 Dotazů.
               </p>
             )}
           </div>
         </div>
 
-        <p className="text-sm text-muted-foreground">
+        {/* <p className="text-sm text-muted-foreground">
           <strong>Tip:</strong> Došly vám kredity? Nevadí. V tarifu Raketa a
           vyšším si můžete kdykoliv dokoupit balíček bez nutnosti upgradovat
           tarif.
+        </p> */}
+        <p className="text-sm text-muted-foreground">
+          <strong>Tip:</strong> Došly vám kredity? Nevadí. Tarif je možné
+          kdykoliv upgradovat nebo nás můžete kontaktovat a dokoupit si kredity
+          individuálně.
         </p>
       </div>
     </div>

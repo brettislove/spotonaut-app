@@ -6,16 +6,16 @@ const tableData = {
   credits: [
     {
       feature: "Měsíční příděl",
-      sonda: "30 (jednorázově)",
-      raketa: "500 (obnovuje se)",
-      modul: "5000+",
+      sonda: "25",
+      raketa: "200",
+      modul: "2200",
     },
-    {
-      feature: "Možnost dokoupit",
-      sonda: false,
-      raketa: true,
-      modul: true,
-    },
+    // {
+    //   feature: "Možnost dokoupit",
+    //   sonda: false,
+    //   raketa: true,
+    //   modul: true,
+    // },
   ],
   analytics: [
     {
@@ -30,29 +30,29 @@ const tableData = {
       raketa: true,
       modul: true,
     },
-    {
-      feature: "Možnost uložit analýzy",
-      sonda: "1 analýza",
-      raketa: "Neomezeně",
-      modul: "Neomezeně",
-    },
+    // {
+    //   feature: "Možnost uložit analýzy",
+    //   sonda: "1 analýza",
+    //   raketa: "Neomezeně",
+    //   modul: "Neomezeně",
+    // },
   ],
   ai: [
     {
       feature: "Chat s AI asistentem",
-      sonda: "Základní",
-      raketa: "Pokročilý kontext",
-      modul: "Pokročilý kontext",
-    },
-  ],
-  export: [
-    {
-      feature: "Export do PDF",
-      sonda: false,
+      sonda: true,
       raketa: true,
       modul: true,
     },
   ],
+  // export: [
+  //   {
+  //     feature: "Export do PDF",
+  //     sonda: false,
+  //     raketa: true,
+  //     modul: true,
+  //   },
+  // ],
 };
 
 export default function PricingComparator() {
@@ -80,7 +80,7 @@ export default function PricingComparator() {
                 <th className="space-y-3">
                   <span className="block">🛰️ Modul</span>
                   <Button asChild variant="outline" size="sm">
-                    <Link href="#">Kontaktujte nás</Link>
+                    <Link href="#">Profi nasazení</Link>
                   </Button>
                 </th>
               </tr>
@@ -197,7 +197,7 @@ export default function PricingComparator() {
                   </td>
                 </tr>
               ))}
-              <tr className="*:pb-3 *:pt-8">
+              {/* <tr className="*:pb-3 *:pt-8">
                 <td className="flex items-center gap-2 font-medium">
                   <FileUp className="size-4" />
                   <span>Exporty</span>
@@ -233,7 +233,7 @@ export default function PricingComparator() {
                     )}
                   </td>
                 </tr>
-              ))}
+              ))} */}
               <tr className="*:py-6">
                 <td></td>
                 <td></td>
