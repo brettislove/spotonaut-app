@@ -24,10 +24,12 @@ import { LogOut } from "lucide-react";
 import Avatar from "boring-avatars";
 import { getTierName } from "@/lib/constants/tiers";
 import { Badge } from "./ui/badge";
+import { useLocale } from "@/hooks/use-locale";
 
 export function NavUser() {
   const { data: session } = useSession();
   const { resetAnalysis } = useAnalysis();
+  const { t } = useLocale();
 
   return (
     <SidebarMenu>
@@ -70,7 +72,8 @@ export function NavUser() {
                     {session?.user?.email}
                   </span>
                   <span className="text-muted-foreground truncate text-xs">
-                    Úroveň: {getTierName(session?.user?.tier || 0)}{" "}
+                    {t("navUser.levelPrefix")}{" "}
+                    {getTierName(session?.user?.tier || 0)}{" "}
                   </span>
                 </div>
               </div>
@@ -79,7 +82,7 @@ export function NavUser() {
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <IconUserCircle />
-                Účet
+                {t("navUser.account")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
@@ -88,7 +91,7 @@ export function NavUser() {
               onClick={() => handleSignOut({ resetAnalysis })}
             >
               <LogOut />
-              Odhlásit se
+              {t("navUser.signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

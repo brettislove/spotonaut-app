@@ -18,13 +18,15 @@ import {
 import Avatar from "boring-avatars";
 import { handleSignOut } from "@/utils/auth";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
-
-const menuItems = [
-  { name: "Jak to funguje", href: "/how-it-works" },
-  { name: "Blog", href: "/blog" },
-  { name: "Ceník", href: "/pricing" },
-  { name: "Kontakt", href: "/kontakt" },
-];
+import { useLocale } from "@/hooks/use-locale";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { isSupportedLocale } from "@/lib/i18n/config";
 
 export const HeroHeader = ({
   setLoginModalOpen,
@@ -37,8 +39,22 @@ export const HeroHeader = ({
 }) => {
   const { resetAnalysis } = useAnalysis();
   const { data: session } = useSession();
+  const { locale, setLocale, t } = useLocale();
   const [menuState, setMenuState] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
+
+  const handleLocaleChange = (value: string) => {
+    if (isSupportedLocale(value)) {
+      setLocale(value);
+    }
+  };
+
+  const menuItems = [
+    { name: t("header.menu.howItWorks"), href: "/how-it-works" },
+    { name: t("header.menu.blog"), href: "/blog" },
+    { name: t("header.menu.pricing"), href: "/pricing" },
+    { name: t("header.menu.contact"), href: "/kontakt" },
+  ];
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -88,7 +104,11 @@ export const HeroHeader = ({
 
               <button
                 onClick={() => setMenuState(!menuState)}
-                aria-label={menuState == true ? "Close Menu" : "Open Menu"}
+                aria-label={
+                  menuState
+                    ? t("header.mobile.closeMenu")
+                    : t("header.mobile.openMenu")
+                }
                 className="relative z-20 -m-2.5 -mr-4 block cursor-pointer p-2.5 lg:hidden"
               >
                 <Menu className="in-data-[state=active]:rotate-180 in-data-[state=active]:scale-0 in-data-[state=active]:opacity-0 m-auto size-6 duration-200" />
@@ -127,6 +147,19 @@ export const HeroHeader = ({
                 </ul>
               </div>
               <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
+                <Select value={locale} onValueChange={handleLocaleChange}>
+                  <SelectTrigger
+                    size="sm"
+                    aria-label={t("common.language")}
+                    className="w-full sm:w-auto border-none bg-transparent shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:bg-transparent"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cs">{t("common.czech")}</SelectItem>
+                    <SelectItem value="en">{t("common.english")}</SelectItem>
+                  </SelectContent>
+                </Select>
                 {session ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -154,14 +187,14 @@ export const HeroHeader = ({
                         onClick={() => setAccountSettingsModalOpen(true)}
                       >
                         <Settings />
-                        <span>Nastavení účtu</span>
+                        <span>{t("header.auth.accountSettings")}</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         variant="destructive"
                         onClick={() => handleSignOut({ resetAnalysis })}
                       >
                         <LogOut />
-                        <span>Odhlásit se</span>
+                        <span>{t("header.auth.signOut")}</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -176,7 +209,7 @@ export const HeroHeader = ({
                       )}
                       onClick={() => setLoginModalOpen(true)}
                     >
-                      <span>Přihlásit se</span>
+                      <span>{t("header.auth.signIn")}</span>
                     </Button>
                     <Button
                       variant="default"
@@ -187,7 +220,7 @@ export const HeroHeader = ({
                       )}
                       onClick={() => setSignupModalOpen(true)}
                     >
-                      <span>Zaregistrovat se</span>
+                      <span>{t("header.auth.signUp")}</span>
                     </Button>
                     <Button
                       asChild
@@ -195,7 +228,7 @@ export const HeroHeader = ({
                       className={cn(isScrolled ? "lg:inline-flex" : "hidden")}
                       onClick={() => setLoginModalOpen(true)}
                     >
-                      <span>Začít</span>
+                      <span>{t("header.auth.start")}</span>
                     </Button>
                   </>
                 )}

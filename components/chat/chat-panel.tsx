@@ -49,6 +49,7 @@ import { AnalysisData } from "@/lib/types/analysis";
 import { Button } from "../ui/button";
 import { ConfirmDialog } from "../ui/confirm-dialog";
 import { useSession } from "next-auth/react";
+import { useLocale } from "@/hooks/use-locale";
 import RequestMorePromptsModalNew from "../request-more-prompts-modal-new";
 import type { MessageType } from "@/lib/types/chat";
 
@@ -62,6 +63,7 @@ export default function ChatPanel({
   const { messages, setMessages, setShowLoginModal } = useAnalysis();
   const { checkRateLimit } = useRateLimit();
   const { data: session } = useSession();
+  const { t } = useLocale();
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [disliked, setDisliked] = useState<Record<string, boolean>>({});
   const [promptInputText, setPromptInputText] = useState("");
@@ -107,7 +109,7 @@ export default function ChatPanel({
       const rateLimitMessage: MessageType = {
         id: Date.now().toString(),
         role: "assistant",
-        content: "Příliš mnoho požadavků. Prosím, zkuste to znovu za chvíli.",
+        content: t("chatPanel.rateLimitMessage"),
         timestamp: new Date(),
       };
       // Append rate limit message to conversation
@@ -129,7 +131,7 @@ export default function ChatPanel({
         const claimData = await claimRes.json().catch(() => ({}));
         if (claimRes.status === 403 && claimData.limitExceeded) {
           if (claimData.requestPending) {
-            toast.info("Žádost o další prompty je v procesu schválení.");
+            toast.info(t("chatPanel.promptsPending"));
           } else {
             // Show request modal
             setShowRequestModal(true);
@@ -162,7 +164,7 @@ export default function ChatPanel({
         const errorMessage: MessageType = {
           id: Date.now().toString(),
           role: "assistant",
-          content: "Došlo k chybě při získávání odpovědi od AI.",
+          content: t("chatPanel.aiError"),
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, errorMessage]);
@@ -190,14 +192,14 @@ export default function ChatPanel({
       <Card className={`h-full flex flex-col py-4 ${className}`}>
         <CardHeader className="flex flex-row items-start justify-between">
           <div>
-            <CardTitle>AI Asistent</CardTitle>
-            <CardDescription>Chatujte s naším AI asistentem.</CardDescription>
+            <CardTitle>{t("chatPanel.title")}</CardTitle>
+            <CardDescription>{t("chatPanel.description")}</CardDescription>
           </div>
           {/* Add button to start new analysis */}
           {!session && (
             <Button onClick={handleNewAnalysis}>
               <Plus className="size-4" />
-              Nová analýza
+              {t("chatPanel.newAnalysis")}
             </Button>
           )}
         </CardHeader>
@@ -206,9 +208,9 @@ export default function ChatPanel({
             <ConversationContent>
               {messages.length === 0 ? (
                 <ConversationEmptyState
-                  description="Zde můžete začít klást otázky týkající se vaší analýzy."
+                  description={t("chatPanel.emptyDescription")}
                   icon={<MessageSquareIcon className="size-6" />}
-                  title="Začněte konverzaci"
+                  title={t("chatPanel.emptyTitle")}
                 />
               ) : (
                 <>
@@ -222,25 +224,23 @@ export default function ChatPanel({
                           <MessageToolbar>
                             <MessageActions>
                               <MessageAction
-                                label="Retry"
+                                label={t("chatPanel.retry")}
                                 onClick={() =>
-                                  toast.info(
-                                    "Opětovný dotaz zatím není implementován.",
-                                  )
+                                  toast.info(t("chatPanel.retryNotImplemented"))
                                 }
-                                tooltip="Zkusit znovu"
+                                tooltip={t("chatPanel.retryTooltip")}
                               >
                                 <RefreshCcwIcon className="size-4" />
                               </MessageAction>
                               <MessageAction
-                                label="Like"
+                                label={t("chatPanel.like")}
                                 onClick={() =>
                                   setLiked((prev) => ({
                                     ...prev,
                                     [id]: !prev[id],
                                   }))
                                 }
-                                tooltip="Dobrá odpověď"
+                                tooltip={t("chatPanel.likeTooltip")}
                               >
                                 <ThumbsUpIcon
                                   className="size-4"
@@ -248,14 +248,14 @@ export default function ChatPanel({
                                 />
                               </MessageAction>
                               <MessageAction
-                                label="Dislike"
+                                label={t("chatPanel.dislike")}
                                 onClick={() =>
                                   setDisliked((prev) => ({
                                     ...prev,
                                     [id]: !prev[id],
                                   }))
                                 }
-                                tooltip="Špatná odpověď"
+                                tooltip={t("chatPanel.dislikeTooltip")}
                               >
                                 <ThumbsDownIcon
                                   className="size-4"
@@ -263,9 +263,9 @@ export default function ChatPanel({
                                 />
                               </MessageAction>
                               <MessageAction
-                                label="Copy"
+                                label={t("chatPanel.copy")}
                                 onClick={() => handleCopy(content)}
-                                tooltip="Zkopírovat"
+                                tooltip={t("chatPanel.copyTooltip")}
                               >
                                 <CopyIcon className="size-4" />
                               </MessageAction>
@@ -278,7 +278,7 @@ export default function ChatPanel({
                   {status === "streaming" && (
                     <Message from="assistant" key="loading">
                       <MessageContent>
-                        <Shimmer>Přemýšlím</Shimmer>
+                        <Shimmer>{t("chatPanel.thinking")}</Shimmer>
                       </MessageContent>
                     </Message>
                   )}
@@ -318,7 +318,7 @@ export default function ChatPanel({
               onClick={() => setShowChatAccessModal(true)}
             >
               <MessagesSquare />
-              Zeptat se AI na detaily
+              {t("chatPanel.askDetails")}
             </Button>
           )}
         </CardFooter>
@@ -327,20 +327,20 @@ export default function ChatPanel({
       <ConfirmDialog
         open={showNewAnalysisAfterSignupConfirmDialog}
         onOpenChange={setShowNewAnalysisAfterSignupConfirmDialog}
-        title="Je nutné se přihlásit"
-        description="Pro zahájení nové analýzy je nutné se přihlásit. Chcete pokračovat?"
+        title={t("chatPanel.loginRequiredTitle")}
+        description={t("chatPanel.loginRequiredDescription")}
         onConfirm={handleConfirmNewAnalysis}
       />
       <ConfirmDialog
         open={showChatAccessModal}
         onOpenChange={setShowChatAccessModal}
-        title="Získat přístup k chatu"
-        description="Pro získání přístupu k AI asistentovi je nutné se přihlásit."
+        title={t("chatPanel.getChatAccessTitle")}
+        description={t("chatPanel.getChatAccessDescription")}
         onConfirm={() => {
           setShowChatAccessModal(false);
           setShowLoginModal(true);
         }}
-        confirmText="Přihlásit se"
+        confirmText={t("chatPanel.confirmSignIn")}
         variant="default"
       />
 
@@ -364,6 +364,7 @@ function PromptInputWrapper({
   onSuggestionTextConsumed?: () => void;
 }) {
   const controller = usePromptInputController();
+  const { t } = useLocale();
 
   // When suggestionText changes, insert it into the input
   useEffect(() => {
@@ -384,7 +385,7 @@ function PromptInputWrapper({
         <PromptInputBody>
           <PromptInputTextarea
             onChange={(e) => controller.textInput.setInput(e.target.value)}
-            placeholder="Zeptejte se mě na cokoli..."
+            placeholder={t("chatPanel.inputPlaceholder")}
             value={controller.textInput.value}
           />
         </PromptInputBody>

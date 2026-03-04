@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale } from "@/hooks/use-locale";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import AnalysisResultsDesktop from "@/components/analysis-results/analysis-results-desktop";
 import AnalysisResultsMobile from "@/components/analysis-results/analysis-results-mobile";
@@ -15,6 +16,7 @@ interface AnalysisViewerProps {
 
 export default function AnalysisViewer({ analysisId }: AnalysisViewerProps) {
   const router = useRouter();
+  const { t } = useLocale();
   const {
     setMessages,
     setAnalysisData,
@@ -58,11 +60,11 @@ export default function AnalysisViewer({ analysisId }: AnalysisViewerProps) {
             return;
           }
           if (response.status === 403) {
-            setError("Nemáte oprávnění zobrazit tuto analýzu.");
+            setError(t("analysisViewer.unauthorized"));
             return;
           }
           if (response.status === 404) {
-            setError("Analýza nebyla nalezena.");
+            setError(t("analysisViewer.notFound"));
             return;
           }
           throw new Error("Failed to fetch analysis");
@@ -106,7 +108,7 @@ export default function AnalysisViewer({ analysisId }: AnalysisViewerProps) {
         }
       } catch (err) {
         console.error("Error fetching analysis:", err);
-        setError("Nepodařilo se načíst analýzu.");
+        setError(t("analysisViewer.fetchFailed"));
       } finally {
         setIsLoading(false);
       }
@@ -119,6 +121,7 @@ export default function AnalysisViewer({ analysisId }: AnalysisViewerProps) {
     setAnalysisData,
     setHasCompletedAnalysis,
     setMessages,
+    t,
   ]);
 
   if (isLoading) {
@@ -126,7 +129,7 @@ export default function AnalysisViewer({ analysisId }: AnalysisViewerProps) {
       <div className="flex flex-1 items-center justify-center py-20">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Načítání analýzy...</p>
+          <p className="text-muted-foreground">{t("analysisViewer.loading")}</p>
         </div>
       </div>
     );
@@ -141,7 +144,7 @@ export default function AnalysisViewer({ analysisId }: AnalysisViewerProps) {
             onClick={() => router.push("/app")}
             className="text-primary hover:underline"
           >
-            Zpět na hlavní stránku
+            {t("analysisViewer.backToApp")}
           </button>
         </div>
       </div>

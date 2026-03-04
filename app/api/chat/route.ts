@@ -5,6 +5,7 @@ import {
   type GroundedLocationData,
 } from "@/lib/google-ai/location-analysis";
 import { PrismaClient } from "@prisma/client";
+import { detectLocaleFromRequest } from "@/lib/i18n/detect-locale";
 
 const prisma = new PrismaClient();
 
@@ -13,6 +14,8 @@ const MAX_MESSAGE_LENGTH = 2000;
 
 export async function POST(request: NextRequest) {
   try {
+    const locale = detectLocaleFromRequest(request);
+
     // Check authentication
     const session = await auth();
 
@@ -111,6 +114,7 @@ export async function POST(request: NextRequest) {
           content: msg.content,
         })),
         groundedLocation: groundedLocationData as GroundedLocationData,
+        locale,
       });
 
       const text = proResult.text;

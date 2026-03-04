@@ -13,6 +13,7 @@ import {
   type BusinessAnalysisMetrics,
   type GroundedLocationData,
 } from "@/lib/google-ai/location-analysis";
+import { detectLocaleFromRequest } from "@/lib/i18n/detect-locale";
 import type { ProgressStep } from "@/lib/types/analysis";
 import {
   anonymizeIP,
@@ -27,6 +28,7 @@ const prisma = new PrismaClient();
 export async function POST(request: NextRequest) {
   try {
     const data: AnalysisRequest = await request.json();
+    const locale = detectLocaleFromRequest(request);
 
     // Get session to check if user is authenticated
     const session = await auth();
@@ -192,6 +194,7 @@ export async function POST(request: NextRequest) {
                 businessType: data.businessType,
                 coordinates,
                 prisma, // Pass Prisma client for Places API and caching
+                locale,
               });
 
               console.log("Flash grounding result:", {
@@ -320,6 +323,7 @@ export async function POST(request: NextRequest) {
             location: data.location,
             businessType: data.businessType,
             groundedLocation,
+            locale,
           });
 
           for await (const item of analysisStream) {

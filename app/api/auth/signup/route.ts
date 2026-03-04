@@ -4,10 +4,15 @@ import bcrypt from "bcryptjs";
 import { Resend } from "resend";
 import { getPromoQuota } from "@/lib/constants/chat";
 import { TIER_SONDA, MAX_CREDITS_SONDA } from "@/lib/constants/tiers";
+import { detectLocaleFromRequest } from "@/lib/i18n/detect-locale";
+import { createTranslator } from "@/lib/i18n/translator";
 
 const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
+  const locale = detectLocaleFromRequest(request);
+  const t = createTranslator(locale);
+
   try {
     const {
       email,
@@ -22,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Validate input
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Email a heslo jsou povinné" },
+        { error: t("api.auth.signup.emailPasswordRequired") },
         { status: 400 },
       );
     }
@@ -31,7 +36,7 @@ export async function POST(request: NextRequest) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
-        { error: "Neplatný formát emailu" },
+        { error: t("api.auth.signup.invalidEmailFormat") },
         { status: 400 },
       );
     }
@@ -39,7 +44,7 @@ export async function POST(request: NextRequest) {
     // Validate password length
     if (password.length < 6) {
       return NextResponse.json(
-        { error: "Heslo musí mít alespoň 6 znaků" },
+        { error: t("api.auth.signup.passwordTooShort") },
         { status: 400 },
       );
     }
@@ -53,7 +58,7 @@ export async function POST(request: NextRequest) {
 
       if (promoQuota === null) {
         return NextResponse.json(
-          { error: "Neplatný promo kód" },
+          { error: t("api.auth.signup.invalidPromoCode") },
           { status: 400 },
         );
       }
@@ -67,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json(
-        { error: "Uživatel s tímto emailem již existuje" },
+        { error: t("api.auth.signup.userAlreadyExists") },
         { status: 400 },
       );
     }
@@ -113,12 +118,12 @@ export async function POST(request: NextRequest) {
 
       if (RESEND_API_KEY) {
         const resend = new Resend(RESEND_API_KEY);
-        const subject = `Vítejte na Spotonaut — potvrzení registrace`;
+        const subject = t("api.auth.signup.welcomeSubject");
         const html = `
-          <p>Ahoj ${name ? `${name},` : ""}</p>
-          <p>Děkujeme za registraci do aplikace Spotonaut. Váš účet byl úspěšně vytvořen s tímto emailem: <strong>${email}</strong>.</p>
-          <p>Pokud jste registraci neprováděl(a), ihned nás, prosím, kontaktujte.</p>
-          <p>Děkujeme &ndash; Tým Spotonaut</p>
+          <p>${t("api.auth.signup.welcomeGreeting")} ${name ? `${name},` : ""}</p>
+          <p>${t("api.auth.signup.welcomeBody")} <strong>${email}</strong>.</p>
+          <p>${t("api.auth.signup.welcomeIfNotYou")}</p>
+          <p>${t("api.auth.signup.welcomeTeam")}</p>
         `;
 
         try {
@@ -138,7 +143,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: "Účet byl úspěšně vytvořen",
+      message: t("api.auth.signup.accountCreated"),
       user: {
         id: user.id,
         email: user.email,
@@ -148,7 +153,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Signup error:", error);
     return NextResponse.json(
-      { error: "Nepodařilo se vytvořit účet" },
+      { error: t("api.auth.signup.accountCreateFailed") },
       { status: 500 },
     );
   }

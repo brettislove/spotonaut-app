@@ -13,6 +13,8 @@ import AnalysisMiniBar from "@/components/analysis-mini-bar";
 import AnalysisDialogs from "@/components/analysis-dialogs";
 import CookieBannerNew from "@/components/cookie-banner-new";
 import { Toaster } from "sonner";
+import LocaleProvider from "@/components/locale-provider";
+import { detectLocaleFromServerContext } from "@/lib/i18n/detect-locale";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -78,13 +80,15 @@ export const viewport: Viewport = {
   themeColor: "#A43BFE",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await detectLocaleFromServerContext();
+
   return (
-    <html lang="en" className="dark">
+    <html lang={locale} className="dark">
       <head>
         <link rel="icon" href="/favicon.png" />
         <link rel="icon" sizes="48x48" href="/favicon.png" type="image/png" />
@@ -185,23 +189,25 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}
       >
-        <AuthProvider>
-          <AnalysisProvider>
-            <Suspense fallback={null}>
-              <PageTracker />
-              <UTMCapture />
-            </Suspense>
-            <UtmAttributionProvider />
-            {/* <Header /> */}
-            <Toaster />
-            <HeaderWrapper />
-            {children}
-            <AnalysisMiniBar />
-            <AnalysisDialogs />
-            <CookieBannerNew />
-            <FooterGuard />
-          </AnalysisProvider>
-        </AuthProvider>
+        <LocaleProvider initialLocale={locale}>
+          <AuthProvider>
+            <AnalysisProvider>
+              <Suspense fallback={null}>
+                <PageTracker />
+                <UTMCapture />
+              </Suspense>
+              <UtmAttributionProvider />
+              {/* <Header /> */}
+              <Toaster />
+              <HeaderWrapper />
+              {children}
+              <AnalysisMiniBar />
+              <AnalysisDialogs />
+              <CookieBannerNew />
+              <FooterGuard />
+            </AnalysisProvider>
+          </AuthProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

@@ -1,15 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
+import { useLocale } from "@/hooks/use-locale";
 
 const links = [
-  {
-    title: "O nás",
-    href: "/about",
-  },
-  {
-    title: "Jak to funguje",
-    href: "/how-it-works",
-  },
+  { titleKey: "footer.links.about", href: "/about" },
+  { titleKey: "footer.links.howItWorks", href: "/how-it-works" },
   // {
   //   title: "Blog",
   //   href: "/blog",
@@ -18,25 +13,14 @@ const links = [
   //   title: "Ceník",
   //   href: "/pricing",
   // },
-  {
-    title: "Kontakt",
-    href: "/kontakt",
-  },
-  {
-    title: "GDPR",
-    href: "/privacy",
-  },
-  {
-    title: "Podmínky",
-    href: "/terms",
-  },
-  {
-    title: "Cookies",
-    href: "/cookies",
-  },
+  { titleKey: "footer.links.contact", href: "/kontakt" },
+  { titleKey: "footer.links.privacy", href: "/privacy" },
+  { titleKey: "footer.links.terms", href: "/terms" },
+  { titleKey: "footer.links.cookies", href: "/cookies" },
 ];
 
 export default function FooterSection() {
+  const { t } = useLocale();
   return (
     <footer className="py-16 md:py-32">
       <div className="mx-auto max-w-5xl px-6">
@@ -71,7 +55,7 @@ export default function FooterSection() {
               href={link.href}
               className="text-muted-foreground hover:text-primary block duration-150"
             >
-              <span>{link.title}</span>
+              <span>{t(link.titleKey)}</span>
             </Link>
           ))}
         </div>
@@ -204,7 +188,7 @@ export default function FooterSection() {
         </div>
         <span className="text-muted-foreground block text-center text-sm">
           {" "}
-          © {new Date().getFullYear()} Spotonaut, všechna práva vyhrazena.
+          {t("footer.copyright", { year: new Date().getFullYear() })}
         </span>
       </div>
     </footer>

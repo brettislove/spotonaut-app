@@ -8,32 +8,31 @@ import {
 } from "@/components/ui/accordion";
 import Link from "next/link";
 import { AnimatedGroup } from "./ui/animated-group";
+import { useLocale } from "@/hooks/use-locale";
 
 export default function FAQSection() {
+  const { t } = useLocale();
+
   const faqItems = [
     {
       id: "item-1",
-      question: "Jaká data používáme pro analýzu?",
-      answer:
-        "Naše analýza využívá veřejně dostupná data z Google Maps a Sreality.cz.  AI model je zpracovává a pomáha analyzova jejich vzájemné propojení, či vliv na obchodní potenciál zvolené lokality.",
+      question: t("faqs.items.item1.question"),
+      answer: t("faqs.items.item1.answer"),
     },
     {
       id: "item-2",
-      question: "Jaké jsou hlavní výhody využití Spotonauta pro můj byznys?",
-      answer: `Spotonaut vám pomůže vybrat správné místo rychle a bez zbytečného rizika.\n\n Během pár minut zjistíte, jaký má lokalita potenciál, a můžete porovnat více míst mezi sebou. Díky tomu děláte rozhodnutí na základě dat, ne pocitu. Výrazně tím snížíte šanci, že investujete do špatné adresy.\n\n Navíc je Spotonaut aktuálně zdarma a stále přidáváme nové funkce.`,
+      question: t("faqs.items.item2.question"),
+      answer: t("faqs.items.item2.answer"),
     },
     {
       id: "item-3",
-      question:
-        "V čem se Spotonaut liší od jiných zprostředkovatelů lokačních analýz?",
-      answer:
-        "Spotonaut je rychlý, dostupný a praktický.\n\nNejsme drahá konzultační firma ani složitý enterprise nástroj. Analýzu získáte během pár minut, bez dlouhých jednání a vysokých nákladů. Zaměřujeme se na jednoduchost, srozumitelnost a reálné využití v praxi pro malé podnikatele i rostoucí sítě.\n\nNavíc nástroj neustále vyvíjíme podle zpětné vazby uživatelů.",
+      question: t("faqs.items.item3.question"),
+      answer: t("faqs.items.item3.answer"),
     },
     {
       id: "item-4",
-      question: "Jaký je typický případ užití?",
-      answer:
-        "Chci otevřít nový stánek, provozovnu nebo umístit automat, ale nejsem si jistý lokalitou.\n\nZadám adresu, porovnám možnosti a během chvíle mám jasnější představu, kde má smysl investovat.\n\nSpotonaut pomáhá rozhodnout se dřív, než podepíšete nájem nebo utratíte první peníze.",
+      question: t("faqs.items.item4.question"),
+      answer: t("faqs.items.item4.answer"),
     },
   ];
 
@@ -71,10 +70,10 @@ export default function FAQSection() {
         <div className="mx-auto max-w-5xl px-4 md:px-6">
           <div className="mx-auto max-w-xl text-center">
             <h2 className="text-balance text-3xl font-bold md:text-4xl lg:text-5xl">
-              Často kladené otázky
+              {t("faqs.title")}
             </h2>
             <p className="text-muted-foreground mt-4 text-balance">
-              Níže naleznete výběr nejčastějších dotazů našich uživatelů.
+              {t("faqs.intro")}
             </p>
           </div>
 
@@ -103,12 +102,12 @@ export default function FAQSection() {
             </Accordion>
 
             <p className="text-muted-foreground mt-6 px-8 text-center text-sm">
-              Nemůžete najít, co hledáte?{" "}
+              {t("faqs.contactPrompt")}{" "}
               <Link
                 href="mailto:crew@spotonaut.com"
                 className="text-primary font-medium hover:underline"
               >
-                Kontaktujte nás
+                {t("faqs.contactLink")}
               </Link>
               .
             </p>

@@ -10,6 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { LucideProps, Plus } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 import { ForwardRefExoticComponent, RefAttributes } from "react";
 
 export function NavMain({
@@ -25,6 +26,7 @@ export function NavMain({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useLocale();
 
   return (
     <SidebarGroup>
@@ -32,12 +34,12 @@ export function NavMain({
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
-              tooltip="Nová analýza"
+              tooltip={t("navMain.newAnalysis")}
               className="px-4 bg-primary text-primary-foreground hover:cursor-pointer hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
               onClick={() => router.push("/app/new-analysis")}
             >
               <Plus />
-              <span>Nová analýza</span>
+              <span>{t("navMain.newAnalysis")}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

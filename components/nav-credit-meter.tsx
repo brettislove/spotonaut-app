@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale } from "@/hooks/use-locale";
 import {
   Context,
   ContextContent,
@@ -14,8 +15,7 @@ import { isUnlimited } from "@/lib/constants/tiers";
 const NavCreditMeter = () => {
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
-
-  console.log("NavCreditMeter session data:", session); // Debugging line
+  const { t } = useLocale();
 
   // Get credits from session, preserving null for unlimited
   const usedCredits = session?.user?.usedCredits ?? 0;
@@ -24,7 +24,7 @@ const NavCreditMeter = () => {
 
   return (
     <div className="flex items-center justify-center bg-primary/10 rounded-md text-sm font-medium text-primary-foreground">
-      Zbývající kredity:
+      {t("navCreditMeter.remainingCredits")}
       <Context
         usedCredits={usedCredits}
         maxCredits={maxCredits}

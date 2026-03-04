@@ -1,7 +1,12 @@
 import Link from "next/link";
 import ContactSection from "@/components/contact";
+import { detectLocaleFromServerContext } from "@/lib/i18n/detect-locale";
+import { createTranslator } from "@/lib/i18n/translator";
 
-export default function KontaktPage() {
+export default async function KontaktPage() {
+  const locale = await detectLocaleFromServerContext();
+  const t = createTranslator(locale);
+
   return (
     <div>
       <section className="pt-24 md:pt-28">
@@ -23,7 +28,7 @@ export default function KontaktPage() {
                 d="M10 19l-7-7m0 0l7-7m-7 7h18"
               />
             </svg>
-            Zpět do aplikace
+            {t("contactPage.backToApp")}
           </Link>
         </div>
       </section>

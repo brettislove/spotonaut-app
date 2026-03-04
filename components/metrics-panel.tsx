@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Building,
   ChevronDown,
@@ -35,6 +37,7 @@ import { Switch } from "./ui/switch";
 import MapViewNew from "./map-view-new";
 import { AnalysisData } from "@/lib/types/analysis";
 import { useState } from "react";
+import { useLocale } from "@/hooks/use-locale";
 import {
   Collapsible,
   CollapsibleContent,
@@ -48,6 +51,7 @@ export default function MetricsPanel({
   analysisData: AnalysisData;
   className?: string;
 }) {
+  const { t } = useLocale();
   const [filters, setFilters] = useState({
     competitors: true,
     transit: true,
@@ -83,7 +87,7 @@ export default function MetricsPanel({
                   className="absolute right-0 mt-1 bg-card hover:bg-accent"
                 >
                   <ListFilter />
-                  Filtry
+                  {t("metricsPanel.filters")}
                   <ChevronDown />
                 </Button>
               </DropdownMenuTrigger>
@@ -92,13 +96,17 @@ export default function MetricsPanel({
                 className="data-[state=closed]:slide-out-to-right-10 data-[state=open]:slide-in-from-right-10 data-[state=closed]:slide-out-to-top-20 data-[state=open]:slide-in-from-top-20 data-[state=closed]:zoom-out-100 w-56 duration-400"
               >
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel>Typy bodů zájmu</DropdownMenuLabel>
+                  <DropdownMenuLabel>
+                    {t("metricsPanel.filterTypes")}
+                  </DropdownMenuLabel>
                   <DropdownMenuItem
                     className="justify-between"
                     onSelect={(event) => event.preventDefault()}
                   >
                     <Trophy />
-                    <span className="flex-1">Konkurence</span>
+                    <span className="flex-1">
+                      {t("metricsPanel.competitors")}
+                    </span>
                     <Switch
                       id="airplane-mode"
                       checked={filters.competitors}
@@ -115,7 +123,7 @@ export default function MetricsPanel({
                     onSelect={(event) => event.preventDefault()}
                   >
                     <TrainFront />
-                    <span className="flex-1">Doprava</span>
+                    <span className="flex-1">{t("metricsPanel.transit")}</span>
                     <Switch
                       id="airplane-mode"
                       checked={filters.transit}
@@ -132,7 +140,7 @@ export default function MetricsPanel({
                     onSelect={(event) => event.preventDefault()}
                   >
                     <ShoppingCart />
-                    <span className="flex-1">Nákupy</span>
+                    <span className="flex-1">{t("metricsPanel.shopping")}</span>
                     <Switch
                       id="airplane-mode"
                       checked={filters.shopping}
@@ -149,7 +157,7 @@ export default function MetricsPanel({
                     onSelect={(event) => event.preventDefault()}
                   >
                     <Building />
-                    <span className="flex-1">Kanceláře</span>
+                    <span className="flex-1">{t("metricsPanel.office")}</span>
                     <Switch
                       id="airplane-mode"
                       checked={filters.office}
@@ -166,7 +174,9 @@ export default function MetricsPanel({
                     onSelect={(event) => event.preventDefault()}
                   >
                     <House />
-                    <span className="flex-1">Bydlení</span>
+                    <span className="flex-1">
+                      {t("metricsPanel.residential")}
+                    </span>
                     <Switch
                       id="airplane-mode"
                       checked={filters.residential}
@@ -183,7 +193,9 @@ export default function MetricsPanel({
                     onSelect={(event) => event.preventDefault()}
                   >
                     <MapPinHouse />
-                    <span className="flex-1">Reality</span>
+                    <span className="flex-1">
+                      {t("metricsPanel.availableProperties")}
+                    </span>
                     <Switch
                       id="airplane-mode"
                       checked={filters.availableProperties}
@@ -200,7 +212,7 @@ export default function MetricsPanel({
                     onSelect={(event) => event.preventDefault()}
                   >
                     <CircleEllipsis />
-                    <span className="flex-1">Ostatní</span>
+                    <span className="flex-1">{t("metricsPanel.other")}</span>
                     <Switch
                       id="airplane-mode"
                       checked={filters.other}
@@ -231,8 +243,8 @@ export default function MetricsPanel({
           >
             <DrawerContent className="z-20 bg-card/90 backdrop-blur-sm">
               <DrawerHeader>
-                <div className="flex justify-between items-center">
-                  <DrawerTitle>Metriky</DrawerTitle>
+                  <div className="flex justify-between items-center">
+                    <DrawerTitle>{t("metricsPanel.metrics")}</DrawerTitle>
                   <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" onClick={toggleDrawer}>
                       {activeSnapPoint === 0 ? (
@@ -327,7 +339,7 @@ export default function MetricsPanel({
         >
           <CollapsibleTrigger asChild>
             <Button variant="ghost" className="group w-full text-md font-bold">
-              Metriky
+              {t("metricsPanel.metrics")}
               <ChevronUpIcon className="ml-auto group-data-[state=open]:rotate-180" />
             </Button>
           </CollapsibleTrigger>
@@ -335,7 +347,7 @@ export default function MetricsPanel({
             <div className="flex-1 overflow-y-auto pt-2">
               <ItemGroup className="grid grid-cols-3 gap-4">
                 <Item variant="outline">
-                  <ItemHeader>Hodnocení lokality</ItemHeader>
+                  <ItemHeader>{t("metricsPanel.localityScore")}</ItemHeader>
                   <ItemContent>
                     <div className="flex items-end gap-2">
                       <div className="text-white font-bold text-2xl lg:text-3xl">
@@ -357,7 +369,7 @@ export default function MetricsPanel({
                   </ItemContent>
                 </Item>
                 <Item variant="outline">
-                  <ItemHeader>Průchodnost</ItemHeader>
+                  <ItemHeader>{t("metricsPanel.footfall")}</ItemHeader>
                   <ItemContent>
                     <div className="flex items-end gap-2">
                       <div className="text-white font-bold text-2xl lg:text-3xl">
@@ -379,7 +391,7 @@ export default function MetricsPanel({
                   </ItemContent>
                 </Item>
                 <Item variant="outline">
-                  <ItemHeader>Doporučené hodiny</ItemHeader>
+                  <ItemHeader>{t("metricsPanel.recommendedHours")}</ItemHeader>
                   <ItemContent>
                     <div className="flex items-center gap-2 mt-1">
                       <Clock className="w-6 h-6 lg:w-8 lg:h-8 text-pink-400" />

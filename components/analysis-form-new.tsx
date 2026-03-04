@@ -36,6 +36,7 @@ import { Check, CheckCheck, MapPin, MapPinned, Store } from "lucide-react";
 import { getBusinessTypeByName } from "@/lib/constants/business-types";
 import { useAnalysis } from "@/lib/contexts/analysis-context";
 import { ProgressStep } from "@/lib/types/analysis";
+import { useLocale } from "@/hooks/use-locale";
 
 const formSchema = z.object({
   location: z.string().nonempty("Je nutné zadat cílovou lokalitu."),
@@ -65,6 +66,7 @@ export default function AnalysisFormNew({
     resetAnalysis,
     clearRestoredState,
   } = useAnalysis();
+  const { t } = useLocale();
   const [locationInput, setLocationInput] = React.useState("");
   const [fullLocationData, setFullLocationData] =
     React.useState<LocationData | null>(null);
@@ -130,9 +132,11 @@ export default function AnalysisFormNew({
     <>
       <Card className="w-full max-w-xl mx-auto bg-gradient-to-br from-primary-900/60 via-slate-900/70 to-secondar-900/60 backdrop-blur-sm border border-slate-700/60 shadow-2xl">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Data k analýze</CardTitle>
+          <CardTitle className="text-2xl text-center">
+            {t("analysisForm.card.title")}
+          </CardTitle>
           <CardDescription className="text-center mt-2">
-            Vyplňte základní informace o vašem podnikání potřebné pro analýzu.
+            {t("analysisForm.card.description")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -145,10 +149,12 @@ export default function AnalysisFormNew({
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
                       <FieldLabel htmlFor="analysis-form-location">
-                        Cílová lokalita
+                        {t("analysisForm.fields.location.label")}
                         <FieldHelpNew
-                          title="Cílová lokalita"
-                          description="Zadejte přesnou adresu nebo název místa. Můžete použít vyhledávání nebo vybrat lokaci z mapy. Pro nejlepší výsledky zadejte město a ulici."
+                          title={t("analysisForm.fields.location.helpTitle")}
+                          description={t(
+                            "analysisForm.fields.location.helpDescription",
+                          )}
                         />
                       </FieldLabel>
                       <LocationInput
@@ -171,10 +177,14 @@ export default function AnalysisFormNew({
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
                       <FieldLabel htmlFor="analysis-form-businessType">
-                        Typ podnikání
+                        {t("analysisForm.fields.businessType.label")}
                         <FieldHelpNew
-                          title="Typ podnikání"
-                          description="Vyberte typ podnikání, který nejlépe vystihuje vaši provozovnu. Tento výběr pomůže přizpůsobit odhad návštěvnosti a doporučené provozní parametry."
+                          title={t(
+                            "analysisForm.fields.businessType.helpTitle",
+                          )}
+                          description={t(
+                            "analysisForm.fields.businessType.helpDescription",
+                          )}
                         />
                       </FieldLabel>
                       <BusinessTypeSelectNew
@@ -193,10 +203,14 @@ export default function AnalysisFormNew({
                   render={({ fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
                       <FieldLabel htmlFor="analysis-form-operatingHours">
-                        Plánované dny otevření
+                        {t("analysisForm.fields.operatingHours.label")}
                         <FieldHelpNew
-                          title="Plánované dny otevření"
-                          description="Vyberte dny, kdy bude provozovna otevřená a nastavte počet hodin pro každý den. Celkové hodiny za týden se vypočtou z vybraných dnů."
+                          title={t(
+                            "analysisForm.fields.operatingHours.helpTitle",
+                          )}
+                          description={t(
+                            "analysisForm.fields.operatingHours.helpDescription",
+                          )}
                         />
                       </FieldLabel>
                       <div className="relative">
@@ -207,7 +221,7 @@ export default function AnalysisFormNew({
 
                         {/* Small overlay label indicating planned feature */}
                         <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                          Dostupné brzy...
+                          {t("analysisForm.operatingSoon")}
                         </div>
                       </div>
                     </Field>
@@ -224,13 +238,13 @@ export default function AnalysisFormNew({
                     variant="outline"
                     onClick={() => form.reset()}
                   >
-                    Vymazat
+                    {t("analysisForm.buttons.clear")}
                   </Button>
                   <ShimmerButton
                     type="submit"
                     className="cursor-pointer bg-secondary text-black"
                   >
-                    Spustit analýzu
+                    {t("analysisForm.buttons.submit")}
                   </ShimmerButton>
                 </Field>
               </div>
@@ -238,14 +252,16 @@ export default function AnalysisFormNew({
           ) : (
             <ChainOfThought defaultOpen>
               <ChainOfThoughtHeader>
-                <h3 className="text-2xl">Probíhá analýza vaší lokality...</h3>
+                <h3 className="text-2xl">
+                  {t("analysisForm.chain.processing")}
+                </h3>
               </ChainOfThoughtHeader>
               <ChainOfThoughtContent>
                 <ChainOfThoughtStep
                   icon={
                     getStepStatus("geocoding") === "complete" ? Check : MapPin
                   }
-                  label="Geokódování zadané lokality"
+                  label={t("analysisForm.chain.steps.geocoding")}
                   status={getStepStatus("geocoding")}
                 />
 
@@ -255,7 +271,7 @@ export default function AnalysisFormNew({
                       ? Check
                       : MapPinned
                   }
-                  label="Získávání dat z map"
+                  label={t("analysisForm.chain.steps.mapsGrounding")}
                   status={getStepStatus("maps_grounding")}
                 />
 
@@ -263,19 +279,19 @@ export default function AnalysisFormNew({
                   icon={
                     getStepStatus("pro_analysis") === "complete" ? Check : Store
                   }
-                  label="Analýza obchodního potenciálu"
+                  label={t("analysisForm.chain.steps.proAnalysis")}
                   status={getStepStatus("pro_analysis")}
                 />
 
                 <ChainOfThoughtStep
-                  label="Sumarizace výsledků"
+                  label={t("analysisForm.chain.steps.finalizing")}
                   status={getStepStatus("finalizing")}
                 />
 
                 {getStepStatus("complete") === "complete" && (
                   <ChainOfThoughtStep
                     icon={CheckCheck}
-                    label="Hotovo!"
+                    label={t("analysisForm.chain.steps.completeLabel")}
                     status={getStepStatus("complete")}
                   />
                 )}
@@ -288,8 +304,9 @@ export default function AnalysisFormNew({
       <ConfirmDialog
         open={showConfirmDialog}
         onOpenChange={setShowConfirmDialog}
-        title="Přepsat existující analýzu?"
-        description="Již máte dokončenou analýzu. Spuštěním nové analýzy bude stávající analýza odstraněna. Chcete pokračovat?"
+        title={t("analysisForm.confirm.title")}
+        description={t("analysisForm.confirm.description")}
+        confirmText={t("analysisForm.confirm.confirmButton")}
         onConfirm={handleConfirmNewAnalysis}
       />
     </>

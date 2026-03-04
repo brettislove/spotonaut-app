@@ -7,6 +7,7 @@ import SpotonautLogo from "./spotonaut-logo";
 import { useState } from "react";
 import { handleSignup } from "@/utils/auth";
 import { toast } from "sonner";
+import { useLocale } from "@/hooks/use-locale";
 
 export default function SignUpPage({
   isOpen,
@@ -17,6 +18,7 @@ export default function SignUpPage({
   onClose: () => void;
   onSwitchToLogin: () => void;
 }) {
+  const { t } = useLocale();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [confirmPasswordValid, setConfirmPasswordValid] = useState<
@@ -35,7 +37,7 @@ export default function SignUpPage({
 
   const validatePassword = (pwd: string) => {
     if (pwd.length > 0 && pwd.length < 6) {
-      setPasswordError("Heslo musí mít alespoň 6 znaků");
+      setPasswordError(t("api.auth.signup.passwordTooShort"));
     } else {
       setPasswordError("");
     }
@@ -68,17 +70,14 @@ export default function SignUpPage({
       setError,
       onSwitchToLogin,
     ).then(() => {
-      toast.success(
-        "Registrace úspěšná — zkontrolujte svůj e-mail pro potvrzení.",
-        {
-          position: "top-center",
-          style: {
-            backgroundColor: "#14532d",
-            color: "white",
-            border: "2px solid #22c55e",
-          },
+      toast.success(t("signUp.successToast"), {
+        position: "top-center",
+        style: {
+          backgroundColor: "#14532d",
+          color: "white",
+          border: "2px solid #22c55e",
         },
-      );
+      });
     });
   };
 
@@ -99,22 +98,22 @@ export default function SignUpPage({
               <SpotonautLogo />
             </Link>
             <h1 className="mb-1 mt-4 text-xl font-semibold">
-              Vytvořit účet u Spotonauta
+              {t("signUp.title")}
             </h1>
-            <p className="text-sm">Vítejte!</p>
+            <p className="text-sm">{t("signUp.welcome")}</p>
           </div>
 
           <div className="mt-6 space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email" className="block text-sm">
-                Email
+                {t("signUp.emailLabel")}
               </Label>
               <Input
                 type="email"
                 required
                 name="email"
                 id="email"
-                placeholder="vas@email.cz"
+                placeholder={t("signUp.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -123,7 +122,7 @@ export default function SignUpPage({
             <div className="space-y-0.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="pwd" className="text-sm">
-                  Heslo
+                  {t("signUp.passwordLabel")}
                 </Label>
               </div>
               <Input
@@ -131,7 +130,7 @@ export default function SignUpPage({
                 required
                 name="pwd"
                 id="pwd"
-                placeholder="Alespoň 6 znaků"
+                placeholder={t("signUp.passwordPlaceholder")}
                 value={password}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -157,14 +156,14 @@ export default function SignUpPage({
 
             <div className="space-y-0.5">
               <Label htmlFor="confirmPwd" className="text-sm">
-                Potvrzení hesla
+                {t("signUp.confirmPasswordLabel")}
               </Label>
               <Input
                 type="password"
                 required
                 name="confirmPwd"
                 id="confirmPwd"
-                placeholder="Zadejte heslo znovu"
+                placeholder={t("signUp.confirmPasswordPlaceholder")}
                 value={confirmPassword}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -180,10 +179,14 @@ export default function SignUpPage({
                 }`}
               />
               {confirmPasswordValid === false && (
-                <p className="mt-2 text-sm text-red-400">Hesla se neshodují</p>
+                <p className="mt-2 text-sm text-red-400">
+                  {t("signUp.passwordsDoNotMatch")}
+                </p>
               )}
               {confirmPasswordValid === true && password.length > 0 && (
-                <p className="mt-2 text-sm text-green-400">Hesla se shodují</p>
+                <p className="mt-2 text-sm text-green-400">
+                  {t("signUp.passwordsMatch")}
+                </p>
               )}
             </div>
 
@@ -194,19 +197,19 @@ export default function SignUpPage({
                 className="h-auto p-0 text-sm text-muted-foreground hover:text-foreground"
                 onClick={() => setShowPromoCode(!showPromoCode)}
               >
-                {showPromoCode ? "Skrýt promo kód" : "Máte promo kód?"}
+                {showPromoCode ? t("signUp.hidePromo") : t("signUp.havePromo")}
               </Button>
               {showPromoCode && (
                 <div className="space-y-2">
                   <Label htmlFor="promoCode" className="block text-sm">
-                    Promo kód (volitelné)
+                    {t("signUp.promoLabel")}
                   </Label>
                   <div className="flex gap-2">
                     <Input
                       type="text"
                       name="promoCode"
                       id="promoCode"
-                      placeholder="Zadejte promo kód"
+                      placeholder={t("signUp.promoPlaceholder")}
                       value={promoCode}
                       onChange={(e) => {
                         setPromoCode(e.target.value);
@@ -234,21 +237,23 @@ export default function SignUpPage({
                       className="shrink-0 h-9"
                     >
                       {promoCodeStatus === "checking"
-                        ? "Kontroluji..."
+                        ? t("signUp.checkingPromo")
                         : promoCodeStatus === "valid"
-                          ? "✓ Platný"
+                          ? t("signUp.promoValidButton")
                           : promoCodeStatus === "invalid"
-                            ? "✗ Neplatný"
-                            : "Ověřit"}
+                            ? t("signUp.promoInvalidButton")
+                            : t("signUp.verify")}
                     </Button>
                   </div>
                   {promoCodeStatus === "valid" && (
                     <p className="text-sm text-green-400">
-                      Promo kód je platný!
+                      {t("signUp.promoValidMessage")}
                     </p>
                   )}
                   {promoCodeStatus === "invalid" && (
-                    <p className="text-sm text-red-400">Neplatný promo kód</p>
+                    <p className="text-sm text-red-400">
+                      {t("signUp.promoInvalidMessage")}
+                    </p>
                   )}
                 </div>
               )}
@@ -267,12 +272,12 @@ export default function SignUpPage({
                 htmlFor="terms"
                 className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Souhlasím s
+                {t("signUp.agreeToTermsPrefix")}
                 <Link
                   href="/terms"
                   className="text-sm text-primary leading-none hover:underline"
                 >
-                  podmínkami použití
+                  {t("signUp.termsLink")}
                 </Link>
               </Label>
             </div>
@@ -284,14 +289,16 @@ export default function SignUpPage({
               className="w-full"
               disabled={!agreeToTerms || isLoading}
             >
-              {isLoading ? "Vytvářím účet..." : "Vytvořit účet"}
+              {isLoading
+                ? t("signUp.creatingAccount")
+                : t("signUp.createAccount")}
             </Button>
           </div>
 
           <div className="my-6 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
             <hr className="border-dashed" />
             <span className="text-muted-foreground text-xs">
-              Nebo pokračujte s
+              {t("signUp.orContinueWith")}
             </span>
             <hr className="border-dashed" />
           </div>
@@ -328,9 +335,9 @@ export default function SignUpPage({
 
         <div className="p-3">
           <p className="text-accent-foreground text-center text-sm">
-            Už máte účet?
+            {t("signUp.alreadyHaveAccount")}
             <Button variant="link" className="px-2" onClick={onSwitchToLogin}>
-              Přihlásit se
+              {t("signUp.signIn")}
             </Button>
           </p>
         </div>

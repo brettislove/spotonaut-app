@@ -1,3 +1,5 @@
+"use client";
+
 import { Gemini, VSCodium, GooglePaLM } from "@/components/logos";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -6,8 +8,10 @@ import Image from "next/image";
 import { AnimatedGroup } from "./ui/animated-group";
 import GoogleMaps from "./logos/GoogleMaps";
 import Prisma from "./logos/Prisma";
+import { useLocale } from "@/hooks/use-locale";
 
 export default function IntegrationsSection() {
+  const { t } = useLocale();
   return (
     <section className="py-16 md:py-24">
       <AnimatedGroup
@@ -94,16 +98,16 @@ export default function IntegrationsSection() {
             </div>
             <div className="mx-auto mt-12 max-w-lg space-y-6 text-center">
               <h2 className="text-balance text-3xl font-semibold md:text-4xl">
-                Na čem jsou data založená?
+                {t("integrationsSection.title")}
               </h2>
               <p className="text-muted-foreground">
-                Spotonaut staví na dostupných datech a s pomocí AI pomáhá
-                analyzovat jejich vzájemné propojení a vliv na obchodní
-                potenciál zvolené lokality.
+                {t("integrationsSection.description")}
               </p>
 
               <Button variant="default" size="sm" asChild>
-                <Link href="/#analysis-form">Vyzkoušet zdarma</Link>
+                <Link href="/#analysis-form">
+                  {t("integrationsSection.tryFree")}
+                </Link>
               </Button>
             </div>
           </div>

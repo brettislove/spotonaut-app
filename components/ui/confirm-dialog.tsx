@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/hooks/use-locale";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -25,10 +26,13 @@ export function ConfirmDialog({
   title,
   description,
   onConfirm,
-  confirmText = "Potvrdit",
-  cancelText = "Zrušit",
+  confirmText,
+  cancelText,
   variant = "destructive",
 }: ConfirmDialogProps) {
+  const { t } = useLocale();
+  const confirmLabel = confirmText ?? t("confirmDialog.confirm");
+  const cancelLabel = cancelText ?? t("confirmDialog.cancel");
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -38,10 +42,10 @@ export function ConfirmDialog({
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {cancelText}
+            {cancelLabel}
           </Button>
           <Button variant={variant} onClick={onConfirm}>
-            {confirmText}
+            {confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

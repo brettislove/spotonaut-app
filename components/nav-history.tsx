@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Pencil } from "lucide-react";
 import { Analysis } from "@/lib/types/analysis";
+import { useLocale } from "@/hooks/use-locale";
 
 export function NavHistory({
   analyses,
@@ -57,6 +58,7 @@ export function NavHistory({
   const [deleteAnalysisId, setDeleteAnalysisId] = useState<string | null>(null);
   const [deleteAnalysisName, setDeleteAnalysisName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const { t } = useLocale();
 
   const handleRenameClick = (analysis: Analysis) => {
     setRenameAnalysisId(analysis.id);
@@ -137,7 +139,7 @@ export function NavHistory({
   return (
     <>
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-        <SidebarGroupLabel>Analýzy</SidebarGroupLabel>
+        <SidebarGroupLabel>{t("navHistory.title")}</SidebarGroupLabel>
         <SidebarMenu>
           {analyses.map((analysis) => (
             <SidebarMenuItem key={analysis.id}>
@@ -156,7 +158,7 @@ export function NavHistory({
                     className="data-[state=open]:bg-accent rounded-sm"
                   >
                     <IconDots />
-                    <span className="sr-only">Více</span>
+                    <span className="sr-only">{t("navHistory.more")}</span>
                   </SidebarMenuAction>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -166,11 +168,11 @@ export function NavHistory({
                 >
                   <DropdownMenuItem onClick={() => handleRenameClick(analysis)}>
                     <Pencil />
-                    <span>Přejmenovat</span>
+                    <span>{t("navHistory.rename")}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
                     <IconShare3 />
-                    <span>Sdílet</span>
+                    <span>{t("navHistory.share")}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -178,7 +180,7 @@ export function NavHistory({
                     onClick={() => handleDeleteClick(analysis)}
                   >
                     <IconTrash />
-                    <span>Smazat</span>
+                    <span>{t("navHistory.delete")}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -196,16 +198,16 @@ export function NavHistory({
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Přejmenovat analýzu</DialogTitle>
+            <DialogTitle>{t("navHistory.renameDialog.title")}</DialogTitle>
             <DialogDescription>
-              Zadejte nový název pro tuto analýzu.
+              {t("navHistory.renameDialog.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Input
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
-              placeholder="Název lokace"
+              placeholder={t("navHistory.renameDialog.placeholder")}
               maxLength={100}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -222,7 +224,7 @@ export function NavHistory({
               onClick={() => setRenameDialogOpen(false)}
               disabled={isRenaming}
             >
-              Zrušit
+              {t("navHistory.renameDialog.cancel")}
             </Button>
             <Button
               onClick={handleRenameSubmit}
@@ -233,7 +235,7 @@ export function NavHistory({
               }
             >
               {isRenaming && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Uložit
+              {t("navHistory.renameDialog.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -242,11 +244,13 @@ export function NavHistory({
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="Smazat analýzu"
-        description={`Opravdu chcete smazat analýzu "${deleteAnalysisName}"? Tuto akci nelze vrátit zpět.`}
+        title={t("navHistory.deleteDialog.title")}
+        description={t("navHistory.deleteDialog.description", {
+          name: deleteAnalysisName,
+        })}
         onConfirm={handleDeleteConfirm}
-        confirmText="Smazat"
-        cancelText="Zrušit"
+        confirmText={t("navHistory.deleteDialog.confirm")}
+        cancelText={t("navHistory.deleteDialog.cancel")}
         variant="destructive"
       />
     </>

@@ -1,4 +1,7 @@
 ---
+postId: vyber-lokality-vydejni-automat
+locale: cs
+slug: jak-vybrat-spravnou-lokalitu
 title: 'Jak vybrat správnou lokalitu pro výdejní automat (praktický návod)'
 excerpt: 'Výběr správné lokality pro výdejní automat je klíčový faktor, který rozhoduje o jeho ziskovosti.'
 coverImage: '/blog/vending.png'

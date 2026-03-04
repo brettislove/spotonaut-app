@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
-import { getPostSlugs, getPostWithHtml } from "@/lib/blog";
+import { getPostRouteSlugs, getPostWithHtml } from "@/lib/blog";
 import { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Calendar, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
+import { detectLocaleFromServerContext } from "@/lib/i18n/detect-locale";
+import { createTranslator } from "@/lib/i18n/translator";
 
 interface BlogPostPageProps {
   params: Promise<{
@@ -15,9 +17,9 @@ interface BlogPostPageProps {
 
 // Generate static params for all blog posts
 export async function generateStaticParams() {
-  const slugs = getPostSlugs();
+  const slugs = getPostRouteSlugs();
   return slugs.map((slug) => ({
-    slug: slug.replace(/\.md$/, ""),
+    slug,
   }));
 }
 
@@ -26,11 +28,13 @@ export async function generateMetadata({
   params,
 }: BlogPostPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getPostWithHtml(slug);
+  const locale = await detectLocaleFromServerContext();
+  const t = createTranslator(locale);
+  const post = await getPostWithHtml(slug, locale);
 
   if (!post) {
     return {
-      title: "Post Not Found",
+      title: t("blog.postNotFound"),
     };
   }
 
@@ -47,11 +51,15 @@ export async function generateMetadata({
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params;
-  const post = await getPostWithHtml(slug);
+  const locale = await detectLocaleFromServerContext();
+  const t = createTranslator(locale);
+  const post = await getPostWithHtml(slug, locale);
 
   if (!post) {
     notFound();
   }
+
+  const dateLocale = locale === "en" ? "en-US" : "cs-CZ";
 
   return (
     <section className="py-16 md:pt-32 md:pb-24">
@@ -61,7 +69,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           <Button asChild variant="ghost" size="sm">
             <Link href="/blog" className="gap-2">
               <ArrowLeft className="w-4 h-4" />
-              Zpět na blog
+              {t("blog.backToBlog")}
             </Link>
           </Button>
         </div>
@@ -79,7 +87,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               <Badge variant="outline">
                 <Calendar className="w-3 h-3" />
                 <time dateTime={post.date}>
-                  {new Date(post.date).toLocaleDateString("cs-CZ", {
+                  {new Date(post.date).toLocaleDateString(dateLocale, {
                     year: "numeric",
                     month: "long",
                     day: "numeric",
@@ -130,7 +138,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           <Button asChild variant="outline">
             <Link href="/blog" className="gap-2">
               <ArrowLeft className="w-4 h-4" />
-              Zpět na všechny články
+              {t("blog.backToAllPosts")}
             </Link>
           </Button>
         </div>

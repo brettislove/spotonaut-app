@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { useLocale } from "@/hooks/use-locale";
 
 export default function ContactSection() {
   const [name, setName] = useState("");
@@ -15,6 +16,7 @@ export default function ContactSection() {
     "idle" | "sending" | "success" | "error"
   >("idle");
   const [error, setError] = useState<string | null>(null);
+  const { t } = useLocale();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -67,31 +69,30 @@ export default function ContactSection() {
     <section className="py-8">
       <div className="mx-auto max-w-3xl px-8 lg:px-0">
         <h1 className="text-center text-4xl font-semibold lg:text-5xl">
-          Potřebujete s něčím poradit?
+          {t("contactSection.title")}
         </h1>
-        <p className="mt-4 text-center">
-          Pokud si s něčím nevíte rady, nebo chcete probrat možnosti využití
-          Spotonauta ve vaší firmě, neváhejte nám napsat. Rádi vám pomůžeme.
-        </p>
+        <p className="mt-4 text-center">{t("contactSection.intro")}</p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <Card className="p-5">
             <h2 className="text-base font-semibold">
-              Pro firmy: kontakt napřímo
+              {t("contactSection.company.title")}
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Firemní poptávky a spolupráce řešíme přednostně e-mailem na{" "}
+              {t("contactSection.company.prefix")}
               <a
                 href="mailto:crew@spotonaut.com"
                 className="underline underline-offset-2"
               >
-                crew@spotonaut.com
+                {t("contactSection.company.email")}
               </a>
-              . Odpovídáme obvykle do 1 pracovního dne.
+              {t("contactSection.company.suffix")}
             </p>
           </Card>
           <Card className="p-5">
-            <h2 className="text-base font-semibold">Sledujte nás</h2>
+            <h2 className="text-base font-semibold">
+              {t("contactSection.followTitle")}
+            </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               <a
                 href="https://x.com/spotonaut"
@@ -135,18 +136,15 @@ export default function ContactSection() {
         <Card className="mx-auto mt-12 max-w-lg p-8 shadow-md sm:p-16">
           <div>
             <h2 className="text-xl font-semibold">
-              Dejte nám vědět a my se vám ozveme
+              {t("contactSection.form.title")}
             </h2>
-            <p className="mt-4 text-sm">
-              Máte otázku k používání Spotonautu? Napište nám a my se vám co
-              nejdříve ozveme s odpovědí.
-            </p>
+            <p className="mt-4 text-sm">{t("contactSection.form.intro")}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <Label htmlFor="name" className="mb-2 inline-block">
-                Jméno *
+                {t("contactSection.form.labels.name")}
               </Label>
               <Input
                 type="text"
@@ -160,7 +158,7 @@ export default function ContactSection() {
 
             <div>
               <Label htmlFor="email" className="mb-2 inline-block">
-                E-mail *
+                {t("contactSection.form.labels.email")}
               </Label>
               <Input
                 type="email"
@@ -174,7 +172,7 @@ export default function ContactSection() {
 
             <div>
               <Label htmlFor="msg" className="mb-2 inline-block">
-                Zpráva *
+                {t("contactSection.form.labels.message")}
               </Label>
               <Textarea
                 id="msg"
@@ -189,17 +187,18 @@ export default function ContactSection() {
 
             {status === "success" && (
               <p className="text-sm text-foreground">
-                Děkujeme, zpráva byla odeslána. Ozveme se co nejdříve.
+                {t("contactSection.form.success")}
               </p>
             )}
 
             <p className="text-xs text-muted-foreground">
-              Odesláním formuláře souhlasíte se zpracováním údajů pro vyřízení
-              dotazu.
+              {t("contactSection.form.privacy")}
             </p>
 
             <Button type="submit" disabled={status === "sending"}>
-              {status === "sending" ? "Odesílám…" : "Odeslat"}
+              {status === "sending"
+                ? t("contactSection.form.sending")
+                : t("contactSection.form.submit")}
             </Button>
           </form>
         </Card>

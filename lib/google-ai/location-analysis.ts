@@ -1,6 +1,6 @@
 import type { BusinessType } from "@/lib/constants/business-types";
 import { FOOTFALL_PROXY_TYPES } from "@/lib/constants/business-types";
-import { genai, BASIC_SYSTEM_PROMPT } from "./client";
+import { genai, getBasicSystemPrompt } from "./client";
 import {
   extractGroundingSources,
   hasGroundingMetadata,
@@ -13,6 +13,7 @@ import {
   type PlacesSearchResult,
 } from "@/lib/google-maps/places";
 import { PrismaClient } from "@prisma/client";
+import type { Locale } from "@/lib/i18n/config";
 
 export type GroundingStatus = "not_used" | "used" | "insufficient" | "failed";
 
@@ -234,7 +235,7 @@ POZNÁMKY:
 `;
 
 const HYBRID_PRO_SYSTEM_PROMPT = `
-${BASIC_SYSTEM_PROMPT}
+${getBasicSystemPrompt("cs")}
 
 DODATEČNÉ INSTRUKCE PRO PRÁCI S DATY Z GOOGLE MAPS:
 - Dostaneš strukturovaný objekt "locationData" z předchozího kroku, který vychází z Google Maps.
@@ -244,6 +245,425 @@ DODATEČNÉ INSTRUKCE PRO PRÁCI S DATY Z GOOGLE MAPS:
   jasně ji označ jako obecný předpoklad, ne jako fakt o konkrétní lokalitě.
 - Pokud jsou data neúplná nebo nekonzistentní, výslovně na to upozorni v analýze.
 `;
+
+const FLASH_PLACES_ANALYSIS_PROMPT_EN = `
+You are an assistant for analyzing data from the Google Places API.
+
+YOUR TASK:
+- You will receive structured data from Google Places API about competitors and footfall proxy points in a location.
+- ANALYZE this data and return a structured JSON output.
+- DO NOT perform business analysis — only categorize and summarize the retrieved data.
+
+OUTPUT:
+- Return ONLY ONE JSON OBJECT in the format below.
+- No explanatory text around it, no extra sentences.
+
+EXACT JSON STRUCTURE:
+\`\`\`json
+{
+  "locationQuery": string,
+  "resolvedAddress": string | null,
+  "coordinates": {
+    "lat": number,
+    "lng": number
+  } | null,
+  "primaryPlaceId": string | null,
+  "primaryMapsUrl": string | null,
+  "categories": string[] | null,
+  "competitors": [
+    {
+      "name": string,
+      "category": string | null,
+      "distanceMeters": number | null,
+      "coordinates": {
+        "lat": number,
+        "lng": number
+      } | null,
+      "address": string | null
+    }
+  ],
+  "footfallProxies": [
+    {
+      "type": "transit" | "shopping" | "office" | "residential" | "other",
+      "description": string,
+      "distanceMeters": number | null,
+      "coordinates": {
+        "lat": number,
+        "lng": number
+      } | null
+    }
+  ],
+  "notes": string | null,
+  "groundingStatus": "used" | "insufficient"
+}
+\`\`\`
+
+NOTES:
+- "competitors" = competing businesses in the area, sorted by distance.
+- "footfallProxies" = places indicating potential footfall (transit stops, malls, schools...).
+- For each competitor/proxy, include GPS coordinates when available.
+- "averageRating" = average rating of found competitors (if ratings are available).
+- Set "groundingStatus" to "used" when meaningful data is available, otherwise "insufficient".
+`;
+
+const FLASH_GROUNDING_SYSTEM_PROMPT_EN = `
+You are an assistant for gathering data from Google Maps.
+
+YOUR TASK:
+- Use Google Maps tools to retrieve the most accurate facts about the given location.
+- DO NOT perform business analysis, only collect DATA.
+- If you are uncertain, leave fields as null/undefined — DO NOT GUESS.
+
+CRITICALLY IMPORTANT - COORDINATES:
+- You will receive EXACT GPS coordinates (latitude, longitude) in toolConfig.
+- These coordinates are TRUSTED and FINAL - they have already been correctly geocoded.
+- You MUST NEVER geocode the location yourself or alter the provided coordinates!
+- Use the provided coordinates as the center for Google Maps tool searches.
+- If you find a place on Google Maps, DO NOT CHANGE coordinates - keep them as provided.
+
+OUTPUT:
+- Return ONLY ONE JSON OBJECT in the format below.
+- No explanatory text around it, no extra sentences.
+
+EXACT JSON STRUCTURE:
+\`\`\`json
+{
+  "locationQuery": string,
+  "resolvedAddress": string | null,
+  "coordinates": {
+    "lat": number,
+    "lng": number
+  } | null,
+  "primaryPlaceId": string | null,
+  "primaryMapsUrl": string | null,
+  "categories": string[] | null,
+  "competitors": [
+    {
+      "name": string,
+      "category": string | null,
+      "distanceMeters": number | null,
+      "rating": number | null,
+      "userRatingsTotal": number | null,
+      "priceLevel": number | null,
+      "mapsUrl": string | null,
+      "openingHours": string | null,
+      "coordinates": {
+        "lat": number,
+        "lng": number
+      } | null,
+      "address": string | null
+    }
+  ],
+  "footfallProxies": [
+    {
+      "type": "transit" | "shopping" | "office" | "residential" | "other",
+      "description": string,
+      "distanceMeters": number | null,
+      "coordinates": {
+        "lat": number,
+        "lng": number
+      } | null
+    }
+  ],
+  "averageRating": number | null,
+  "reviewSentiment": "positive" | "mixed" | "negative" | "unknown",
+  "notes": string | null,
+  "groundingStatus": "used" | "insufficient" | "failed"
+}
+\`\`\`
+
+NOTES:
+- "competitors" = similar businesses within roughly 500 m.
+- "footfallProxies" = places indicating potential footfall (transit stops, malls, schools, offices…).
+- Set "groundingStatus" to "used" if meaningful Google Maps data was retrieved,
+  otherwise "insufficient" or "failed".
+- RETURN coordinates in JSON EXACTLY AS PROVIDED in toolConfig - DO NOT CHANGE THEM!
+`;
+
+const HYBRID_PRO_SYSTEM_PROMPT_EN = `
+${getBasicSystemPrompt("en")}
+
+ADDITIONAL INSTRUCTIONS FOR WORKING WITH GOOGLE MAPS DATA:
+- You will receive a structured "locationData" object from the previous step, based on Google Maps.
+- Treat THIS DATA as the main source of truth about the specific location
+  (address, competition, place type, ratings…).
+- DO NOT invent specific geographic facts that are not evident from this data.
+- If you use general knowledge (e.g., typical customer behavior in shopping malls),
+  clearly label it as a general assumption, not a fact about this exact location.
+- If data is incomplete or inconsistent, explicitly call that out in the analysis.
+`;
+
+function resolvePromptLocale(locale?: Locale): Locale {
+  return locale === "en" ? "en" : "cs";
+}
+
+function getFlashPlacesAnalysisSystemPrompt(locale?: Locale): string {
+  return resolvePromptLocale(locale) === "en"
+    ? FLASH_PLACES_ANALYSIS_PROMPT_EN
+    : FLASH_PLACES_ANALYSIS_PROMPT;
+}
+
+function getFlashGroundingSystemPrompt(locale?: Locale): string {
+  return resolvePromptLocale(locale) === "en"
+    ? FLASH_GROUNDING_SYSTEM_PROMPT_EN
+    : FLASH_GROUNDING_SYSTEM_PROMPT;
+}
+
+function getHybridProSystemPrompt(locale?: Locale): string {
+  return resolvePromptLocale(locale) === "en"
+    ? HYBRID_PRO_SYSTEM_PROMPT_EN
+    : HYBRID_PRO_SYSTEM_PROMPT;
+}
+
+function buildFlashPlacesUserPrompt(params: {
+  locale?: Locale;
+  location: string;
+  businessType: BusinessType;
+  coordinates: Coordinates;
+  placesDataForAnalysis: {
+    competitors: unknown[];
+    footfallProxies: unknown[];
+  };
+}): string {
+  const { locale, location, businessType, coordinates, placesDataForAnalysis } =
+    params;
+
+  if (resolvePromptLocale(locale) === "en") {
+    return `
+LOCATION: "${location}"
+BUSINESS TYPE: ${businessType.type} (category: ${businessType.category})
+COORDINATES: lat=${coordinates.lat}, lng=${coordinates.lng}
+
+DATA FROM GOOGLE PLACES API:
+
+**COMPETITORS (${placesDataForAnalysis.competitors.length} places):**
+${JSON.stringify(placesDataForAnalysis.competitors, null, 2)}
+
+**FOOTFALL PROXY POINTS (${placesDataForAnalysis.footfallProxies.length} places):**
+${JSON.stringify(placesDataForAnalysis.footfallProxies, null, 2)}
+
+Analyze this data and return a JSON object according to the provided schema.
+Focus on:
+- Categorizing competitors by type and distance
+- Identifying footfall proxies (transit, shopping, office, etc.)
+- Overall sentiment based on ratings
+- Average competitor rating
+`;
+  }
+
+  return `
+LOKALITA: "${location}"
+TYP PODNIKÁNÍ: ${businessType.type} (kategorie: ${businessType.category})
+SOUŘADNICE: lat=${coordinates.lat}, lng=${coordinates.lng}
+
+DATA Z GOOGLE PLACES API:
+
+**KONKURENCE (${placesDataForAnalysis.competitors.length} míst):**
+${JSON.stringify(placesDataForAnalysis.competitors, null, 2)}
+
+**BODY NÁVŠTĚVNOSTI (${placesDataForAnalysis.footfallProxies.length} míst):**
+${JSON.stringify(placesDataForAnalysis.footfallProxies, null, 2)}
+
+Analyzuj tato data a vrať JSON objekt podle zadaného schématu.
+Zaměř se na:
+- Kategorizaci konkurentů podle typu a vzdálenosti
+- Identifikaci bodů návštěvnosti (transit, shopping, office, atd.)
+- Celkový sentiment na základě ratingů
+- Průměrný rating konkurence
+`;
+}
+
+function buildFlashGroundingUserPrompt(params: {
+  locale?: Locale;
+  location: string;
+  businessType: BusinessType;
+  coordinates?: Coordinates | null;
+}): string {
+  const { locale, location, businessType, coordinates } = params;
+
+  if (resolvePromptLocale(locale) === "en") {
+    if (coordinates) {
+      return `
+EXACT GPS COORDINATES (already geocoded): lat=${coordinates.lat}, lng=${coordinates.lng}
+Address/location: "${location}"
+Business type: ${businessType.type} (category: ${businessType.category})
+
+IMPORTANT: Coordinates are FINAL and CORRECT. Do not geocode the location again!
+Use the provided GPS coordinates as the search center in Google Maps.
+Find competitors, footfall proxies, and other data AROUND these coordinates.
+
+Return ONLY a JSON object according to the provided schema.
+`;
+    }
+
+    return `
+Location to analyze: "${location}"
+Business type: ${businessType.type} (category: ${businessType.category})
+
+Use Google Maps tools to retrieve the most accurate data about the surroundings
+of this location in the Czech Republic and return ONLY a JSON object according to the schema.
+`;
+  }
+
+  if (coordinates) {
+    return `
+PŘESNÉ GPS SOUŘADNICE (již geokódovány): lat=${coordinates.lat}, lng=${coordinates.lng}
+Adresa/lokalita: "${location}"
+Typ podnikání: ${businessType.type} (kategorie: ${businessType.category})
+
+DŮLEŽITÉ: Souřadnice jsou FINÁLNÍ a SPRÁVNÉ. Negeokóduj znovu lokalitu!
+Použij poskytnuté GPS souřadnice jako střed pro vyhledávání na Google Maps.
+Najdi konkurenci, body návštěvnosti a další data OKOLO těchto souřadnic.
+
+Vrať POUZE JSON objekt podle zadaného schématu.
+`;
+  }
+
+  return `
+Lokalita k analýze: "${location}"
+Typ podnikání: ${businessType.type} (kategorie: ${businessType.category})
+
+Použij nástroje Google Maps k získání co nejpřesnějších dat o okolí této lokality
+v České republice a vrať POUZE JSON objekt podle zadaného schématu.
+`;
+}
+
+function buildProAnalysisPrompt(params: {
+  locale?: Locale;
+  location: string;
+  businessType: BusinessType;
+  groundedLocation: GroundedLocationData;
+}): string {
+  const { locale, location, businessType, groundedLocation } = params;
+
+  if (resolvePromptLocale(locale) === "en") {
+    return `
+Provide a BRIEF business location analysis based on the following data:
+
+**INPUT DATA:**
+- Location (original input): ${location}
+- Business type: ${businessType.type}
+- Category: ${businessType.category}
+- Average customer spend: ${businessType.avgSpend} CZK
+- Conversion rate: ${(businessType.conversionRate * 100).toFixed(1)}%
+
+**ADDITIONAL STRUCTURED DATA FROM GOOGLE MAPS (locationData):**
+${JSON.stringify(groundedLocation, null, 2)}
+
+Treat this data as the primary source of truth about this specific location.
+
+**REQUIRED ANALYSIS:**
+Write only 2-3 sentences summarizing key findings about this location - its type,
+potential, and the main recommendation. Clearly distinguish:
+- what directly follows from locationData (facts from Google Maps)
+- what is a general assumption or estimate.
+
+📊 METRICS (REQUIRED - at the very end of the response)
+At the end of your response, append a JSON object with exact metrics.
+JSON format:
+- localityScore: number 1-100 (overall location score)
+- footfallScore: number 1-100 (footfall score)
+- recommendedHours: string in format "7-22" (recommended opening hours)
+`;
+  }
+
+  return `
+Proveď STRUČNOU analýzu obchodní lokality s následujícími daty:
+
+**VSTUPNÍ DATA:**
+- Lokalita (původní zadání): ${location}
+- Typ podnikání: ${businessType.type}
+- Kategorie: ${businessType.category}
+- Průměrná útrata zákazníka: ${businessType.avgSpend} Kč
+- Konverzní poměr: ${(businessType.conversionRate * 100).toFixed(1)}%
+
+**DODATEČNÁ STRUKTUROVANÁ DATA Z GOOGLE MAPS (locationData):**
+${JSON.stringify(groundedLocation, null, 2)}
+
+Tato data považuj za hlavní zdroj pravdy o konkrétní lokalitě.
+
+**POŽADOVANÁ ANALÝZA:**
+Napiš pouze 2-3 věty shrnující klíčové poznatky o této lokalitě - její typ,
+potenciál a hlavní doporučení. V analýze jasně rozlišuj:
+- co vyplývá přímo z locationData (fakta z Google Maps)
+- co je obecný předpoklad nebo odhad.
+
+📊 METRIKY (POVINNÉ - na samém konci odpovědi)
+Na konec své odpovědi přidej JSON objekt s přesnými metrikami.
+Formát JSON:
+- localityScore: číslo 1-100 (celkové hodnocení lokality)
+- footfallScore: číslo 1-100 (hodnocení návštěvnosti)
+- recommendedHours: string ve formátu "7-22" (doporučené provozní hodiny)
+`;
+}
+
+function buildProChatPrompt(params: {
+  locale?: Locale;
+  conversationContext: string;
+  currentQuery: string;
+  groundedLocation: GroundedLocationData;
+}): string {
+  const { locale, conversationContext, currentQuery, groundedLocation } =
+    params;
+
+  if (resolvePromptLocale(locale) === "en") {
+    return `
+CONVERSATION CONTEXT:
+${conversationContext || "(no prior context)"}
+
+CURRENT QUESTION:
+${currentQuery}
+
+**ADDITIONAL STRUCTURED DATA FROM GOOGLE MAPS (locationData):**
+${JSON.stringify(groundedLocation, null, 2)}
+
+Treat this data as the primary source of truth for this specific location. DO NOT INVENT specific geographic facts that are not evident from this data.
+
+Answer the current question with regard to previous conversation context. If the question relates to prior analysis, reference concrete data and recommendations from that analysis. If the question concerns the specific location or nearby places, use only locationData above. If data is unavailable, clearly state that.
+
+📝 FOLLOW-UP QUESTION SUGGESTIONS (REQUIRED - at the very end of the response)
+At the end of your response, you MUST append a JSON array with 2-3 follow-up question suggestions the user might ask.
+Suggestions should be:
+- Relevant to the current location/analysis
+- Short and specific (max 50 characters)
+- In English
+- Formulated as questions or requests
+
+Format:
+\`\`\`suggestions
+["How strong is nearby competition?", "Best opening hours?", "How to improve conversions?"]
+\`\`\`
+`;
+  }
+
+  return `
+KONTEXT KONVERZACE:
+${conversationContext || "(žádný předchozí kontext)"}
+
+AKTUÁLNÍ DOTAZ:
+${currentQuery}
+
+**DODATEČNÁ STRUKTUROVANÁ DATA Z GOOGLE MAPS (locationData):**
+${JSON.stringify(groundedLocation, null, 2)}
+
+Tato data považuj za hlavní zdroj pravdy o konkrétní lokalitě. NEVYMÝŠLEJ si konkrétní geografická fakta, která nejsou v těchto datech zřejmá.
+
+Odpověz na aktuální dotaz s ohledem na předchozí konverzaci. Pokud se dotaz týká dříve provedené analýzy, odkazuj na konkrétní data a doporučení z té analýzy. Pokud se dotaz týká konkrétní lokality nebo míst v okolí, použij výhradně data z locationData výše. Pokud data nejsou k dispozici, jasně to uveď.
+
+📝 NÁVRHY NA DALŠÍ OTÁZKY (POVINNÉ - na samém konci odpovědi)
+Na konec své odpovědi MUSÍŠ přidat JSON pole s 2-3 návrhy na další otázky, které by uživatel mohl položit.
+Návrhy by měly být:
+- Relevantní k právě probírané lokalitě/analýze
+- Krátké a konkrétní (max 50 znaků)
+- V češtině
+- Formulované jako otázky nebo požadavky
+
+Formát:
+\`\`\`suggestions
+["Jaká je konkurence v okolí?", "Doporučené provozní hodiny?", "Jak optimalizovat prodeje?"]
+\`\`\`
+`;
+}
 
 function safelyParseJson<T>(raw: string): T | null {
   try {
@@ -305,6 +725,7 @@ interface FlashGroundingParams {
   businessType: BusinessType;
   coordinates?: Coordinates | null;
   prisma?: PrismaClient;
+  locale?: Locale;
 }
 
 export async function getGroundedLocationDataWithFlash(
@@ -314,7 +735,7 @@ export async function getGroundedLocationDataWithFlash(
   usedMapsGrounding: boolean;
   sources: GroundingSource[];
 }> {
-  const { location, businessType, coordinates, prisma } = params;
+  const { location, businessType, coordinates, prisma, locale } = params;
 
   // Try Places API first if we have coordinates and Prisma client
   if (coordinates && prisma) {
@@ -371,26 +792,13 @@ export async function getGroundedLocationDataWithFlash(
       };
 
       // Ask Gemini Flash to analyze the Places data
-      const analysisPrompt = `
-LOKALITA: "${location}"
-TYP PODNIKÁNÍ: ${businessType.type} (kategorie: ${businessType.category})
-SOUŘADNICE: lat=${coordinates.lat}, lng=${coordinates.lng}
-
-DATA Z GOOGLE PLACES API:
-
-**KONKURENCE (${placesDataForAnalysis.competitors.length} míst):**
-${JSON.stringify(placesDataForAnalysis.competitors, null, 2)}
-
-**BODY NÁVŠTĚVNOSTI (${placesDataForAnalysis.footfallProxies.length} míst):**
-${JSON.stringify(placesDataForAnalysis.footfallProxies, null, 2)}
-
-Analyzuj tato data a vrať JSON objekt podle zadaného schématu.
-Zaměř se na:
-- Kategorizaci konkurentů podle typu a vzdálenosti
-- Identifikaci bodů návštěvnosti (transit, shopping, office, atd.)
-- Celkový sentiment na základě ratingů
-- Průměrný rating konkurence
-`;
+      const analysisPrompt = buildFlashPlacesUserPrompt({
+        locale,
+        location,
+        businessType,
+        coordinates,
+        placesDataForAnalysis,
+      });
 
       const response = await genai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -401,7 +809,7 @@ Zaměř se na:
           },
         ],
         config: {
-          systemInstruction: FLASH_PLACES_ANALYSIS_PROMPT,
+          systemInstruction: getFlashPlacesAnalysisSystemPrompt(locale),
         },
       });
 
@@ -477,25 +885,12 @@ Zaměř se na:
   // Fallback: Use Gemini's built-in Google Maps grounding (original behavior)
   console.log("Using Gemini grounding fallback for:", businessType.type);
 
-  const userPrompt = coordinates
-    ? `
-PŘESNÉ GPS SOUŘADNICE (již geokódovány): lat=${coordinates.lat}, lng=${coordinates.lng}
-Adresa/lokalita: "${location}"
-Typ podnikání: ${businessType.type} (kategorie: ${businessType.category})
-
-DŮLEŽITÉ: Souřadnice jsou FINÁLNÍ a SPRÁVNÉ. Negeokóduj znovu lokalitu!
-Použij poskytnuté GPS souřadnice jako střed pro vyhledávání na Google Maps.
-Najdi konkurenci, body návštěvnosti a další data OKOLO těchto souřadnic.
-
-Vrať POUZE JSON objekt podle zadaného schématu.
-`
-    : `
-Lokalita k analýze: "${location}"
-Typ podnikání: ${businessType.type} (kategorie: ${businessType.category})
-
-Použij nástroje Google Maps k získání co nejpřesnějších dat o okolí této lokality
-v České republice a vrať POUZE JSON objekt podle zadaného schématu.
-`;
+  const userPrompt = buildFlashGroundingUserPrompt({
+    locale,
+    location,
+    businessType,
+    coordinates,
+  });
 
   const config: Parameters<typeof genai.models.generateContent>[0] = {
     model: "gemini-2.5-flash",
@@ -506,7 +901,7 @@ v České republice a vrať POUZE JSON objekt podle zadaného schématu.
       },
     ],
     config: {
-      systemInstruction: FLASH_GROUNDING_SYSTEM_PROMPT,
+      systemInstruction: getFlashGroundingSystemPrompt(locale),
       tools: [{ googleMaps: {} }],
     },
   };
@@ -581,47 +976,26 @@ interface ProAnalysisParams {
   location: string;
   businessType: BusinessType;
   groundedLocation: GroundedLocationData;
+  locale?: Locale;
 }
 
 export async function generateProAnalysisWithGrounding(
   params: ProAnalysisParams,
 ): Promise<{ text: string; metrics: BusinessAnalysisMetrics }> {
-  const { location, businessType, groundedLocation } = params;
+  const { location, businessType, groundedLocation, locale } = params;
 
-  const structuredPrompt = `
-Proveď STRUČNOU analýzu obchodní lokality s následujícími daty:
-
-**VSTUPNÍ DATA:**
-- Lokalita (původní zadání): ${location}
-- Typ podnikání: ${businessType.type}
-- Kategorie: ${businessType.category}
-- Průměrná útrata zákazníka: ${businessType.avgSpend} Kč
-- Konverzní poměr: ${(businessType.conversionRate * 100).toFixed(1)}%
-
-**DODATEČNÁ STRUKTUROVANÁ DATA Z GOOGLE MAPS (locationData):**
-${JSON.stringify(groundedLocation, null, 2)}
-
-Tato data považuj za hlavní zdroj pravdy o konkrétní lokalitě.
-
-**POŽADOVANÁ ANALÝZA:**
-Napiš pouze 2-3 věty shrnující klíčové poznatky o této lokalitě - její typ,
-potenciál a hlavní doporučení. V analýze jasně rozlišuj:
-- co vyplývá přímo z locationData (fakta z Google Maps)
-- co je obecný předpoklad nebo odhad.
-
-📊 METRIKY (POVINNÉ - na samém konci odpovědi)
-Na konec své odpovědi přidej JSON objekt s přesnými metrikami.
-Formát JSON:
-- localityScore: číslo 1-100 (celkové hodnocení lokality)
-- footfallScore: číslo 1-100 (hodnocení návštěvnosti)
-- recommendedHours: string ve formátu "7-22" (doporučené provozní hodiny)
-`;
+  const structuredPrompt = buildProAnalysisPrompt({
+    locale,
+    location,
+    businessType,
+    groundedLocation,
+  });
 
   const proResponse = await genai.models.generateContent({
     model: "gemini-2.5-pro",
     contents: structuredPrompt,
     config: {
-      systemInstruction: HYBRID_PRO_SYSTEM_PROMPT,
+      systemInstruction: getHybridProSystemPrompt(locale),
     },
   });
 
@@ -649,42 +1023,20 @@ export async function* generateProAnalysisWithGroundingStream(
   void,
   unknown
 > {
-  const { location, businessType, groundedLocation } = params;
+  const { location, businessType, groundedLocation, locale } = params;
 
-  const structuredPrompt = `
-Proveď STRUČNOU analýzu obchodní lokality s následujícími daty:
-
-**VSTUPNÍ DATA:**
-- Lokalita (původní zadání): ${location}
-- Typ podnikání: ${businessType.type}
-- Kategorie: ${businessType.category}
-- Průměrná útrata zákazníka: ${businessType.avgSpend} Kč
-- Konverzní poměr: ${(businessType.conversionRate * 100).toFixed(1)}%
-
-**DODATEČNÁ STRUKTUROVANÁ DATA Z GOOGLE MAPS (locationData):**
-${JSON.stringify(groundedLocation, null, 2)}
-
-Tato data považuj za hlavní zdroj pravdy o konkrétní lokalitě.
-
-**POŽADOVANÁ ANALÝZA:**
-Napiš pouze 2-3 věty shrnující klíčové poznatky o této lokalitě - její typ,
-potenciál a hlavní doporučení. V analýze jasně rozlišuj:
-- co vyplývá přímo z locationData (fakta z Google Maps)
-- co je obecný předpoklad nebo odhad.
-
-📊 METRIKY (POVINNÉ - na samém konci odpovědi)
-Na konec své odpovědi přidej JSON objekt s přesnými metrikami.
-Formát JSON:
-- localityScore: číslo 1-100 (celkové hodnocení lokality)
-- footfallScore: číslo 1-100 (hodnocení návštěvnosti)
-- recommendedHours: string ve formátu "7-22" (doporučené provozní hodiny)
-`;
+  const structuredPrompt = buildProAnalysisPrompt({
+    locale,
+    location,
+    businessType,
+    groundedLocation,
+  });
 
   const stream = await genai.models.generateContentStream({
     model: "gemini-2.5-pro",
     contents: structuredPrompt,
     config: {
-      systemInstruction: HYBRID_PRO_SYSTEM_PROMPT,
+      systemInstruction: getHybridProSystemPrompt(locale),
     },
   });
 
@@ -711,6 +1063,7 @@ Formát JSON:
 interface ProChatParams {
   messages: Array<{ role: string; content: string }>;
   groundedLocation: GroundedLocationData;
+  locale?: Locale;
 }
 
 function extractSuggestionsFromText(text: string): {
@@ -740,7 +1093,7 @@ function extractSuggestionsFromText(text: string): {
 export async function generateProChatWithGrounding(
   params: ProChatParams,
 ): Promise<{ text: string; suggestions: string[] }> {
-  const { messages, groundedLocation } = params;
+  const { messages, groundedLocation, locale } = params;
 
   // Build conversation context
   const conversationContext = messages
@@ -754,39 +1107,18 @@ export async function generateProChatWithGrounding(
   const lastMessage = messages[messages.length - 1];
   const currentQuery = lastMessage.content;
 
-  const structuredPrompt = `
-KONTEXT KONVERZACE:
-${conversationContext || "(žádný předchozí kontext)"}
-
-AKTUÁLNÍ DOTAZ:
-${currentQuery}
-
-**DODATEČNÁ STRUKTUROVANÁ DATA Z GOOGLE MAPS (locationData):**
-${JSON.stringify(groundedLocation, null, 2)}
-
-Tato data považuj za hlavní zdroj pravdy o konkrétní lokalitě. NEVYMÝŠLEJ si konkrétní geografická fakta, která nejsou v těchto datech zřejmá.
-
-Odpověz na aktuální dotaz s ohledem na předchozí konverzaci. Pokud se dotaz týká dříve provedené analýzy, odkazuj na konkrétní data a doporučení z té analýzy. Pokud se dotaz týká konkrétní lokality nebo míst v okolí, použij výhradně data z locationData výše. Pokud data nejsou k dispozici, jasně to uveď.
-
-📝 NÁVRHY NA DALŠÍ OTÁZKY (POVINNÉ - na samém konci odpovědi)
-Na konec své odpovědi MUSÍŠ přidat JSON pole s 2-3 návrhy na další otázky, které by uživatel mohl položit.
-Návrhy by měly být:
-- Relevantní k právě probírané lokalitě/analýze
-- Krátké a konkrétní (max 50 znaků)
-- V češtině
-- Formulované jako otázky nebo požadavky
-
-Formát:
-\`\`\`suggestions
-["Jaká je konkurence v okolí?", "Doporučené provozní hodiny?", "Jak optimalizovat prodeje?"]
-\`\`\`
-`;
+  const structuredPrompt = buildProChatPrompt({
+    locale,
+    conversationContext,
+    currentQuery,
+    groundedLocation,
+  });
 
   const proResponse = await genai.models.generateContent({
     model: "gemini-2.5-pro",
     contents: structuredPrompt,
     config: {
-      systemInstruction: HYBRID_PRO_SYSTEM_PROMPT,
+      systemInstruction: getHybridProSystemPrompt(locale),
     },
   });
 
@@ -801,12 +1133,14 @@ interface OrchestratorParams {
   businessType: BusinessType;
   coordinates?: Coordinates | null;
   useMapsGrounding: boolean;
+  locale?: Locale;
 }
 
 export async function analyzeLocationBusinessPotential(
   params: OrchestratorParams,
 ): Promise<HybridAnalysisResult> {
-  const { location, businessType, coordinates, useMapsGrounding } = params;
+  const { location, businessType, coordinates, useMapsGrounding, locale } =
+    params;
 
   let groundedLocation: GroundedLocationData;
   let usedMapsGrounding = false;
@@ -818,6 +1152,7 @@ export async function analyzeLocationBusinessPotential(
         location,
         businessType,
         coordinates,
+        locale,
       });
       groundedLocation = flashResult.groundedLocation;
       usedMapsGrounding = flashResult.usedMapsGrounding;
@@ -861,6 +1196,7 @@ export async function analyzeLocationBusinessPotential(
     location,
     businessType,
     groundedLocation,
+    locale,
   });
 
   const analysisText =

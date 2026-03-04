@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import dynamic from "next/dynamic";
 import { Button } from "./ui/button";
+import { useLocale } from "@/hooks/use-locale";
 import type { Analysis } from "@/lib/types/analysis";
 import { getScoreGradient } from "@/lib/utils";
 
@@ -27,7 +28,10 @@ const MapThumbnail = dynamic(() => import("./map-thumbnail"), {
   ),
 });
 
-function getRelativeTime(date: string): string {
+function getRelativeTime(
+  date: string,
+  t: (key: string, params?: Record<string, number | string>) => string,
+): string {
   const now = new Date();
   const then = new Date(date);
   const diffInMs = now.getTime() - then.getTime();
@@ -35,16 +39,14 @@ function getRelativeTime(date: string): string {
   const diffInHours = Math.floor(diffInMinutes / 60);
   const diffInDays = Math.floor(diffInHours / 24);
 
-  if (diffInMinutes < 1) return "Právě teď";
-  if (diffInMinutes < 60) return `Před ${diffInMinutes} min`;
-  if (diffInHours < 24) return `Před ${diffInHours} h`;
-  if (diffInDays === 1) return "Včera";
-  if (diffInDays < 7) return `Před ${diffInDays} dny`;
+  if (diffInMinutes < 1) return t("recentAnalyses.now");
+  if (diffInMinutes < 60)
+    return t("recentAnalyses.minutesAgo", { n: diffInMinutes });
+  if (diffInHours < 24) return t("recentAnalyses.hoursAgo", { n: diffInHours });
+  if (diffInDays === 1) return t("recentAnalyses.yesterday");
+  if (diffInDays < 7) return t("recentAnalyses.daysAgo", { n: diffInDays });
 
-  return then.toLocaleDateString("cs-CZ", {
-    day: "numeric",
-    month: "short",
-  });
+  return then.toLocaleDateString();
 }
 
 function AnalysisCardSkeleton() {
@@ -73,7 +75,8 @@ function AnalysisCardSkeleton() {
 
 function AnalysisCard({ analysis }: { analysis: Analysis }) {
   const router = useRouter();
-  const relativeTime = getRelativeTime(analysis.createdAt);
+  const { t } = useLocale();
+  const relativeTime = getRelativeTime(analysis.createdAt, t);
 
   const handleClick = () => {
     router.push(`/app/analysis/${analysis.id}`);
@@ -100,7 +103,8 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
       <CardHeader className="px-4">
         <CardDescription className="text-xs">
           <div className="grid grid-cols-2">
-            {analysis.businessType || "Analýza lokality"}
+            {analysis.businessType ||
+              t("recentAnalyses.fallbackBusinessAnalysis")}
             <div className="flex gap-2">
               <IconClock className="h-3.5 w-3.5" />
               {relativeTime}
@@ -112,7 +116,9 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
           className={`gap-1 ${getScoreGradient(analysis.metrics.localityScore)}`}
         >
           <IconTrendingUp className="h-3 w-3" />
-          Potenciál: {analysis.metrics.localityScore}/100
+          {t("recentAnalyses.potential", {
+            score: analysis.metrics.localityScore,
+          })}
         </Badge>
         <CardTitle className="text-base font-semibold line-clamp-1">
           {analysis.locationName}
@@ -121,7 +127,7 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
       </CardHeader>
       <CardFooter className="flex items-center px-4 text-xs text-muted-foreground">
         <Button className="w-full" onClick={handleClick}>
-          Zobrazit analýzu
+          {t("recentAnalyses.viewAnalysis")}
         </Button>
       </CardFooter>
     </Card>
@@ -131,6 +137,7 @@ function AnalysisCard({ analysis }: { analysis: Analysis }) {
 export function RecentAnalyses() {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useLocale();
 
   useEffect(() => {
     async function fetchRecentAnalyses() {
@@ -186,9 +193,11 @@ export function RecentAnalyses() {
     return (
       <div className="mx-4 rounded-lg border border-dashed border-muted-foreground/25 bg-muted/5 px-4 py-12 text-center lg:mx-6">
         <IconMapPin className="mx-auto h-12 w-12 text-muted-foreground/50" />
-        <h3 className="mt-4 text-lg font-semibold">Žádné analýzy</h3>
+        <h3 className="mt-4 text-lg font-semibold">
+          {t("recentAnalyses.noAnalysesTitle")}
+        </h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          Začněte vytvořením vaší první analýzy lokality
+          {t("recentAnalyses.emptyDescription")}
         </p>
       </div>
     );

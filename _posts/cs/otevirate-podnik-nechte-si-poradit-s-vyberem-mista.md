@@ -1,4 +1,7 @@
 ---
+postId: otevreni-podniku-vyber-mista
+locale: cs
+slug: otevirate-podnik-nechte-si-poradit-s-vyberem-mista
 title: 'Otevíráte podnik? Nechte si poradit s výběrem místa.'
 excerpt: 'Začít podnikat je odvážné rozhodnutí. Ale vybrat správné místo? To je často to nejtěžší.'
 coverImage: '/blog/kavarna.png'

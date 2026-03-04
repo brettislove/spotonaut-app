@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,6 +29,7 @@ export function BusinessTypeSelectNew({
 }: BusinessTypeSelectNewProps) {
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const { t } = useLocale();
   const [expandedCategories, setExpandedCategories] = React.useState<
     Record<string, boolean>
   >(() => Object.fromEntries(CATEGORIES.map((c) => [c, false])));
@@ -93,7 +95,7 @@ export function BusinessTypeSelectNew({
           <span className="truncate">
             {selectedBusinessType
               ? selectedBusinessType.type
-              : "Vyberte typ podnikání"}
+              : t("businessTypeSelect.defaultPrompt")}
           </span>
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </button>
@@ -107,7 +109,7 @@ export function BusinessTypeSelectNew({
         <div className="flex items-center border-b p-3">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <Input
-            placeholder="Hledat typ podnikání..."
+            placeholder={t("businessTypeSelect.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-auto border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -123,7 +125,7 @@ export function BusinessTypeSelectNew({
                     onClick={() => toggleCategory(category)}
                     className="flex w-full items-center justify-between rounded-sm px-2 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   >
-                    <span>{category}</span>
+                    <span>{t(`businessTypeCategories.${category}`)}</span>
                     <ChevronDown
                       className={cn(
                         "h-4 w-4 shrink-0 transition-transform",
@@ -152,7 +154,7 @@ export function BusinessTypeSelectNew({
                                 : "opacity-0",
                             )}
                           />
-                          {business.type}
+                          {t(`businessTypeNames.${business.type}`)}
                         </button>
                       ))}
                     </div>
@@ -162,7 +164,7 @@ export function BusinessTypeSelectNew({
             </div>
           ) : (
             <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Žádné výsledky nenalezeny.
+              {t("businessTypeSelect.noResults")}
             </div>
           )}
         </ScrollArea>

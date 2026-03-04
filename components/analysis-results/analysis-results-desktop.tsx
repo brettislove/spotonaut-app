@@ -6,12 +6,14 @@ import {
 } from "../ui/resizable";
 import ChatPanel from "../chat/chat-panel";
 import MetricsPanel from "../metrics-panel";
+import { useLocale } from "@/hooks/use-locale";
 
 export default function AnalysisResultsDesktop({
   analysisData,
 }: {
   analysisData: AnalysisData;
 }) {
+  const { t } = useLocale();
   return (
     <div className="flex flex-col items-center justify-center h-full w-full">
       <ResizablePanelGroup
@@ -33,8 +35,7 @@ export default function AnalysisResultsDesktop({
 
       {/* AI disclaimer */}
       <div className="text-xs text-slate-400 px-3 py-2 max-w-6xl w-full text-center">
-        Výsledky jsou založeny na AI a slouží pouze pro informační účely —
-        nemusí být přesné ani úplné.
+        {t("analysisResultsDesktop.aiDisclaimer")}
       </div>
     </div>
   );

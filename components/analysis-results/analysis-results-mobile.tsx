@@ -1,5 +1,8 @@
+"use client";
+
 import { useSession } from "next-auth/react";
 import { useState } from "react";
+import { useLocale } from "@/hooks/use-locale";
 import ChatPanel from "../chat/chat-panel";
 import { AnalysisData } from "@/lib/types/analysis";
 import MetricsPanel from "../metrics-panel";
@@ -10,6 +13,7 @@ export default function AnalysisResultsMobile({
   analysisData: AnalysisData;
 }) {
   const { data: session } = useSession();
+  const { t } = useLocale();
   const [activeTab, setActiveTab] = useState<"metrics" | "chat">("metrics");
   const [, setIsExpanded] = useState(false);
 
@@ -55,6 +59,7 @@ export default function AnalysisResultsMobile({
                 {/* New Analysis Button */}
 
                 <button
+                  aria-label={t("analysisResultsMobile.newAnalysis")}
                   onClick={() => {}}
                   className="absolute left-1/12 translate-y-1/6 px-3 py-1.5 transition-all flex items-center"
                 >
@@ -78,7 +83,7 @@ export default function AnalysisResultsMobile({
                   disabled={session?.user?.email !== "crew@spotonaut.com"}
                   onClick={() => {}}
                   className="absolute right-1/12 translate-y-1/6 px-3 py-0.5 text-slate-300 disabled:text-slate-600"
-                  aria-label="Open extra functions drawer"
+                  aria-label={t("analysisResultsMobile.openExtraFunctions")}
                 >
                   <svg
                     className="w-7 h-7"
@@ -96,7 +101,7 @@ export default function AnalysisResultsMobile({
                 <div className="relative flex items-center gap-2">
                   <div
                     role="tablist"
-                    aria-label="Přepnout mezi metrikami a chatem"
+                    aria-label={t("analysisResultsMobile.tabAriaLabel")}
                     className="relative w-44 h-11 bg-card border border-border rounded-full p-1 flex items-center"
                   >
                     <button
@@ -105,7 +110,7 @@ export default function AnalysisResultsMobile({
                       aria-pressed={activeTab === "metrics"}
                       className="z-20 flex-1 text-sm font-medium text-center transition-colors text-white"
                     >
-                      Metriky
+                      {t("analysisResultsMobile.metrics")}
                     </button>
                     <button
                       type="button"
@@ -113,7 +118,7 @@ export default function AnalysisResultsMobile({
                       aria-pressed={activeTab === "chat"}
                       className="z-20 flex-1 text-sm font-medium text-center transition-colors text-white"
                     >
-                      Chat
+                      {t("analysisResultsMobile.chat")}
                     </button>
 
                     {/* Sliding knob (half width) */}

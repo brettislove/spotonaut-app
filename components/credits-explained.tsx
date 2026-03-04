@@ -2,34 +2,36 @@
 
 import { useState } from "react";
 import { Button } from "./ui/button";
+import { useLocale } from "@/hooks/use-locale";
 
 export default function CreditsExplained() {
   const [selectedScenario, setSelectedScenario] = useState("A");
+  const { t } = useLocale();
 
   return (
     <div className="mt-16 md:mt-24">
       <div className="mx-auto max-w-4xl text-center">
         <h2 className="text-2xl font-semibold md:text-3xl mb-4">
-          Jak fungují kredity?
+          {t("creditsExplained.title")}
         </h2>
         <p className="text-lg text-muted-foreground mb-8">
-          Flexibilita v každém kreditu. Plaťte jen za to, co využijete.
+          {t("creditsExplained.intro")}
         </p>
 
         <div className="flex flex-col sm:flex-row justify-center items-center gap-6 mb-8">
           <div className="flex items-center gap-2 text-lg">
             <span className="text-2xl">🗺️</span>
-            <span>1 analýza lokality = 10 Kreditů</span>
+            <span>{t("creditsExplained.bullets.analysisCredit")}</span>
           </div>
           <div className="flex items-center gap-2 text-lg">
             <span className="text-2xl">💬</span>
-            <span>1 dotaz na AI asistenta = 1 Kredit</span>
+            <span>{t("creditsExplained.bullets.aiQueryCredit")}</span>
           </div>
         </div>
 
         <div className="bg-muted/50 rounded-lg p-6 mb-6">
           <p className="text-sm text-muted-foreground mb-4">
-            S tarifem 🚀 Raketa (200 kreditů) můžete měsíčně udělat například:
+            {t("creditsExplained.raketaIntro")}
           </p>
 
           <div className="flex justify-center gap-2 mb-4">
@@ -38,38 +40,38 @@ export default function CreditsExplained() {
               size="sm"
               onClick={() => setSelectedScenario("A")}
             >
-              Scénář A
+              {t("creditsExplained.scenarios.A")}
             </Button>
             <Button
               variant={selectedScenario === "B" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedScenario("B")}
             >
-              Scénář B
+              {t("creditsExplained.scenarios.B")}
             </Button>
             <Button
               variant={selectedScenario === "C" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedScenario("C")}
             >
-              Scénář C
+              {t("creditsExplained.scenarios.C")}
             </Button>
           </div>
 
           <div className="text-center">
             {selectedScenario === "A" && (
               <p className="text-lg font-medium">
-                20 Hloubkových analýz a 0 dotazů.
+                {t("creditsExplained.scenarios.selectedA")}
               </p>
             )}
             {selectedScenario === "B" && (
               <p className="text-lg font-medium">
-                10 Analýz (100 kr.) + 100 Dotazů na AI (doladění detailů).
+                {t("creditsExplained.scenarios.selectedB")}
               </p>
             )}
             {selectedScenario === "C" && (
               <p className="text-lg font-medium">
-                5 Analýz (50 kr.) + 150 Dotazů.
+                {t("creditsExplained.scenarios.selectedC")}
               </p>
             )}
           </div>
@@ -81,9 +83,8 @@ export default function CreditsExplained() {
           tarif.
         </p> */}
         <p className="text-sm text-muted-foreground">
-          <strong>Tip:</strong> Došly vám kredity? Nevadí. Tarif je možné
-          kdykoliv upgradovat nebo nás můžete kontaktovat a dokoupit si kredity
-          individuálně.
+          <strong>{t("creditsExplained.tipIntro")}</strong>{" "}
+          {t("creditsExplained.tip")}
         </p>
       </div>
     </div>

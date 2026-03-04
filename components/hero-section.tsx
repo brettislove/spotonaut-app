@@ -11,6 +11,7 @@ import ButtonHeartbeat from "./button/button-heartbeat";
 import AnalysisFormNew from "./analysis-form-new";
 import React, { useState, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { useLocale } from "@/hooks/use-locale";
 import { AnalysisFormData } from "@/lib/types/analysis";
 import {
   checkIfUsedFreeAnalysis,
@@ -65,6 +66,8 @@ export default function HeroSection() {
 
   const [progressStep, setProgressStep] = useState<ProgressStep>("geocoding");
   const formRef = useRef<HTMLDivElement>(null);
+
+  const { t } = useLocale();
 
   // Redirect authenticated users to /app
   React.useEffect(() => {
@@ -243,7 +246,7 @@ export default function HeroSection() {
                     className="hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-zinc-950/5 transition-colors duration-300 dark:border-t-white/5 dark:shadow-zinc-950"
                   >
                     <span className="text-foreground text-sm">
-                      Novinka: zobrazení konkurence v mapě!
+                      {t("hero.news")}
                     </span>
                     <span className="dark:border-background block h-4 w-0.5 border-l bg-white dark:bg-zinc-700"></span>
 
@@ -266,7 +269,7 @@ export default function HeroSection() {
                   as="h1"
                   className="font-inter mx-auto mt-8 max-w-4xl text-balance text-5xl font-bold md:text-7xl lg:mt-16 xl:text-[5.25rem]"
                 >
-                  Zjisti kde otevřít svůj další podnik
+                  {t("hero.title")}
                 </TextEffect>
                 <TextEffect
                   per="line"
@@ -276,9 +279,7 @@ export default function HeroSection() {
                   as="p"
                   className="mx-auto mt-8 max-w-2xl text-balance text-lg"
                 >
-                  Spotonaut využívá pokročilou AI analýzu k vyhodnocení
-                  potenciálu vaší lokality. Zaregistrujte se zdarma a využijte
-                  tak možnost zhodnotit výsledná data s naším AI asistentem!
+                  {t("hero.description")}
                 </TextEffect>
 
                 <AnimatedGroup
@@ -302,7 +303,7 @@ export default function HeroSection() {
                     <ButtonHeartbeat
                       size="lg"
                       className="rounded-xl px-5 text-base"
-                      InnerText="Vyzkoušet zdarma"
+                      InnerText={t("hero.tryFree")}
                       onClick={() =>
                         formRef.current?.scrollIntoView({
                           behavior: "smooth",
@@ -318,7 +319,9 @@ export default function HeroSection() {
                     className="group h-10.5 rounded-xl px-5"
                   >
                     <Link href="/how-it-works">
-                      <span className="text-nowrap">Jak to funguje?</span>
+                      <span className="text-nowrap">
+                        {t("hero.howItWorks")}
+                      </span>
                       <ArrowRight className="transition-transform duration-200 group-hover:translate-x-0.5" />
                     </Link>
                   </Button>

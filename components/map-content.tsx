@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/map";
 import { MapContentProps } from "@/lib/types/map";
 import { Mountain, RotateCcw } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 // ── Marker color helper ──────────────────────────────────────────────
 function getMarkerColor(type: string) {
@@ -128,6 +129,7 @@ export default function MapContent({
   groundedLocationData,
   filterState,
 }: MapContentProps) {
+  const { t } = useLocale();
   return (
     <div className="relative h-full w-full">
       <Map
@@ -200,7 +202,9 @@ export default function MapContent({
                   )}
                   {competitor.distanceMeters && (
                     <div className="text-muted-foreground text-xs">
-                      {Math.round(competitor.distanceMeters)}m daleko
+                      {t("mapContent.distanceMeters", {
+                        n: Math.round(competitor.distanceMeters),
+                      })}
                     </div>
                   )}
                   {competitor.address && (
@@ -215,7 +219,7 @@ export default function MapContent({
                       rel="noopener noreferrer"
                       className="text-blue-600 underline text-xs block"
                     >
-                      Zobrazit na Google Maps
+                      {t("mapContent.viewOnGoogleMaps")}
                     </a>
                   )}
                 </div>
@@ -244,21 +248,23 @@ export default function MapContent({
                 <div className="text-sm space-y-1">
                   <strong style={{ color: getMarkerColor(proxy.type) }}>
                     {proxy.type === "transit"
-                      ? "Doprava"
+                      ? t("mapContent.proxyTypes.transit")
                       : proxy.type === "shopping"
-                        ? "Nákupy"
+                        ? t("mapContent.proxyTypes.shopping")
                         : proxy.type === "office"
-                          ? "Kancelář"
+                          ? t("mapContent.proxyTypes.office")
                           : proxy.type === "residential"
-                            ? "Bydlení"
-                            : "Ostatní"}
+                            ? t("mapContent.proxyTypes.residential")
+                            : t("mapContent.proxyTypes.other")}
                   </strong>
                   <div className="text-muted-foreground">
                     {proxy.description}
                   </div>
                   {proxy.distanceMeters && (
                     <div className="text-muted-foreground text-xs">
-                      {Math.round(proxy.distanceMeters)}m daleko
+                      {t("mapContent.distanceMeters", {
+                        n: Math.round(proxy.distanceMeters),
+                      })}
                     </div>
                   )}
                 </div>
@@ -298,7 +304,7 @@ export default function MapContent({
                       <span>{property.price.toLocaleString("cs-CZ")} Kč</span>
                       {property.transactionType === "rent" && (
                         <span className="text-xs text-muted-foreground font-normal">
-                          / měsíc
+                          {t("mapContent.perMonth")}
                         </span>
                       )}
                     </div>
@@ -320,7 +326,9 @@ export default function MapContent({
                   )}
                   {property.distanceMeters && (
                     <div className="text-muted-foreground text-xs">
-                      {Math.round(property.distanceMeters)}m od lokace
+                      {t("mapContent.distanceFromLocation", {
+                        n: Math.round(property.distanceMeters),
+                      })}
                     </div>
                   )}
                   {property.labels && property.labels.length > 0 && (
@@ -341,10 +349,10 @@ export default function MapContent({
                     rel="noopener noreferrer"
                     className="text-blue-600 text-xs block hover:underline font-medium pt-1"
                   >
-                    Zobrazit inzerát →
+                    {t("mapContent.viewListing")}
                   </a>
                   <div className="text-xs text-muted-foreground pt-2 mt-1 border-t border-border">
-                    Zdroj:{" "}
+                    {t("mapContent.sourceLabel")}{" "}
                     {property.source === "sreality" ? (
                       <a
                         href="https://www.sreality.cz"

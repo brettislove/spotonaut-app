@@ -8,6 +8,7 @@ import type { LocationData, LocationSuggestion } from "@/lib/types/analysis";
 import { Dialog, DialogTrigger } from "./dialog";
 import { LocationPickerDialogNew } from "../location-picker-dialog-new";
 import { ControllerFieldState, ControllerRenderProps } from "react-hook-form";
+import { useLocale } from "@/hooks/use-locale";
 
 interface LocationInputProps {
   field: ControllerRenderProps<
@@ -34,6 +35,7 @@ export default function LocationInput({
   setLocationInput,
   setFullLocationData,
 }: LocationInputProps) {
+  const { t } = useLocale();
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -89,7 +91,7 @@ export default function LocationInput({
         data-slots="input"
         type="text"
         aria-invalid={fieldState.invalid}
-        placeholder="např. Úvoz 40, Brno"
+        placeholder={t("locationInput.placeholder")}
         autoComplete="off"
         value={locationInput}
         onChange={(e) =>
@@ -114,9 +116,9 @@ export default function LocationInput({
             type="button"
             // onClick={() => setIsLocationPickerOpen(true)}
             className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-slate-400 hover:text-blue-400 transition-colors disabled:opacity-50"
-            title="Vybrat z mapy"
+            title={t("locationInput.pickFromMapTitle")}
           >
-            <span>Vybrat z mapy</span>
+            <span>{t("locationInput.pickFromMapLabel")}</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="w-4 h-4"
@@ -151,7 +153,13 @@ export default function LocationInput({
       {showSuggestions && (suggestions.length > 0 || isLoadingSuggestions) && (
         <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-y-auto">
           {isLoadingSuggestions ? (
-            <div className="px-4 py-3 text-sm text-blue-200">Načítání...</div>
+            <div className="px-4 py-3 text-sm text-blue-200">
+              {t("locationInput.loadingSuggestions")}
+            </div>
+          ) : suggestions.length === 0 ? (
+            <div className="px-4 py-3 text-sm text-blue-200">
+              {t("locationInput.noSuggestions")}
+            </div>
           ) : (
             <ul className="py-2 text-sm">
               {suggestions.map((suggestion) => (

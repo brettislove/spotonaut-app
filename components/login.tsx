@@ -5,6 +5,7 @@ import Link from "next/link";
 import SpotonautLogo from "./spotonaut-logo";
 import { useState } from "react";
 import { handleGoogleSignIn, handleLogin } from "@/utils/auth";
+import { useLocale } from "@/hooks/use-locale";
 
 export default function LoginPage({
   isOpen,
@@ -17,6 +18,7 @@ export default function LoginPage({
   onSwitchToSignup: () => void;
   onSwitchToForgotPassword: () => void;
 }) {
+  const { t } = useLocale();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
@@ -44,15 +46,15 @@ export default function LoginPage({
               <SpotonautLogo />
             </Link>
             <h1 className="mb-1 mt-4 text-xl font-semibold">
-              Přihlaste se do Spotonauta
+              {t("login.title")}
             </h1>
-            <p className="text-sm">Vítejte zpět!</p>
+            <p className="text-sm">{t("login.welcomeBack")}</p>
           </div>
 
           <div className="mt-6 space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email" className="block text-sm">
-                E-mail
+                {t("login.emailLabel")}
               </Label>
               <Input
                 type="email"
@@ -74,7 +76,7 @@ export default function LoginPage({
             <div className="space-y-0.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="pwd" className="text-sm">
-                  Heslo
+                  {t("login.passwordLabel")}
                 </Label>
                 <Button asChild variant="link" size="sm">
                   <Link
@@ -82,7 +84,7 @@ export default function LoginPage({
                     className="link intent-info variant-ghost text-sm"
                     onClick={onSwitchToForgotPassword}
                   >
-                    Zapomněli jste heslo?
+                    {t("login.forgotPassword")}
                   </Link>
                 </Button>
               </div>
@@ -110,14 +112,14 @@ export default function LoginPage({
             )}
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Přihlašování..." : "Přihlásit se"}
+              {isLoading ? t("login.loggingIn") : t("login.loginButton")}
             </Button>
           </div>
 
           <div className="my-6 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
             <hr className="border-dashed" />
             <span className="text-muted-foreground text-xs">
-              Nebo pokračujte s
+              {t("login.orContinueWith")}
             </span>
             <hr className="border-dashed" />
           </div>
@@ -153,20 +155,20 @@ export default function LoginPage({
                   d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0C79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251"
                 ></path>
               </svg>
-              <span>Google</span>
+              <span>{t("login.google")}</span>
             </Button>
           </div>
         </div>
 
         <div className="p-3">
           <p className="text-accent-foreground text-center text-sm">
-            Nemáte účet?
+            {t("login.noAccount")}
             <Button
               variant="link"
               className="px-2 cursor-pointer"
               onClick={onSwitchToSignup}
             >
-              Vytvořit účet
+              {t("login.createAccount")}
             </Button>
           </p>
         </div>

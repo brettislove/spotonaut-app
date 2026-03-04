@@ -11,6 +11,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { createContext, useContext } from "react";
+import { useLocale } from "@/hooks/use-locale";
 
 const PERCENT_MAX = 100;
 const ICON_RADIUS = 20;
@@ -57,6 +58,7 @@ export const Context = ({
 
 const CreditsIcon = () => {
   const { usedCredits, maxCredits, unlimited } = useContextValue();
+  const { t } = useLocale();
 
   const circumference = 2 * Math.PI * ICON_RADIUS;
   const remainingPercent = unlimited
@@ -70,7 +72,7 @@ const CreditsIcon = () => {
 
   return (
     <svg
-      aria-label="Využití kreditů"
+      aria-label={t("navCreditMeter.ariaLabel")}
       height="32"
       role="img"
       style={{ color: "currentcolor", minWidth: "32px", minHeight: "32px" }}
@@ -153,12 +155,14 @@ export const ContextContentHeader = ({
 }: ContextContentHeaderProps) => {
   const { usedCredits, maxCredits, unlimited } = useContextValue();
 
+  const { t } = useLocale();
+
   if (unlimited) {
     return (
       <div className={cn("w-full space-y-2 p-3", className)} {...props}>
         {children ?? (
           <div className="flex items-center justify-center gap-3 text-sm">
-            <p className="font-medium">Neomezené kredity</p>
+            <p className="font-medium">{t("navCreditMeter.unlimited")}</p>
           </div>
         )}
       </div>
@@ -180,7 +184,9 @@ export const ContextContentHeader = ({
     <div className={cn("w-full space-y-2 p-3", className)} {...props}>
       {children ?? (
         <>
-          <p className="text-xs text-muted-foreground mb-1">Využito:</p>
+          <p className="text-xs text-muted-foreground mb-1">
+            {t("navCreditMeter.usedLabel")}
+          </p>
           <div className="flex items-center justify-between gap-3 text-xs mb-1">
             <p className="font-medium">{percentDisplay}%</p>
             <p className="font-mono text-muted-foreground">
