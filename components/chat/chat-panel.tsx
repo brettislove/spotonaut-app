@@ -50,7 +50,6 @@ import { Button } from "../ui/button";
 import { ConfirmDialog } from "../ui/confirm-dialog";
 import { useSession } from "next-auth/react";
 import { useLocale } from "@/hooks/use-locale";
-import RequestMorePromptsModalNew from "../request-more-prompts-modal-new";
 import type { MessageType } from "@/lib/types/chat";
 
 export default function ChatPanel({
@@ -72,7 +71,6 @@ export default function ChatPanel({
     setShowNewAnalysisAfterSignupConfirmDialog,
   ] = useState(false);
   const [showChatAccessModal, setShowChatAccessModal] = useState(false);
-  const [showRequestModal, setShowRequestModal] = useState(false);
   const [status, setStatus] = useState<
     "submitted" | "streaming" | "ready" | "error"
   >("ready");
@@ -125,24 +123,6 @@ export default function ChatPanel({
     };
 
     try {
-      // Claim a prompt for this user (server-side lifetime quota) BEFORE appending the user's message
-      const claimRes = await fetch("/api/chat/usage/claim", { method: "POST" });
-      if (!claimRes.ok) {
-        const claimData = await claimRes.json().catch(() => ({}));
-        if (claimRes.status === 403 && claimData.limitExceeded) {
-          if (claimData.requestPending) {
-            toast.info(t("chatPanel.promptsPending"));
-          } else {
-            // Show request modal
-            setShowRequestModal(true);
-          }
-          // Show request modal
-          setStatus("ready");
-          return;
-        }
-        throw new Error(claimData.error || "Failed to claim prompt");
-      }
-      // Claim succeeded: append user's message and clear input
       setMessages((prev) => [...prev, userMessage]);
       setStatus("streaming");
       // Build the full conversation history including the new message
@@ -161,6 +141,12 @@ export default function ChatPanel({
         }),
       });
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 403 && errorData.limitExceeded) {
+          toast.info("Nedostatek kreditů pro AI dotaz.");
+          setStatus("ready");
+          return;
+        }
         const errorMessage: MessageType = {
           id: Date.now().toString(),
           role: "assistant",
@@ -342,11 +328,6 @@ export default function ChatPanel({
         }}
         confirmText={t("chatPanel.confirmSignIn")}
         variant="default"
-      />
-
-      <RequestMorePromptsModalNew
-        isOpen={showRequestModal}
-        onClose={() => setShowRequestModal(false)}
       />
     </>
   );

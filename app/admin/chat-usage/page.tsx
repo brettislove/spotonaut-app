@@ -11,10 +11,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, MessageSquare } from "lucide-react";
+import { ArrowLeft, Coins } from "lucide-react";
 import Link from "next/link";
 import UpdateQuotaForm from "./update-quota-form";
-import UpdatePendingForm from "./update-pending-form";
+import { getRemainingCredits, getTierName } from "@/lib/constants/tiers";
 
 const prisma = new PrismaClient();
 
@@ -44,12 +44,16 @@ export default async function AdminChatUsagePage() {
   if (!isAdmin(session.user.email)) redirect("/");
 
   const users = await prisma.user.findMany({
-    select: { id: true, email: true, name: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      tier: true,
+      maxCredits: true,
+      usedCredits: true,
+    },
     orderBy: { email: "asc" },
   });
-
-  const usages = await prisma.chatUsage.findMany();
-  const usageMap = new Map(usages.map((u) => [u.userId, u]));
 
   return (
     <section className="py-16 md:pt-32 md:pb-24">
@@ -64,18 +68,18 @@ export default async function AdminChatUsagePage() {
         {/* Header */}
         <div className="mb-12 md:mb-20">
           <h1 className="text-4xl font-semibold lg:text-5xl flex items-center gap-3">
-            <MessageSquare className="w-8 h-8" />
-            Uživatelské kvóty
+            <Coins className="w-8 h-8" />
+            Uživatelské kredity
           </h1>
           <p className="text-muted-foreground">
-            Zobrazit a upravit kvóty uživatelů pro použití chatových promptů.
+            Správa tarifů a kreditových limitů uživatelů.
           </p>
         </div>
 
-        {/* Chat Usage Table */}
+        {/* Credits Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Uživatelské kvóty</CardTitle>
+            <CardTitle>Uživatelské kredity</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -83,21 +87,18 @@ export default async function AdminChatUsagePage() {
                 <TableRow>
                   <TableHead>Email</TableHead>
                   <TableHead>Jméno</TableHead>
-                  <TableHead>Použité prompty</TableHead>
-                  <TableHead>Kvóta</TableHead>
+                  <TableHead>Tarif</TableHead>
+                  <TableHead>Použité kredity</TableHead>
+                  <TableHead>Zbývá</TableHead>
                   <TableHead>Akce</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.map((user) => {
-                  const usage = usageMap.get(user.id);
-                  const promptCount = usage?.promptCount ?? 0;
-                  // Keep a numeric value for the update form, but display
-                  // a friendly '∞' when quota is NULL (unlimited).
-                  const currentQuota = usage?.quota ?? 3;
-                  const displayQuota =
-                    usage?.quota === null ? "∞" : currentQuota;
-                  const pending = usage?.requestPending ?? false;
+                  const remaining = getRemainingCredits(
+                    user.maxCredits,
+                    user.usedCredits,
+                  );
                   return (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">
@@ -105,20 +106,19 @@ export default async function AdminChatUsagePage() {
                       </TableCell>
                       <TableCell>{user.name ?? "—"}</TableCell>
                       <TableCell className="font-medium">
-                        {promptCount}
+                        {getTierName(user.tier, false)}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {displayQuota}
+                        {user.usedCredits}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {remaining === null ? "∞" : remaining}
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-3 items-center">
+                        <div className="flex gap-3 items-center flex-wrap">
                           <UpdateQuotaForm
                             email={user.email!}
-                            currentQuota={currentQuota}
-                          />
-                          <UpdatePendingForm
-                            email={user.email!}
-                            currentPending={pending}
+                            currentTier={user.tier}
                           />
                         </div>
                       </TableCell>

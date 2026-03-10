@@ -41,8 +41,12 @@ export default async function AdminPage() {
   });
 
   const totalUsers = await prisma.user.count();
-  const pendingQuotaRequests = await prisma.chatUsage.count({
-    where: { requestPending: true },
+  const paidUsers = await prisma.user.count({
+    where: {
+      tier: {
+        in: [1, 2],
+      },
+    },
   });
 
   // Get analyses this week
@@ -138,7 +142,7 @@ export default async function AdminPage() {
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
                     <Users className="w-6 h-6 text-primary" />
                   </div>
-                  <CardTitle>Chat Kvóty</CardTitle>
+                  <CardTitle>Kredity & Tarify</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="flex-grow">
@@ -149,9 +153,9 @@ export default async function AdminPage() {
                       uživatelů
                     </span>
                   </div>
-                  {pendingQuotaRequests > 0 && (
+                  {paidUsers > 0 && (
                     <Badge variant="secondary" className="w-fit">
-                      {pendingQuotaRequests} čekajících
+                      {paidUsers} placených
                     </Badge>
                   )}
                 </div>
@@ -161,7 +165,7 @@ export default async function AdminPage() {
                   variant="ghost"
                   className="w-full justify-start p-0 h-auto text-primary hover:text-primary/80"
                 >
-                  Spravovat kvóty →
+                  Spravovat kredity →
                 </Button>
               </CardContent>
             </Card>

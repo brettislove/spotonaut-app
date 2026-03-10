@@ -22,6 +22,9 @@ import {
 import { runAggregationsIfNeeded } from "@/lib/analytics/aggregation";
 import { runCleanupIfNeeded } from "@/lib/analytics/retention";
 import type { AnalysisRequest } from "@/lib/types/analysis";
+import { ANALYSIS_CREDIT_COST } from "@/lib/constants/tiers";
+import { consumeUserCredits } from "@/lib/security/credits";
+import { isAdminEmail } from "@/lib/security/admin-access";
 
 const prisma = new PrismaClient();
 
@@ -66,6 +69,30 @@ export async function POST(request: NextRequest) {
         { error: "Všechna pole jsou povinná" },
         { status: 400 },
       );
+    }
+
+    if (session?.user?.id && !isAdminEmail(session.user.email)) {
+      const consumption = await consumeUserCredits(
+        prisma,
+        session.user.id,
+        ANALYSIS_CREDIT_COST,
+      );
+
+      if (!consumption) {
+        return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
+      }
+
+      if (!consumption.allowed) {
+        return NextResponse.json(
+          {
+            error: "Nedostatek kreditů pro analýzu.",
+            limitExceeded: true,
+            requiredCredits: ANALYSIS_CREDIT_COST,
+            remainingCredits: consumption.remainingCredits,
+          },
+          { status: 403 },
+        );
+      }
     }
 
     console.log("Processing analysis request:", data);

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { Resend } from "resend";
-import { getPromoQuota } from "@/lib/constants/chat";
 import { TIER_SONDA, MAX_CREDITS_SONDA } from "@/lib/constants/tiers";
 import { detectLocaleFromRequest } from "@/lib/i18n/detect-locale";
 import { createTranslator } from "@/lib/i18n/translator";
@@ -48,22 +47,11 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    // Validate promo code if provided
-    let promoQuota: number | null = null;
+    // Normalize promo code if provided
     let normalizedPromoCode: string | null = null;
 
     if (promoCode && typeof promoCode === "string" && promoCode.trim()) {
-      const trimmedCode = promoCode.trim();
-      promoQuota = getPromoQuota(trimmedCode);
-
-      if (promoQuota === null) {
-        return NextResponse.json(
-          { error: t("api.auth.signup.invalidPromoCode") },
-          { status: 400 },
-        );
-      }
-
-      normalizedPromoCode = trimmedCode.toUpperCase();
+      normalizedPromoCode = promoCode.trim().toUpperCase();
     }
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -97,18 +85,6 @@ export async function POST(request: NextRequest) {
         utmCampaign: utmCampaign || null,
       },
     });
-
-    // Create ChatUsage record with bonus quota if promo code was used
-    if (promoQuota !== null && normalizedPromoCode) {
-      await prisma.chatUsage.create({
-        data: {
-          userId: user.id,
-          quota: promoQuota,
-          quotaSource: `promo:${normalizedPromoCode}`,
-          promptCount: 0,
-        },
-      });
-    }
 
     // Send welcome / registration email via Resend (if configured)
     try {

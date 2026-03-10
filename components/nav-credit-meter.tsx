@@ -10,7 +10,7 @@ import {
   ContextTrigger,
 } from "@/components/ai-elements/context";
 import { useSession } from "next-auth/react";
-import { isUnlimited } from "@/lib/constants/tiers";
+import { isUnlimited, MAX_CREDITS_SONDA } from "@/lib/constants/tiers";
 
 const NavCreditMeter = () => {
   const { data: session } = useSession();
@@ -19,7 +19,9 @@ const NavCreditMeter = () => {
 
   // Get credits from session, preserving null for unlimited
   const usedCredits = session?.user?.usedCredits ?? 0;
-  const maxCredits = session?.user ? session.user.maxCredits : 30;
+  const maxCredits = session?.user
+    ? session.user.maxCredits
+    : MAX_CREDITS_SONDA;
   const unlimited = isUnlimited(maxCredits);
 
   return (

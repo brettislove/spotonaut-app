@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get("endDate") || "";
 
     let csv = "";
-    let filename = `analytics-${type}-${startDate}-${endDate}.csv`;
+    const filename = `analytics-${type}-${startDate}-${endDate}.csv`;
 
     if (type === "daily") {
       const data = await prisma.dailyAnalytics.findMany({
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
     console.error("Analytics export error:", error);
     return NextResponse.json(
       { error: "Failed to export analytics data" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -3,10 +3,12 @@
  * Generates CSV files from data arrays with proper escaping
  */
 
+type CsvRow = Record<string, unknown>;
+
 /**
  * Escape a value for CSV output
  */
-function escapeCSVValue(value: any): string {
+function escapeCSVValue(value: unknown): string {
   if (value === null || value === undefined) {
     return "";
   }
@@ -31,7 +33,7 @@ function escapeCSVValue(value: any): string {
  * @param headers - Array of header names (keys to extract from objects)
  * @returns CSV string
  */
-export function generateCSV(data: any[], headers: string[]): string {
+export function generateCSV(data: CsvRow[], headers: string[]): string {
   if (data.length === 0) {
     return headers.join(",");
   }
@@ -63,8 +65,8 @@ export function generateCSV(data: any[], headers: string[]): string {
  * @returns CSV string
  */
 export function generateCSVWithLabels(
-  data: any[],
-  columns: Array<{ key: string; label: string }>
+  data: CsvRow[],
+  columns: Array<{ key: string; label: string }>,
 ): string {
   if (data.length === 0) {
     return columns.map((c) => escapeCSVValue(c.label)).join(",");

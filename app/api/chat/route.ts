@@ -6,6 +6,9 @@ import {
 } from "@/lib/google-ai/location-analysis";
 import { PrismaClient } from "@prisma/client";
 import { detectLocaleFromRequest } from "@/lib/i18n/detect-locale";
+import { CHAT_MESSAGE_CREDIT_COST } from "@/lib/constants/tiers";
+import { consumeUserCredits } from "@/lib/security/credits";
+import { isAdminEmail } from "@/lib/security/admin-access";
 
 const prisma = new PrismaClient();
 
@@ -52,31 +55,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Server-side guard: check chat usage quota for user (lifetime)
-    const userEmail = (session.user?.email || "").toLowerCase();
-    const adminEmailsEnv = process.env.ADMIN_EMAILS;
-    let isAdmin = false;
-    if (adminEmailsEnv) {
-      try {
-        const parsed = JSON.parse(adminEmailsEnv);
-        if (Array.isArray(parsed)) {
-          isAdmin = parsed
-            .map((e: string) => e.toLowerCase())
-            .includes(userEmail);
-        }
-      } catch (e) {
-        console.error("Failed to parse ADMIN_EMAILS", e);
-      }
+    const userId = session.user?.id;
+    if (!userId) {
+      return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
     }
 
+    const isAdmin = isAdminEmail(session.user?.email);
+
     if (!isAdmin) {
-      const usage = await prisma.chatUsage.findUnique({
-        where: { userId: session.user?.id as string },
-      });
-      // If usage.quota is NULL treat as unlimited
-      if (usage && usage.quota !== null && usage.promptCount >= usage.quota) {
+      const consumption = await consumeUserCredits(
+        prisma,
+        userId,
+        CHAT_MESSAGE_CREDIT_COST,
+      );
+
+      if (!consumption) {
+        return NextResponse.json({ error: "Neautorizováno" }, { status: 401 });
+      }
+
+      if (!consumption.allowed) {
         return NextResponse.json(
-          { error: "Chat prompt limit exceeded", limitExceeded: true },
+          {
+            error: "Nedostatek kreditů pro AI dotaz.",
+            limitExceeded: true,
+            requiredCredits: CHAT_MESSAGE_CREDIT_COST,
+            remainingCredits: consumption.remainingCredits,
+          },
           { status: 403 },
         );
       }

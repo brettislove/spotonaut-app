@@ -6,6 +6,11 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import type { JWT } from "next-auth/jwt";
 import type { User, Account } from "next-auth";
+import {
+  MAX_CREDITS_SONDA,
+  TIER_SONDA,
+  getTierMaxCredits,
+} from "@/lib/constants/tiers";
 
 const prisma = new PrismaClient();
 
@@ -80,7 +85,50 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/",
   },
   callbacks: {
-    async jwt({ token, user, trigger, account }: {
+    async signIn({ user }) {
+      if (!user?.id) {
+        return true;
+      }
+
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          tier: true,
+          maxCredits: true,
+          usedCredits: true,
+          creditsResetAt: true,
+        },
+      });
+
+      if (!dbUser) {
+        return true;
+      }
+
+      if (dbUser.maxCredits === null) {
+        const normalizedTier = dbUser.tier ?? TIER_SONDA;
+        const normalizedMaxCredits = getTierMaxCredits(normalizedTier);
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            tier: normalizedTier,
+            maxCredits:
+              normalizedMaxCredits ??
+              (normalizedTier === TIER_SONDA ? MAX_CREDITS_SONDA : null),
+            usedCredits: dbUser.usedCredits ?? 0,
+            creditsResetAt: dbUser.creditsResetAt ?? null,
+          },
+        });
+      }
+
+      return true;
+    },
+    async jwt({
+      token,
+      user,
+      trigger,
+      account,
+    }: {
       token: JWT;
       user: User;
       trigger?: "signIn" | "update" | "signUp";

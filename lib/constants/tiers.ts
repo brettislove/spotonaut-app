@@ -8,6 +8,10 @@ export const TIER_SONDA = 0; // Free tier
 export const TIER_RAKETA = 1; // Paid tier
 export const TIER_MODUL = 2; // Enterprise tier
 
+// Credit costs per operation
+export const ANALYSIS_CREDIT_COST = 10;
+export const CHAT_MESSAGE_CREDIT_COST = 1;
+
 // TypeScript type for tier values
 export type UserTier =
   | typeof TIER_SONDA
@@ -15,9 +19,9 @@ export type UserTier =
   | typeof TIER_MODUL;
 
 // Credit limits per tier
-export const MAX_CREDITS_SONDA = 30; // One-time 30 credits
-export const MAX_CREDITS_RAKETA = 500; // 500 credits/month (renewable)
-export const MAX_CREDITS_MODUL = null; // Unlimited (NULL)
+export const MAX_CREDITS_SONDA = 25; // One-time 25 credits
+export const MAX_CREDITS_RAKETA = 200; // 200 credits/month (renewable)
+export const MAX_CREDITS_MODUL = 2200; // 2200 credits/month (renewable)
 
 // Tier display names (Czech - ready for i18n)
 export const TIER_NAMES: Record<UserTier, string> = {
@@ -35,16 +39,16 @@ export const TIER_NAMES_PLAIN: Record<UserTier, string> = {
 
 // Tier descriptions
 export const TIER_DESCRIPTIONS: Record<UserTier, string> = {
-  [TIER_SONDA]: "Bezplatný tarif s 30 kredity na vyzkoušení",
-  [TIER_RAKETA]: "Prémiový tarif s 500 kredity měsíčně",
-  [TIER_MODUL]: "Podnikový tarif s neomezenými kredity",
+  [TIER_SONDA]: "Bezplatný tarif s 25 kredity na vyzkoušení",
+  [TIER_RAKETA]: "Prémiový tarif s 200 kredity měsíčně",
+  [TIER_MODUL]: "Profesionální tarif s 2200 kredity měsíčně",
 };
 
 // Tier credit renewal periods (in days, null = no renewal)
 export const TIER_RENEWAL_DAYS: Record<UserTier, number | null> = {
   [TIER_SONDA]: null, // One-time credits, no renewal
   [TIER_RAKETA]: 30, // Monthly renewal
-  [TIER_MODUL]: null, // Unlimited, no renewal needed
+  [TIER_MODUL]: 30, // Monthly renewal
 };
 
 /**

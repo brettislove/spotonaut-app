@@ -159,7 +159,7 @@ export async function trackPageView(path?: string): Promise<void> {
  */
 export async function trackEvent(
   eventType: string,
-  eventData?: Record<string, any>,
+  eventData?: Record<string, unknown>,
   page?: string,
 ): Promise<void> {
   if (!hasConsent()) return;

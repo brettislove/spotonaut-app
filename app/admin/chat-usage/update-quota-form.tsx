@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
+import { TIER_MODUL, TIER_RAKETA, TIER_SONDA } from "@/lib/constants/tiers";
 
 export default function UpdateQuotaForm({
   email,
-  currentQuota,
+  currentTier,
 }: {
   email: string;
-  currentQuota: number;
+  currentTier: number;
 }) {
-  const [quota, setQuota] = useState<number>(currentQuota);
+  const [tier, setTier] = useState<number>(currentTier);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -18,20 +19,19 @@ export default function UpdateQuotaForm({
     setIsSaving(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/chat/usage/update-quota", {
+      const res = await fetch("/api/admin/users/credits/update-tier", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, quota }),
+        body: JSON.stringify({ email, tier, resetUsage: true }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setMessage(data.error || "Failed to update quota");
+        setMessage(data.error || "Failed to update tier");
       } else {
         setMessage("Updated");
-        // refresh to show updated counts
         setTimeout(() => window.location.reload(), 700);
       }
-    } catch (err) {
+    } catch {
       setMessage("Network error");
     } finally {
       setIsSaving(false);
@@ -40,13 +40,15 @@ export default function UpdateQuotaForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex items-center gap-2">
-      <input
-        type="number"
-        value={quota}
-        min={0}
-        onChange={(e) => setQuota(Number(e.target.value))}
-        className="w-20 px-2 py-1 rounded-md bg-slate-800 border border-slate-700 text-white text-sm"
-      />
+      <select
+        value={tier}
+        onChange={(e) => setTier(Number(e.target.value))}
+        className="px-2 py-1 rounded-md bg-slate-800 border border-slate-700 text-white text-sm"
+      >
+        <option value={TIER_SONDA}>Sonda</option>
+        <option value={TIER_RAKETA}>Raketa</option>
+        <option value={TIER_MODUL}>Modul</option>
+      </select>
       <button
         type="submit"
         disabled={isSaving}

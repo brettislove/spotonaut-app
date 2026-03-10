@@ -19,25 +19,16 @@ export function useChat() {
   // Chat-specific states
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [requestPending, setRequestPending] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<"login" | "signup">(
     "signup",
   );
-  const [showRequestModal, setShowRequestModal] = useState(false);
 
   const { checkRateLimit } = useRateLimit();
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !hasCompletedAnalysis) return;
-
-    if (requestPending) {
-      showToast(
-        "Žádost o další prompty je v procesu schválení. Prosím vyčkejte na potvrzení.",
-      );
-      return;
-    }
 
     // Validate message length
     if (input.length > MAX_MESSAGE_LENGTH) {
@@ -81,25 +72,6 @@ export function useChat() {
     setIsLoading(true);
 
     try {
-      // Claim a prompt for this user (server-side lifetime quota) BEFORE appending the user's message
-      const claimRes = await fetch("/api/chat/usage/claim", { method: "POST" });
-      const claimData = await claimRes.json().catch(() => ({}));
-      if (!claimRes.ok) {
-        if (claimRes.status === 403 && claimData.limitExceeded) {
-          if (claimData.requestPending) {
-            setRequestPending(true);
-            showToast("Žádost o další prompty je v procesu schválení.");
-            setIsLoading(false);
-            return;
-          }
-          setShowRequestModal(true);
-          setIsLoading(false);
-          return;
-        }
-        throw new Error(claimData.error || "Failed to claim prompt");
-      }
-
-      // Claim succeeded: append user's message and clear input
       setMessages((prev) => [...prev, userMessage]);
       setInput("");
 
@@ -120,7 +92,7 @@ export function useChat() {
 
       if (!response.ok) {
         if (response.status === 403 && data.limitExceeded) {
-          setShowRequestModal(true);
+          showToast("Nedostatek kreditů pro AI dotaz.");
           setIsLoading(false);
           return;
         }
@@ -158,14 +130,10 @@ export function useChat() {
     setInput,
     isLoading,
     setIsLoading,
-    requestPending,
-    setRequestPending,
     showAuthModal,
     setShowAuthModal,
     authModalMode,
     setAuthModalMode,
-    showRequestModal,
-    setShowRequestModal,
     sendMessage,
   };
 }
