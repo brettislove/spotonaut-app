@@ -189,8 +189,6 @@ const en = {
     intro:
       "Choose a plan that matches your ambitions — from first idea to franchise network.",
     perMonth: "/ month",
-    perYear: "/ year",
-    perMonthAnnualPayment: "/ month (annual payment)",
     perMonthEarlyBird: "/ month (early bird price)",
     popularBadge: "🔥 Most popular",
     plans: {
@@ -218,8 +216,8 @@ const en = {
         },
         cta: "Start full",
       },
-      modul: {
-        title: "🛰️ Modul",
+      satellite: {
+        title: "🛰️ Satellite",
         description: "For professionals.",
         features: {
           f1: "Everything in Raketa, plus:",
@@ -244,12 +242,12 @@ const en = {
     header: {
       sonda: "🌑 Sonda",
       raketa: "🚀 Raketa",
-      modul: "🛰️ Modul",
+      satellite: "🛰️ Satellite",
     },
     buttons: {
       sonda: "Try for free",
       raketa: "Start full",
-      modul: "Profi deployment",
+      satellite: "Profi deployment",
     },
     sections: {
       creditsAndUsage: "Credits & usage",

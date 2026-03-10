@@ -11,30 +11,85 @@ datasource db {
   directUrl = env("PRISMA_DATABASE_URL")
 }
 
-model User {
-  id             String    @id @default(cuid())
-  email          String    @unique
-  name           String?
-  password       String? // Nullable for OAuth users
-  emailVerified  DateTime?
-  image          String?
-  promoCode      String? // Promo code used at registration
-  tier           Int       @default(0) // 0=Sonda (Free), 1=Raketa (Paid), 2=Modul (Enterprise)
-  maxCredits     Int? // NULL = unlimited (∞), otherwise specific credit limit
-  usedCredits    Int       @default(0) // Credits consumed by the user
-  creditsResetAt DateTime? // When credits reset for renewable tiers (e.g., monthly)
-  utmSource      String?   @map("utm_source") // First-touch UTM: where this user originally came from
-  utmMedium      String?   @map("utm_medium") // First-touch UTM: channel type (social, print, cpc...)
-  utmCampaign    String?   @map("utm_campaign") // First-touch UTM: campaign name (vending_expo_warsaw...)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+enum BillingInterval {
+  month
+  year
+}
 
-  accounts            Account[]
-  analyses            Analysis[]
-  passwordResetTokens PasswordResetToken[]
-  feedbacks           Feedback[]
+enum BillingStatus {
+  active
+  trialing
+  past_due
+  canceled
+  unpaid
+  incomplete
+  incomplete_expired
+}
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  name             String?
+  password         String? // Nullable for OAuth users
+  emailVerified    DateTime?
+  image            String?
+  promoCode        String? // Promo code used at registration
+  tier             Int       @default(0) // 0=Sonda (Free), 1=Raketa (Paid), 2=Satelit/Satellite (Enterprise)
+  maxCredits       Int? // NULL = unlimited (∞), otherwise specific credit limit
+  usedCredits      Int       @default(0) // Credits consumed by the user
+  creditsResetAt   DateTime? // When credits reset for renewable tiers (e.g., monthly)
+  stripeCustomerId String?   @unique
+  utmSource        String?   @map("utm_source") // First-touch UTM: where this user originally came from
+  utmMedium        String?   @map("utm_medium") // First-touch UTM: channel type (social, print, cpc...)
+  utmCampaign      String?   @map("utm_campaign") // First-touch UTM: campaign name (vending_expo_warsaw...)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  accounts             Account[]
+  analyses             Analysis[]
+  passwordResetTokens  PasswordResetToken[]
+  feedbacks            Feedback[]
+  billingSubscriptions BillingSubscription[]
 
   @@map("users")
+}
+
+model BillingSubscription {
+  id                   String          @id @default(cuid())
+  userId               String
+  stripeSubscriptionId String          @unique
+  stripeCustomerId     String
+  stripePriceId        String
+  tier                 Int
+  interval             BillingInterval
+  currency             String
+  status               BillingStatus
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean         @default(false)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([stripeCustomerId])
+  @@map("billing_subscriptions")
+}
+
+model BillingWebhookEvent {
+  id              String    @id @default(cuid())
+  stripeEventId   String    @unique
+  eventType       String
+  payload         Json?
+  processedAt     DateTime?
+  processingError String?
+  createdAt       DateTime  @default(now())
+
+  @@index([eventType])
+  @@index([processedAt])
+  @@map("billing_webhook_events")
 }
 
 model Account {

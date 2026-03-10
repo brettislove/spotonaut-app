@@ -1,12 +1,12 @@
 /**
  * User tier constants and helper functions
- * Tiers: 0 = Sonda (Free), 1 = Raketa (Paid), 2 = Modul (Enterprise)
+ * Tiers: 0 = Sonda (Free), 1 = Raketa (Paid), 2 = Satelit/Satellite (Enterprise)
  */
 
 // Tier enum values
 export const TIER_SONDA = 0; // Free tier
 export const TIER_RAKETA = 1; // Paid tier
-export const TIER_MODUL = 2; // Enterprise tier
+export const TIER_SATELLITE = 2; // Enterprise tier
 
 // Credit costs per operation
 export const ANALYSIS_CREDIT_COST = 10;
@@ -16,39 +16,39 @@ export const CHAT_MESSAGE_CREDIT_COST = 1;
 export type UserTier =
   | typeof TIER_SONDA
   | typeof TIER_RAKETA
-  | typeof TIER_MODUL;
+  | typeof TIER_SATELLITE;
 
 // Credit limits per tier
 export const MAX_CREDITS_SONDA = 25; // One-time 25 credits
 export const MAX_CREDITS_RAKETA = 200; // 200 credits/month (renewable)
-export const MAX_CREDITS_MODUL = 2200; // 2200 credits/month (renewable)
+export const MAX_CREDITS_SATELLITE = 2200; // 2200 credits/month (renewable)
 
 // Tier display names (Czech - ready for i18n)
 export const TIER_NAMES: Record<UserTier, string> = {
   [TIER_SONDA]: "🌑 Sonda",
   [TIER_RAKETA]: "🚀 Raketa",
-  [TIER_MODUL]: "🛰️ Modul",
+  [TIER_SATELLITE]: "🛰️ Satelit",
 };
 
 // Tier display names without emojis
 export const TIER_NAMES_PLAIN: Record<UserTier, string> = {
   [TIER_SONDA]: "Sonda",
   [TIER_RAKETA]: "Raketa",
-  [TIER_MODUL]: "Modul",
+  [TIER_SATELLITE]: "Satelit",
 };
 
 // Tier descriptions
 export const TIER_DESCRIPTIONS: Record<UserTier, string> = {
   [TIER_SONDA]: "Bezplatný tarif s 25 kredity na vyzkoušení",
   [TIER_RAKETA]: "Prémiový tarif s 200 kredity měsíčně",
-  [TIER_MODUL]: "Profesionální tarif s 2200 kredity měsíčně",
+  [TIER_SATELLITE]: "Profesionální tarif s 2200 kredity měsíčně",
 };
 
 // Tier credit renewal periods (in days, null = no renewal)
 export const TIER_RENEWAL_DAYS: Record<UserTier, number | null> = {
   [TIER_SONDA]: null, // One-time credits, no renewal
   [TIER_RAKETA]: 30, // Monthly renewal
-  [TIER_MODUL]: 30, // Monthly renewal
+  [TIER_SATELLITE]: 30, // Monthly renewal
 };
 
 /**
@@ -83,8 +83,8 @@ export function getTierMaxCredits(tier: number): number | null {
       return MAX_CREDITS_SONDA;
     case TIER_RAKETA:
       return MAX_CREDITS_RAKETA;
-    case TIER_MODUL:
-      return MAX_CREDITS_MODUL;
+    case TIER_SATELLITE:
+      return MAX_CREDITS_SATELLITE;
     default:
       return MAX_CREDITS_SONDA; // Default to free tier
   }

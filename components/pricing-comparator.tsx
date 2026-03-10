@@ -14,7 +14,7 @@ export default function PricingComparator() {
         feature: t("pricingComparator.table.credits.monthlyAllowance"),
         sonda: "25",
         raketa: "200",
-        modul: "2200",
+        satellite: "2200",
       },
     ],
     analytics: [
@@ -22,13 +22,13 @@ export default function PricingComparator() {
         feature: t("pricingComparator.table.analytics.localityScore"),
         sonda: true,
         raketa: true,
-        modul: true,
+        satellite: true,
       },
       {
         feature: t("pricingComparator.table.analytics.realEstateListings"),
         sonda: false,
         raketa: true,
-        modul: true,
+        satellite: true,
       },
     ],
     ai: [
@@ -36,7 +36,7 @@ export default function PricingComparator() {
         feature: t("pricingComparator.table.ai.chatWithAi"),
         sonda: true,
         raketa: true,
-        modul: true,
+        satellite: true,
       },
     ],
   };
@@ -55,7 +55,9 @@ export default function PricingComparator() {
                   </span>
 
                   <Button asChild variant="outline" size="sm">
-                    <Link href="#">{t("pricingComparator.buttons.sonda")}</Link>
+                    <Link href="/pricing#pricing-plans">
+                      {t("pricingComparator.buttons.sonda")}
+                    </Link>
                   </Button>
                 </th>
                 <th className="bg-muted rounded-t-(--radius) space-y-3 px-4">
@@ -63,17 +65,19 @@ export default function PricingComparator() {
                     {t("pricingComparator.header.raketa")}
                   </span>
                   <Button asChild size="sm">
-                    <Link href="#">
+                    <Link href="/pricing#pricing-plans">
                       {t("pricingComparator.buttons.raketa")}
                     </Link>
                   </Button>
                 </th>
                 <th className="space-y-3">
                   <span className="block">
-                    {t("pricingComparator.header.modul")}
+                    {t("pricingComparator.header.satellite")}
                   </span>
                   <Button asChild variant="outline" size="sm">
-                    <Link href="#">{t("pricingComparator.buttons.modul")}</Link>
+                    <Link href="/pricing#pricing-plans">
+                      {t("pricingComparator.buttons.satellite")}
+                    </Link>
                   </Button>
                 </th>
               </tr>
@@ -108,10 +112,10 @@ export default function PricingComparator() {
                     </div>
                   </td>
                   <td>
-                    {typeof row.modul === "boolean" && row.modul ? (
+                    {typeof row.satellite === "boolean" && row.satellite ? (
                       <Check className="size-4" />
                     ) : (
-                      row.modul
+                      row.satellite
                     )}
                   </td>
                 </tr>
@@ -147,10 +151,10 @@ export default function PricingComparator() {
                     </div>
                   </td>
                   <td>
-                    {typeof row.modul === "boolean" && row.modul ? (
+                    {typeof row.satellite === "boolean" && row.satellite ? (
                       <Check className="size-4" />
                     ) : (
-                      row.modul
+                      row.satellite
                     )}
                   </td>
                 </tr>
@@ -184,10 +188,10 @@ export default function PricingComparator() {
                     </div>
                   </td>
                   <td>
-                    {typeof row.modul === "boolean" && row.modul ? (
+                    {typeof row.satellite === "boolean" && row.satellite ? (
                       <Check className="size-4" />
                     ) : (
-                      row.modul
+                      row.satellite
                     )}
                   </td>
                 </tr>

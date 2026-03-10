@@ -187,8 +187,6 @@ const cs = {
     intro:
       "Vyberte si plán, který odpovídá vašim ambicím. Od prvního nápadu po franšízovou síť.",
     perMonth: "/ měsíc",
-    perYear: "/ rok",
-    perMonthAnnualPayment: "/ měsíc (roční platba)",
     perMonthEarlyBird: "/ měsíc (early bird cena)",
     popularBadge: "🔥 Nejpopulárnější",
     plans: {
@@ -216,8 +214,8 @@ const cs = {
         },
         cta: "Začít naplno",
       },
-      modul: {
-        title: "🛰️ Modul",
+      satellite: {
+        title: "🛰️ Satelit",
         description: "Pro profesionály.",
         features: {
           f1: "Vše v plánu Raketa, plus:",
@@ -242,12 +240,12 @@ const cs = {
     header: {
       sonda: "🌑 Sonda",
       raketa: "🚀 Raketa",
-      modul: "🛰️ Modul",
+      satellite: "🛰️ Satelit",
     },
     buttons: {
       sonda: "Vyzkoušet zdarma",
       raketa: "Začít naplno",
-      modul: "Profi nasazení",
+      satellite: "Profi nasazení",
     },
     sections: {
       creditsAndUsage: "Kredity a použití",

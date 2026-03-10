@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { TIER_MODUL, TIER_RAKETA, TIER_SONDA } from "@/lib/constants/tiers";
+import { TIER_RAKETA, TIER_SATELLITE, TIER_SONDA } from "@/lib/constants/tiers";
 
 export default function UpdateQuotaForm({
   email,
@@ -47,7 +47,7 @@ export default function UpdateQuotaForm({
       >
         <option value={TIER_SONDA}>Sonda</option>
         <option value={TIER_RAKETA}>Raketa</option>
-        <option value={TIER_MODUL}>Modul</option>
+        <option value={TIER_SATELLITE}>Satelit</option>
       </select>
       <button
         type="submit"

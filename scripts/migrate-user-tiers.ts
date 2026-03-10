@@ -5,7 +5,7 @@
  * 1. Sets all existing users to tier 0 (Sonda/Free) by default
  * 2. Sets maxCredits to 30 for free tier users
  * 3. Sets usedCredits to 0
- * 4. For users with unlimited ChatUsage.quota (null), upgrades them to tier 2 (Modul/Enterprise)
+ * 4. For users with unlimited ChatUsage.quota (null), upgrades them to tier 2 (Satelit/Satellite)
  *
  * Run with: npx tsx scripts/migrate-user-tiers.ts
  * Or: node --loader ts-node/esm scripts/migrate-user-tiers.ts
@@ -14,9 +14,9 @@
 import { PrismaClient } from "@prisma/client";
 import {
   TIER_SONDA,
-  TIER_MODUL,
+  TIER_SATELLITE,
   MAX_CREDITS_SONDA,
-  MAX_CREDITS_MODUL,
+  MAX_CREDITS_SATELLITE,
 } from "../lib/constants/tiers";
 
 const prisma = new PrismaClient();
@@ -43,7 +43,7 @@ async function migrateUserTiers() {
     const chatUsageMap = new Map(chatUsages.map((cu) => [cu.userId, cu]));
 
     let updatedCount = 0;
-    let upgradedToModulCount = 0;
+    let upgradedToSatelliteCount = 0;
 
     for (const user of users) {
       const chatUsage = chatUsageMap.get(user.id);
@@ -52,13 +52,13 @@ async function migrateUserTiers() {
       let tier = TIER_SONDA;
       let maxCredits: number | null = MAX_CREDITS_SONDA;
 
-      // If user has unlimited chat quota, upgrade to Modul (Enterprise) tier
+      // If user has unlimited chat quota, upgrade to Satelit/Satellite (Enterprise) tier
       if (chatUsage && chatUsage.quota === null) {
-        tier = TIER_MODUL;
-        maxCredits = MAX_CREDITS_MODUL; // null = unlimited
-        upgradedToModulCount++;
+        tier = TIER_SATELLITE;
+        maxCredits = MAX_CREDITS_SATELLITE; // null = unlimited
+        upgradedToSatelliteCount++;
         console.log(
-          `  Upgrading user ${user.email} to Modul tier (had unlimited chat quota)`,
+          `  Upgrading user ${user.email} to Satelit tier (had unlimited chat quota)`,
         );
       }
 
@@ -78,9 +78,11 @@ async function migrateUserTiers() {
 
     console.log(`\n✅ Migration completed successfully!`);
     console.log(`   ${updatedCount} users updated`);
-    console.log(`   ${upgradedToModulCount} users upgraded to Modul tier`);
     console.log(
-      `   ${updatedCount - upgradedToModulCount} users set to Sonda tier\n`,
+      `   ${upgradedToSatelliteCount} users upgraded to Satelit tier`,
+    );
+    console.log(
+      `   ${updatedCount - upgradedToSatelliteCount} users set to Sonda tier\n`,
     );
   } catch (error) {
     console.error("❌ Migration failed:", error);

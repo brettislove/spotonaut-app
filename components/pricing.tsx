@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Card,
   CardContent,
@@ -13,13 +21,41 @@ import {
 } from "@/components/ui/card";
 import { Check, X } from "lucide-react";
 import { useLocale } from "@/hooks/use-locale";
+import {
+  BILLING_PLAN_SATELLITE,
+  BILLING_PLAN_RAKETA,
+  type BillingCurrency,
+  type BillingPlan,
+} from "@/lib/constants/billing";
+import { startStripeCheckout } from "@/lib/billing/client";
 
 export default function Pricing() {
-  const [isAnnual] = useState(false);
+  const [currency, setCurrency] = useState<BillingCurrency>("czk");
+  const [activeCheckoutPlan, setActiveCheckoutPlan] =
+    useState<BillingPlan | null>(null);
   const { t, locale } = useLocale();
 
+  const handleCheckout = async (plan: BillingPlan) => {
+    try {
+      setActiveCheckoutPlan(plan);
+      await startStripeCheckout({
+        plan,
+        interval: "month",
+        currency,
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Nepodařilo se spustit platbu",
+      );
+      setActiveCheckoutPlan(null);
+    }
+  };
+
   return (
-    <section className="py-16 md:pt-32 md:pb-24 bg-gradient-to-b from-background to-muted/20">
+    <section
+      id="pricing-plans"
+      className="py-16 md:pt-32 md:pb-24 bg-gradient-to-b from-background to-muted/20"
+    >
       <div className="mx-auto max-w-6xl px-6">
         <div className="mx-auto max-w-2xl space-y-6 text-center">
           <h1 className="text-center text-4xl font-semibold lg:text-5xl">
@@ -28,32 +64,20 @@ export default function Pricing() {
           <p>{t("pricing.intro")}</p>
         </div>
 
-        {/* <div className="mt-8 flex items-center justify-center gap-4 md:mt-12">
-          <span
-            className={`text-sm ${!isAnnual ? "font-semibold" : "text-muted-foreground"}`}
+        <div className="mt-8 flex flex-col items-center justify-center gap-4 md:mt-12 md:flex-row">
+          <Select
+            value={currency}
+            onValueChange={(value) => setCurrency(value as BillingCurrency)}
           >
-            Měsíční
-          </span>
-          <Switch
-            checked={isAnnual}
-            onCheckedChange={setIsAnnual}
-            aria-label="Přepnout na roční platbu"
-          />
-          <span
-            className={`text-sm ${isAnnual ? "font-semibold" : "text-muted-foreground"}`}
-          >
-            Roční
-            {/* <span className="ml-2 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-              -20%
-            </span> 
-            <Badge
-              variant="outline"
-              className="ml-2 text-green-600 dark:text-green-400 border-green-200 dark:border-green-700"
-            >
-              -20%
-            </Badge>
-          </span>
-        </div> */}
+            <SelectTrigger size="sm" className="w-[120px]">
+              <SelectValue placeholder="Currency" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="czk">CZK</SelectItem>
+              <SelectItem value="eur">EUR</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="mt-8 grid gap-6 md:mt-20 md:grid-cols-4 items-stretch">
           <Card className="flex flex-col">
@@ -62,8 +86,7 @@ export default function Pricing() {
                 {t("pricing.plans.sonda.title")}
               </CardTitle>
               <span className="my-3 block text-2xl font-semibold">
-                {t("pricing.plans.sonda.price")}{" "}
-                {isAnnual ? t("pricing.perYear") : t("pricing.perMonth")}
+                {t("pricing.plans.sonda.price")} {t("pricing.perMonth")}
               </span>
               <CardDescription className="text-sm">
                 {t("pricing.plans.sonda.description")}
@@ -103,7 +126,7 @@ export default function Pricing() {
 
             <CardFooter className="mt-auto">
               <Button asChild variant="outline" className="w-full">
-                <Link href="">{t("pricing.plans.sonda.cta")}</Link>
+                <Link href="/">{t("pricing.plans.sonda.cta")}</Link>
               </Button>
             </CardFooter>
           </Card>
@@ -117,27 +140,15 @@ export default function Pricing() {
                 {t("pricing.plans.raketa.title")}
               </CardTitle>
               <span className="my-3 block text-2xl font-semibold">
-                {isAnnual ? (
-                  <>
-                    <span className="text-muted-foreground line-through mr-2">
-                      399 Kč
-                    </span>
-                    <span className="text-3xl text-primary block">319 Kč</span>
-                    <span className="text-sm text-muted-foreground block">
-                      {t("pricing.perMonthAnnualPayment")}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-muted-foreground line-through block">
-                      399 Kč
-                    </span>
-                    <span className="text-3xl text-primary mr-4">299 Kč</span>
-                    <span className="text-sm text-muted-foreground block">
-                      {t("pricing.perMonthEarlyBird")}
-                    </span>
-                  </>
-                )}
+                <>
+                  <span className="text-muted-foreground line-through block">
+                    399 Kč
+                  </span>
+                  <span className="text-3xl text-primary mr-4">299 Kč</span>
+                  <span className="text-sm text-muted-foreground block">
+                    {t("pricing.perMonthEarlyBird")}
+                  </span>
+                </>
               </span>
               <CardDescription className="text-sm">
                 {t("pricing.plans.raketa.description")}
@@ -176,41 +187,37 @@ export default function Pricing() {
             </CardContent>
 
             <CardFooter className="mt-auto">
-              <Button asChild className="w-full">
-                <Link href="">{t("pricing.plans.raketa.cta")}</Link>
+              <Button
+                className="w-full"
+                onClick={() => handleCheckout(BILLING_PLAN_RAKETA)}
+                disabled={activeCheckoutPlan !== null}
+              >
+                {activeCheckoutPlan === BILLING_PLAN_RAKETA
+                  ? locale === "cs"
+                    ? "Přesměrování..."
+                    : "Redirecting..."
+                  : t("pricing.plans.raketa.cta")}
               </Button>
             </CardFooter>
           </Card>
           <Card className="flex flex-col">
             <CardHeader>
               <CardTitle className="font-medium">
-                {t("pricing.plans.modul.title")}
+                {t("pricing.plans.satellite.title")}
               </CardTitle>
               <span className="my-3 block text-2xl font-semibold">
-                {isAnnual ? (
-                  <>
-                    <span className="text-muted-foreground line-through mr-2">
-                      2990 Kč
-                    </span>
-                    <span className="text-3xl text-primary">2392 Kč</span>
-                    <span className="text-sm text-muted-foreground block">
-                      {t("pricing.perMonthAnnualPayment")}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-muted-foreground line-through block">
-                      2999 Kč
-                    </span>
-                    <span className="text-3xl text-primary mr-4">2249 Kč</span>
-                    <span className="text-sm text-muted-foreground block">
-                      {t("pricing.perMonthEarlyBird")}
-                    </span>
-                  </>
-                )}
+                <>
+                  <span className="text-muted-foreground line-through block">
+                    2999 Kč
+                  </span>
+                  <span className="text-3xl text-primary mr-4">2249 Kč</span>
+                  <span className="text-sm text-muted-foreground block">
+                    {t("pricing.perMonthEarlyBird")}
+                  </span>
+                </>
               </span>
               <CardDescription className="text-sm">
-                {t("pricing.plans.modul.description")}
+                {t("pricing.plans.satellite.description")}
               </CardDescription>
             </CardHeader>
 
@@ -219,9 +226,9 @@ export default function Pricing() {
 
               <ul className="list-outside space-y-3 text-sm">
                 {[
-                  t("pricing.plans.modul.features.f1"),
-                  t("pricing.plans.modul.features.f2"),
-                  t("pricing.plans.modul.features.f3"),
+                  t("pricing.plans.satellite.features.f1"),
+                  t("pricing.plans.satellite.features.f2"),
+                  t("pricing.plans.satellite.features.f3"),
                 ].map((item, index) => (
                   <li key={index} className="flex items-center gap-2">
                     <Check className="size-3" />
@@ -231,8 +238,17 @@ export default function Pricing() {
               </ul>
             </CardContent>
             <CardFooter className="mt-auto">
-              <Button asChild variant="outline" className="w-full">
-                <Link href="">{t("pricing.plans.modul.cta")}</Link>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => handleCheckout(BILLING_PLAN_SATELLITE)}
+                disabled={activeCheckoutPlan !== null}
+              >
+                {activeCheckoutPlan === BILLING_PLAN_SATELLITE
+                  ? locale === "cs"
+                    ? "Přesměrování..."
+                    : "Redirecting..."
+                  : t("pricing.plans.satellite.cta")}
               </Button>
             </CardFooter>
           </Card>
@@ -242,17 +258,7 @@ export default function Pricing() {
                 {t("pricing.plans.orbita.title")}
               </CardTitle>
               <span className="my-3 block text-2xl font-semibold">
-                {/* {isAnnual ? (
-                  <>
-                    <span className="text-muted-foreground line-through mr-2"></span>
-                    <span className="text-3xl text-primary">Dle dohody</span>
-                    <span className="text-sm text-muted-foreground block">
-                      / měsíc (roční platba)
-                    </span>
-                  </>
-                ) : ( */}
                 {t("pricing.plans.orbita.priceNegotiable")}
-                {/* )} */}
               </span>
               <CardDescription className="text-sm">
                 {t("pricing.plans.orbita.description")}

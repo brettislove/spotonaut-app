@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { auth } from "@/app/api/auth/[...nextauth]/route";
 import {
-  TIER_MODUL,
   TIER_RAKETA,
+  TIER_SATELLITE,
   TIER_SONDA,
   calculateNextResetDate,
   getTierMaxCredits,
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    if (![TIER_SONDA, TIER_RAKETA, TIER_MODUL].includes(tier)) {
+    if (![TIER_SONDA, TIER_RAKETA, TIER_SATELLITE].includes(tier)) {
       return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
     }
 
