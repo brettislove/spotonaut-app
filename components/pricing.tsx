@@ -35,6 +35,15 @@ export default function Pricing() {
     useState<BillingPlan | null>(null);
   const { t, locale } = useLocale();
 
+  const currencySuffix = currency === "eur" ? "€" : "Kč";
+  const formatPrice = (amount: number) => `${amount} ${currencySuffix}`;
+
+  const raketaPrice =
+    currency === "eur" ? { current: 11.99 } : { original: 399, current: 299 };
+
+  const satellitePrice =
+    currency === "eur" ? { current: 89.99 } : { original: 2999, current: 2249 };
+
   const handleCheckout = async (plan: BillingPlan) => {
     try {
       setActiveCheckoutPlan(plan);
@@ -86,7 +95,7 @@ export default function Pricing() {
                 {t("pricing.plans.sonda.title")}
               </CardTitle>
               <span className="my-3 block text-2xl font-semibold">
-                {t("pricing.plans.sonda.price")} {t("pricing.perMonth")}
+                {formatPrice(0)} {t("pricing.perMonth")}
               </span>
               <CardDescription className="text-sm">
                 {t("pricing.plans.sonda.description")}
@@ -141,10 +150,14 @@ export default function Pricing() {
               </CardTitle>
               <span className="my-3 block text-2xl font-semibold">
                 <>
-                  <span className="text-muted-foreground line-through block">
-                    399 Kč
+                  {raketaPrice.original !== undefined && (
+                    <span className="text-muted-foreground line-through block">
+                      {formatPrice(raketaPrice.original)}
+                    </span>
+                  )}
+                  <span className="text-3xl text-primary mr-4">
+                    {formatPrice(raketaPrice.current)}
                   </span>
-                  <span className="text-3xl text-primary mr-4">299 Kč</span>
                   <span className="text-sm text-muted-foreground block">
                     {t("pricing.perMonthEarlyBird")}
                   </span>
@@ -207,10 +220,14 @@ export default function Pricing() {
               </CardTitle>
               <span className="my-3 block text-2xl font-semibold">
                 <>
-                  <span className="text-muted-foreground line-through block">
-                    2999 Kč
+                  {satellitePrice.original !== undefined && (
+                    <span className="text-muted-foreground line-through block">
+                      {formatPrice(satellitePrice.original)}
+                    </span>
+                  )}
+                  <span className="text-3xl text-primary mr-4">
+                    {formatPrice(satellitePrice.current)}
                   </span>
-                  <span className="text-3xl text-primary mr-4">2249 Kč</span>
                   <span className="text-sm text-muted-foreground block">
                     {t("pricing.perMonthEarlyBird")}
                   </span>
