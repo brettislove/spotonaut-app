@@ -27,6 +27,7 @@ const cs = {
     home: "Domů",
     settings: "Nastavení",
     howItWorks: "Jak to funguje?",
+    billing: "Ceník",
     termsAndPolicies: "Podmínky a zásady",
     about: "O nás",
     contact: "Kontakt",

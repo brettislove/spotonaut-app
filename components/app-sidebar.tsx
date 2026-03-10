@@ -23,7 +23,12 @@ import {
 } from "@/components/ui/sidebar";
 import SpotonautLogo from "./spotonaut-logo";
 import NavCreditMeter from "./nav-credit-meter";
-import { CircleQuestionMark, Home, Settings } from "lucide-react";
+import {
+  CircleDollarSign,
+  CircleQuestionMark,
+  Home,
+  Settings,
+} from "lucide-react";
 import { Analysis } from "@/lib/types/analysis";
 import { useLocale } from "@/hooks/use-locale";
 import { Button } from "@/components/ui/button";
@@ -101,6 +106,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: t("appSidebar.howItWorks"),
         url: "/app/how-it-works",
         icon: CircleQuestionMark,
+      },
+      {
+        title: t("appSidebar.billing"),
+        url: "/app/billing",
+        icon: CircleDollarSign,
       },
       {
         title: t("appSidebar.termsAndPolicies"),

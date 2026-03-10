@@ -27,6 +27,7 @@ const en = {
     home: "Home",
     settings: "Settings",
     howItWorks: "How it works?",
+    billing: "Billing & Pricing",
     termsAndPolicies: "Terms and policies",
     about: "About",
     contact: "Contact",
