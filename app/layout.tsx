@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { Suspense } from "react";
+import Script from "next/script";
 import "./globals.css";
 import AuthProvider from "@/components/auth-provider";
 import { AnalysisProvider } from "@/lib/contexts/analysis-context";
@@ -140,6 +141,18 @@ export default async function RootLayout({
           name="msapplication-TileImage"
           content="/spotonaut_logo-192.png"
         />
+        {/* Google tag (gtag.js) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=AW-18028011932"
+          strategy="afterInteractive"
+        />
+        <Script
+          id="gtag-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'AW-18028011932');`,
+          }}
+        />
         {/* Basic theme color (Chrome/Android) */}
         <meta name="theme-color" content="#A43BFE" />
 
@@ -168,8 +181,10 @@ export default async function RootLayout({
         {/* Pinned tab for macOS Safari (monochrome mask SVG required) */}
         <link rel="mask-icon" href="/spotonaut_mask.svg" color="#A43BFE" />
         <meta name="msapplication-TileColor" content="#A43BFE" />
-        <script
+        <Script
+          id="ld-json"
           type="application/ld+json"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
