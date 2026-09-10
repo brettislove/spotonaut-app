@@ -1,38 +1,62 @@
-# Spotonaut App
+# Spotonaut
 
-A modern AI chat application built with Next.js and Mastra AI.
+Spotonaut helps entrepreneurs decide where to open a physical business (cafés, shops, vending machines, etc.) by analyzing a candidate location with AI — combining foot-traffic signals, nearby competition, and demographic data pulled from Google Maps into a single readiness report.
 
-## Getting Started
+## Features
 
-First, run the development server:
+- **AI location analysis** — submit an address and get an AI-generated report on viability, competition, and demand signals (Google Generative AI + Google Maps Places API)
+- **Chat-based refinement** — follow up on a report through a conversational interface
+- **Auth** — email/password and OAuth (Google) via NextAuth
+- **Billing** — subscription tiers and credit consumption via Stripe
+- **Admin dashboard** — usage, feedback, traffic, and chat analytics
+- **Blog & marketing pages** — localized (Czech/English) content, SEO-oriented static pages
+- **Multi-currency pricing** (CZK/EUR)
+
+## Tech stack
+
+- [Next.js 16](https://nextjs.org/) (App Router) + React 19 + TypeScript
+- [Prisma](https://www.prisma.io/) (PostgreSQL in production, SQLite for local dev)
+- [NextAuth](https://authjs.dev/) for authentication
+- [Stripe](https://stripe.com/) for billing
+- Tailwind CSS 4
+- Google Generative AI + Google Maps Platform APIs
+
+## Getting started
 
 ```bash
+npm install
+cp .env.example .env   # fill in the required keys, see below
+npm run db:migrate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Required environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+See [`.env.example`](.env.example) for the full list. At minimum, local development needs:
 
-## Learn More
+- `DATABASE_URL` — defaults to a local SQLite file
+- `GOOGLE_GENERATIVE_AI_API_KEY` — for AI-generated analyses
+- `GOOGLE_MAPS_API_KEY` — for location/places data
 
-To learn more about Next.js, take a look at the following resources:
+Stripe and admin-email variables are only required for billing and admin-panel features.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `app/` — routes (App Router), including `app/api/*` for backend endpoints
+- `prisma/` — schema and migrations
+- `_posts/` — blog content (Markdown, cs/en)
+- `scripts/` — local dev ↔ production schema switching helpers
 
-## Deploy on Vercel
+## Documentation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+See [docs/SETUP.md](docs/SETUP.md) for local development and production deployment.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Author
+
+Bretislav Dancak — [GitHub](https://github.com/brettislove)
+
+## License
+
+All rights reserved. This code is shared for portfolio/review purposes only; no license is granted to use, copy, modify, or distribute it.
